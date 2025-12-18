@@ -127,7 +127,14 @@ export default function CheckoutPage() {
     const walletBalance = user?.wallet_balance || 0;
     const canPayWithWallet = walletBalance >= (order?.total_price || 0);
 
-    if (loading) return <div className="min-h-screen bg-background flex items-center justify-center text-foreground-muted">در حال بارگذاری سفارش...</div>;
+    if (loading) return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 text-primary animate-spin" />
+          <span className="text-foreground-muted">در حال بارگذاری سفارش...</span>
+        </div>
+      </div>
+    );
 
   // 🔴 اصلاحیه مهم: اگر لودینگ تمام شد ولی اردر نال بود (مثلا در حال ریدایرکت)، هیچی نشون نده تا کرش نکنه
   if (!order) return null;
