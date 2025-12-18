@@ -20,8 +20,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     """Serializer for Product model with category details."""
-    # به جای ID دسته، نام و اسلاگ آن را می‌فرستیم تا در فرانت راحت باشیم
-    category = serializers.CharField(source='category.name', read_only=True)
+    category = serializers.SerializerMethodField()
     category_slug = serializers.CharField(source='category.slug', read_only=True)
 
     class Meta:
@@ -32,6 +31,23 @@ class ProductSerializer(serializers.ModelSerializer):
             'price', 'discount_price', 'main_image', 
             'delivery_time', 'category', 'category_slug', 'is_active'
         ]
+    
+    def get_category(self, obj):
+        if obj.category:
+            return {
+                'id': obj.category.id,
+                'name': obj.category.name,
+                'slug': obj.category.slug
+            }
+        return None
+
+
+class UpdateProductSerializer(serializers.ModelSerializer):
+    """Serializer for updating products - allows is_active to be writable."""
+    
+    class Meta:
+        model = Product
+        fields = ['title', 'description', 'price', 'discount_price', 'main_image', 'delivery_time', 'is_active']
 
 
 class CreateProductSerializer(serializers.ModelSerializer):

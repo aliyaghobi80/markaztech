@@ -51,7 +51,12 @@ export default function AdminProducts() {
       setDeleteError(null);
       mutate();
     } catch (err) {
-      toast.error("خطا در تغییر وضعیت محصول");
+      if (err.response?.status === 401) {
+        toast.error("لطفاً دوباره وارد شوید");
+      } else {
+        toast.error("خطا در تغییر وضعیت محصول");
+      }
+      console.error("Toggle active error:", err);
     }
   };
 

@@ -21,12 +21,14 @@ return (
         {/* ... بج‌ها ... */}
       </div>
 
-      <div className="p-4 flex flex-col flex-1">
-        <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-foreground-muted bg-secondary px-2 py-1 rounded-md">
-                {typeof product.category === 'object' ? product.category?.name : product.category}
-            </span>
-        </div>
+        <div className="p-4 flex flex-col flex-1">
+          <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-foreground-muted bg-secondary px-2 py-1 rounded-md">
+                  {product.category && typeof product.category === 'object' 
+                    ? (product.category.name || 'بدون دسته') 
+                    : (product.category || 'بدون دسته')}
+              </span>
+          </div>
 
         <Link href={`/product/${product.slug}`}>
             <h3 className="font-bold mb-2 line-clamp-2 text-foreground hover:text-primary transition-colors min-h-[3rem]">

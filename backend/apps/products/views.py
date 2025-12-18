@@ -4,7 +4,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from django.db.models import Q, ProtectedError
 from .models import Product, Category
-from .serializers import ProductSerializer, CategorySerializer, CreateProductSerializer
+from .serializers import ProductSerializer, CategorySerializer, CreateProductSerializer, UpdateProductSerializer
 
 class ProductViewSet(viewsets.ModelViewSet):
     """
@@ -37,6 +37,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         """Use different serializers for different actions."""
         if self.action == 'create':
             return CreateProductSerializer
+        if self.action in ['update', 'partial_update']:
+            return UpdateProductSerializer
         return ProductSerializer
     
     # تعیین سطح دسترسی بر اساس نوع درخواست
