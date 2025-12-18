@@ -43,11 +43,11 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class UpdateProductSerializer(serializers.ModelSerializer):
-    """Serializer for updating products - allows is_active to be writable."""
+    """Serializer for updating products - allows is_active and category to be writable."""
     
     class Meta:
         model = Product
-        fields = ['title', 'description', 'price', 'discount_price', 'main_image', 'delivery_time', 'is_active']
+        fields = ['title', 'slug', 'description', 'price', 'discount_price', 'main_image', 'delivery_time', 'category', 'is_active']
 
 
 class CreateProductSerializer(serializers.ModelSerializer):

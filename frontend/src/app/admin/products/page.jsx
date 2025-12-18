@@ -93,26 +93,20 @@ export default function AdminProductsPage() {
                               <td className="px-6 py-3 font-bold text-foreground">
                                   {formatPrice(product.price)}
                               </td>
-                              <td className="px-6 py-3">
-                                  <div className="flex items-center gap-2">
-                                      <button
-                                          onClick={() => handleToggleActive(product)}
-                                          disabled={togglingId === product.id}
-                                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-                                              product.is_active ? 'bg-green-500' : 'bg-gray-400'
-                                          } ${togglingId === product.id ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
-                                      >
-                                          <span
-                                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                                  product.is_active ? 'translate-x-1' : 'translate-x-6'
-                                              }`}
-                                          />
-                                      </button>
-                                      <span className={`text-xs font-bold ${product.is_active ? 'text-green-500' : 'text-gray-500'}`}>
-                                          {product.is_active ? 'فعال' : 'غیرفعال'}
-                                      </span>
-                                  </div>
-                              </td>
+                                <td className="px-6 py-3">
+                                    <button
+                                        onClick={() => handleToggleActive(product)}
+                                        disabled={togglingId === product.id}
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border shadow-sm ${
+                                            product.is_active 
+                                            ? 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100' 
+                                            : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
+                                        } ${togglingId === product.id ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+                                    >
+                                        <Power className={`w-3.5 h-3.5 ${product.is_active ? 'text-green-500' : 'text-red-400'}`} />
+                                        {product.is_active ? 'فعال' : 'غیرفعال'}
+                                    </button>
+                                </td>
                             <td className="px-6 py-3">
                                 <div className="flex items-center justify-center gap-2">
                                     <Link href={`/admin/products/edit/${product.id}`} className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors" title="ویرایش">
@@ -150,25 +144,19 @@ export default function AdminProductsPage() {
               </div>
             </div>
             
-            <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
                 <button
-                  onClick={() => handleToggleActive(product)}
-                  disabled={togglingId === product.id}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                    product.is_active ? 'bg-green-500' : 'bg-gray-400'
-                  } ${togglingId === product.id ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+                    onClick={() => handleToggleActive(product)}
+                    disabled={togglingId === product.id}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border shadow-sm ${
+                        product.is_active 
+                        ? 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100' 
+                        : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
+                    } ${togglingId === product.id ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
                 >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      product.is_active ? 'translate-x-1' : 'translate-x-6'
-                    }`}
-                  />
+                    <Power className={`w-3.5 h-3.5 ${product.is_active ? 'text-green-500' : 'text-red-400'}`} />
+                    {product.is_active ? 'فعال' : 'غیرفعال'}
                 </button>
-                <span className={`text-xs font-bold ${product.is_active ? 'text-green-500' : 'text-gray-500'}`}>
-                  {product.is_active ? 'فعال' : 'غیرفعال'}
-                </span>
-              </div>
               
               <div className="flex items-center gap-1">
                 <Link href={`/admin/products/edit/${product.id}`} className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors">
