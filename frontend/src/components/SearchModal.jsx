@@ -1,8 +1,7 @@
-// مسیر: src/components/SearchModal.jsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Search, X, Clock, TrendingUp, ArrowRight } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Search, X, Clock, TrendingUp, ArrowLeft, Sparkles, Package } from "lucide-react";
 import api from "@/lib/axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,22 +12,27 @@ export default function SearchModal({ isOpen, onClose }) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const [popularSearches] = useState([
-    "ChatGPT", "هوش مصنوعی", "اکانت پریمیم", "موزیک", "AI"
+    "ChatGPT", "هوش مصنوعی", "اکانت پریمیم", "Spotify", "Netflix"
   ]);
   
   const inputRef = useRef(null);
   const searchTimeout = useRef(null);
   const router = useRouter();
+  const resultsRef = useRef(null);
 
-  // فوکوس روی اینپوت وقتی مودال باز می‌شود
   useEffect(() => {
     if (isOpen && inputRef.current) {
-      inputRef.current.focus();
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+    if (!isOpen) {
+      setQuery("");
+      setResults([]);
+      setSelectedIndex(-1);
     }
   }, [isOpen]);
 
-  // بارگذاری جستجوهای اخیر از localStorage
   useEffect(() => {
     const saved = localStorage.getItem("recentSearches");
     if (saved) {
@@ -36,30 +40,23 @@ export default function SearchModal({ isOpen, onClose }) {
     }
   }, []);
 
-  // جستجوی تاخیری (Debounced Search)
   useEffect(() => {
     if (query.trim().length < 2) {
       setResults([]);
+      setSelectedIndex(-1);
       return;
     }
 
-    // پاک کردن تایمر قبلی
     if (searchTimeout.current) {
       clearTimeout(searchTimeout.current);
     }
 
-    // تنظیم تایمر جدید
     searchTimeout.current = setTimeout(async () => {
       setLoading(true);
-      setResults([]); // Clear previous results first
+      setResults([]);
       
       try {
-        const searchUrl = `/products/?search=${encodeURIComponent(query)}&_t=${Date.now()}`;
-        console.log("Search URL:", searchUrl); // دیباگ
-        const response = await api.get(searchUrl);
-        console.log("Search Response:", response.data); // دیباگ
-        
-        // Handle different response structures
+        const response = await api.get(`/products/?search=${encodeURIComponent(query)}`);
         let searchResults = [];
         if (response.data) {
           if (Array.isArray(response.data)) {
@@ -68,21 +65,17 @@ export default function SearchModal({ isOpen, onClose }) {
             searchResults = response.data.results;
           } else if (response.data.value && Array.isArray(response.data.value)) {
             searchResults = response.data.value;
-          } else if (typeof response.data === 'object' && response.data.id) {
-            // Single object response
-            searchResults = [response.data];
           }
         }
-        
-        console.log("Search Results:", searchResults); // دیباگ
         setResults(searchResults);
+        setSelectedIndex(-1);
       } catch (error) {
-        console.error("خطا در جستجو:", error);
+        console.error("Search error:", error);
         setResults([]);
       } finally {
         setLoading(false);
       }
-    }, 300); // 300ms تاخیر
+    }, 250);
 
     return () => {
       if (searchTimeout.current) {
@@ -91,54 +84,59 @@ export default function SearchModal({ isOpen, onClose }) {
     };
   }, [query]);
 
-  // ذخیره جستجو در تاریخچه
-  const saveSearch = (searchTerm) => {
+  const saveSearch = useCallback((searchTerm) => {
     if (!searchTerm.trim()) return;
-    
     const updated = [searchTerm, ...recentSearches.filter(s => s !== searchTerm)].slice(0, 5);
     setRecentSearches(updated);
     localStorage.setItem("recentSearches", JSON.stringify(updated));
-  };
+  }, [recentSearches]);
 
-  // هندل کلیک روی نتیجه
   const handleResultClick = (product) => {
     saveSearch(query);
     onClose();
   };
 
-  // هندل کلیک روی جستجوی محبوب/اخیر
   const handleQuickSearch = (searchTerm) => {
     setQuery(searchTerm);
+    inputRef.current?.focus();
   };
 
-  // هندل Enter برای رفتن به صفحه جستجو
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && query.trim()) {
-      saveSearch(query);
-      router.push(`/search?q=${encodeURIComponent(query)}`);
-      onClose();
-    }
-  };
-
-  // رفتن به صفحه جستجوی کامل
-  const goToFullSearch = () => {
+  const navigateToSearch = useCallback(() => {
     if (query.trim()) {
       saveSearch(query);
       router.push(`/search?q=${encodeURIComponent(query)}`);
       onClose();
+    } else {
+      router.push('/search');
+      onClose();
+    }
+  }, [query, saveSearch, router, onClose]);
+
+  const handleKeyDown = (e) => {
+    const items = results.slice(0, 5);
+    
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex(prev => prev < items.length - 1 ? prev + 1 : prev);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex(prev => prev > 0 ? prev - 1 : -1);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (selectedIndex >= 0 && items[selectedIndex]) {
+        saveSearch(query);
+        router.push(`/product/${items[selectedIndex].slug}`);
+        onClose();
+      } else {
+        navigateToSearch();
+      }
     }
   };
 
-  // بستن مودال با ESC و باز کردن با Ctrl+K
   useEffect(() => {
     const handleKeyboard = (e) => {
       if (e.key === "Escape" && isOpen) {
         onClose();
-      }
-      // Ctrl+K یا Cmd+K برای باز کردن جستجو
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k' && !isOpen) {
-        e.preventDefault();
-        // این را در Header اضافه خواهیم کرد
       }
     };
     
@@ -159,43 +157,61 @@ export default function SearchModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center pt-20">
-      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden">
-        
-        {/* هدر جستجو */}
-        <div className="flex items-center gap-4 p-6 border-b border-border">
-          <div className="flex-1 relative">
-            <Search className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-start justify-center pt-[10vh] animate-in fade-in duration-200"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="bg-card border border-border rounded-3xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden animate-in slide-in-from-top-4 zoom-in-95 duration-300">
+        <div className="relative p-5 border-b border-border bg-gradient-to-b from-secondary/30 to-transparent">
+          <div className="relative">
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground-muted w-5 h-5" />
             <input
               ref={inputRef}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
               placeholder="جستجو در بین محصولات..."
-              className="w-full bg-secondary border border-border text-foreground rounded-xl py-3 pr-12 pl-4 outline-none focus:ring-2 focus:ring-primary transition-all"
+              className="w-full bg-background border border-border text-foreground rounded-2xl py-4 pr-12 pl-24 outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-base"
+              autoComplete="off"
             />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs bg-secondary border border-border rounded-lg text-foreground-muted">
+                ESC
+              </kbd>
+              <button
+                onClick={onClose}
+                className="p-1.5 hover:bg-secondary rounded-lg transition-colors sm:hidden"
+              >
+                <X className="w-5 h-5 text-foreground-muted" />
+              </button>
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-secondary rounded-lg transition-colors"
-          >
-            <X className="w-6 h-6 text-foreground-muted" />
-          </button>
         </div>
 
-        {/* محتوای جستجو */}
-        <div className="max-h-96 overflow-y-auto">
-          
-          {/* حالت بدون جستجو */}
+        <div className="max-h-[60vh] overflow-y-auto" ref={resultsRef}>
           {!query.trim() && (
-            <div className="p-6 space-y-6">
-              
-              {/* جستجوهای اخیر */}
+            <div className="p-5 space-y-6">
+              <button
+                onClick={() => { router.push('/search'); onClose(); }}
+                className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-2xl hover:from-primary/20 hover:to-primary/10 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                    <Package className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-foreground">مشاهده همه محصولات</p>
+                    <p className="text-xs text-foreground-muted">تمامی محصولات فروشگاه</p>
+                  </div>
+                </div>
+                <ArrowLeft className="w-5 h-5 text-primary group-hover:-translate-x-1 transition-transform" />
+              </button>
+
               {recentSearches.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-bold text-foreground-muted mb-3 flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
+                  <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-foreground-muted" />
                     جستجوهای اخیر
                   </h3>
                   <div className="flex flex-wrap gap-2">
@@ -203,7 +219,7 @@ export default function SearchModal({ isOpen, onClose }) {
                       <button
                         key={index}
                         onClick={() => handleQuickSearch(search)}
-                        className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground-secondary text-sm rounded-lg transition-colors"
+                        className="px-4 py-2 bg-secondary/70 hover:bg-secondary border border-border text-foreground text-sm rounded-xl transition-all hover:border-primary/30"
                       >
                         {search}
                       </button>
@@ -212,19 +228,19 @@ export default function SearchModal({ isOpen, onClose }) {
                 </div>
               )}
 
-              {/* جستجوهای محبوب */}
               <div>
-                <h3 className="text-sm font-bold text-foreground-muted mb-3 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  جستجوهای محبوب
+                <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  پرجستجوترین‌ها
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {popularSearches.map((search, index) => (
                     <button
                       key={index}
                       onClick={() => handleQuickSearch(search)}
-                      className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-sm rounded-lg transition-colors"
+                      className="px-4 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary text-sm rounded-xl transition-all font-medium"
                     >
+                      <Sparkles className="w-3 h-3 inline-block ml-1" />
                       {search}
                     </button>
                   ))}
@@ -233,55 +249,60 @@ export default function SearchModal({ isOpen, onClose }) {
             </div>
           )}
 
-          {/* حالت لودینگ */}
           {loading && (
-            <div className="p-6 text-center">
-              <div className="inline-block w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-foreground-muted text-sm mt-2">در حال جستجو...</p>
+            <div className="p-8 text-center">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              <p className="text-foreground-muted text-sm">در حال جستجو...</p>
             </div>
           )}
 
-          {/* نتایج جستجو */}
           {query.trim() && !loading && (
             <div className="p-4">
               {results.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <div className="flex items-center justify-between px-2 mb-3">
                     <p className="text-sm text-foreground-muted">
-                      {results.length} نتیجه برای "{query}"
+                      <span className="font-bold text-foreground">{results.length}</span> نتیجه برای "{query}"
                     </p>
                     <button
-                      onClick={goToFullSearch}
-                      className="text-sm text-primary hover:text-primary-hover font-medium flex items-center gap-1"
+                      onClick={navigateToSearch}
+                      className="text-sm text-primary hover:text-primary/80 font-bold flex items-center gap-1 group"
                     >
                       مشاهده همه
-                      <ArrowRight className="w-4 h-4" />
+                      <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                     </button>
                   </div>
-                  {results.slice(0, 5).map((product) => (
+                  
+                  {results.slice(0, 5).map((product, index) => (
                     <Link
                       key={product.id}
                       href={`/product/${product.slug}`}
                       onClick={() => handleResultClick(product)}
-                      className="flex items-center gap-4 p-3 hover:bg-secondary rounded-xl transition-colors group"
+                      className={`flex items-center gap-4 p-3 rounded-2xl transition-all group ${
+                        selectedIndex === index 
+                          ? 'bg-primary/10 border border-primary/30' 
+                          : 'hover:bg-secondary/70 border border-transparent'
+                      }`}
                     >
-                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-secondary flex-shrink-0">
+                      <div className="w-14 h-14 rounded-xl overflow-hidden bg-secondary flex-shrink-0 border border-border">
                         <img 
                           src={product.main_image} 
                           alt={product.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                        <h4 className="font-bold text-foreground group-hover:text-primary transition-colors truncate">
                           {product.title}
                         </h4>
-                        <p className="text-sm text-foreground-muted truncate">
+                        <p className="text-xs text-foreground-muted truncate mt-0.5">
                           {product.category}
                         </p>
                       </div>
-                      <div className="text-left">
-                        <p className="font-bold text-primary">
+                      <div className="text-left flex-shrink-0">
+                        <p className="font-black text-primary text-lg">
                           {formatPrice(product.discount_price || product.price)}
                         </p>
                         {product.discount_price && (
@@ -294,18 +315,40 @@ export default function SearchModal({ isOpen, onClose }) {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search className="w-8 h-8 text-foreground-muted" />
+                <div className="text-center py-12">
+                  <div className="w-20 h-20 bg-gradient-to-br from-secondary to-secondary/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search className="w-10 h-10 text-foreground-muted" />
                   </div>
-                  <h3 className="font-bold text-foreground mb-2">نتیجه‌ای یافت نشد</h3>
-                  <p className="text-foreground-muted text-sm">
-                    برای "{query}" محصولی پیدا نکردیم. کلمات دیگری امتحان کنید.
+                  <h3 className="font-bold text-foreground mb-2 text-lg">نتیجه‌ای یافت نشد</h3>
+                  <p className="text-foreground-muted text-sm mb-4">
+                    برای "{query}" محصولی پیدا نکردیم
                   </p>
+                  <button
+                    onClick={() => { router.push('/search'); onClose(); }}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-all text-sm"
+                  >
+                    مشاهده همه محصولات
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
                 </div>
               )}
             </div>
           )}
+        </div>
+
+        <div className="px-5 py-3 border-t border-border bg-secondary/30 flex items-center justify-between text-xs text-foreground-muted">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↑</kbd>
+              <kbd className="px-1.5 py-0.5 bg-background border border-border rounded">↓</kbd>
+              برای انتخاب
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 bg-background border border-border rounded">Enter</kbd>
+              برای رفتن
+            </span>
+          </div>
+          <span className="hidden sm:block">Ctrl+K برای جستجو</span>
         </div>
       </div>
     </div>
