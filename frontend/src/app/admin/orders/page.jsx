@@ -13,7 +13,7 @@ const fetcher = (url) => api.get(url).then((res) => res.data);
 export default function AdminOrdersPage() {
   // نکته: باید در بک‌اند یک ViewSet بسازیم که تمام سفارش‌ها را به ادمین بدهد
   // فعلا از همان اندپوینت قبلی استفاده میکنیم (فرض بر اینکه بک‌اند را اصلاح خواهیم کرد)
-  const { data: orders, mutate } = useSWR("/orders/all_orders/", fetcher);
+  const { data: orders, mutate } = useSWR("/orders/", fetcher);
 
   const handleStatusChange = async (id, newStatus) => {
     try {
@@ -47,27 +47,41 @@ export default function AdminOrdersPage() {
                      </div>
                  </div>
 
-                   {/* نمایش فیش و دانلود PDF */}
-                   <div className="flex-1 flex flex-col items-center gap-2">
-                       {order.payment_receipt ? (
-                           <a href={order.payment_receipt} target="_blank" className="flex items-center gap-2 text-primary hover:underline bg-primary/10 px-4 py-2 rounded-xl text-sm w-full justify-center">
-                               <FileText className="w-4 h-4" />
-                               مشاهده تصویر فیش
-                           </a>
-                       ) : (
-                           <span className="text-foreground-muted text-sm italic">فیش آپلود نشده</span>
-                       )}
-                       
-                       {order.status === 'PAID' && (
-                           <button 
-                               onClick={() => downloadOrderPDF(order).catch(err => toast.error(err.message))}
-                               className="flex items-center gap-2 text-success hover:underline bg-success/10 px-4 py-2 rounded-xl text-sm w-full justify-center"
-                           >
-                               <Download className="w-4 h-4" />
-                               نسخه چاپی (PDF)
-                           </button>
-                       )}
-                   </div>
+                     {/* نمایش فیش و دانلود PDF */}
+                     <div className="flex-1 flex flex-col items-center gap-2">
+                         {order.payment_receipt ? (
+                             <a href={order.payment_receipt} target="_blank" className="flex items-center gap-2 text-primary hover:underline bg-primary/10 px-4 py-2 rounded-xl text-sm w-full justify-center">
+                                 <FileText className="w-4 h-4" />
+                                 مشاهده تصویر فیش
+                             </a>
+                         ) : (
+                             <span className="text-foreground-muted text-sm italic">فیش آپلود نشده</span>
+                         )}
+                         
+                         {order.status === 'PAID' && (
+                             <button 
+                                 onClick={async (e) => {
+                                     const btn = e.currentTarget;
+                                     const originalText = btn.innerHTML;
+                                     try {
+                                         btn.disabled = true;
+                                         btn.innerHTML = 'در حال تولید...';
+                                         await downloadOrderPDF(order);
+                                         toast.success("فاکتور آماده دانلود شد");
+                                     } catch (err) {
+                                         toast.error(err.message);
+                                     } finally {
+                                         btn.disabled = false;
+                                         btn.innerHTML = originalText;
+                                     }
+                                 }}
+                                 className="flex items-center gap-2 text-success hover:underline bg-success/10 px-4 py-2 rounded-xl text-sm w-full justify-center disabled:opacity-50"
+                             >
+                                 <Download className="w-4 h-4" />
+                                 دانلود فاکتور (PDF)
+                             </button>
+                         )}
+                     </div>
 
                  {/* دکمه‌های تایید/رد */}
                  <div className="flex items-center gap-2">

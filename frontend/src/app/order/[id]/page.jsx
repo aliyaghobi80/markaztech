@@ -74,6 +74,8 @@ export default function OrderDetailsPage() {
     return configs[status] || configs.PENDING;
   };
 
+  const [downloading, setDownloading] = useState(false);
+
   const handleDownloadPDF = async () => {
     try {
       console.log('Starting PDF download for order:', order);
@@ -83,11 +85,14 @@ export default function OrderDetailsPage() {
         return;
       }
       
+      setDownloading(true);
       await downloadOrderPDF(order);
-      toast.success("رسید PDF آماده شد");
+      toast.success("فاکتور آماده دانلود شد");
     } catch (error) {
       console.error("Error generating PDF:", error);
-      toast.error("خطا در تولید فایل PDF");
+      toast.error(error.message || "خطا در دریافت فایل PDF");
+    } finally {
+      setDownloading(false);
     }
   };
 

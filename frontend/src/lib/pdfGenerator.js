@@ -25,17 +25,34 @@ export const downloadOrderPDF = async (order) => {
     const link = document.createElement('a');
     link.style.display = 'none';
     link.href = url;
-    link.setAttribute('download', `order-${order.id}.pdf`);
+    link.setAttribute('download', `invoice-${order.id}.pdf`);
     
     document.body.appendChild(link);
     link.click();
     
+    // پاکسازی بعد از دانلود
     setTimeout(() => {
-      document.body.removeChild(link);
+      if (document.body.contains(link)) {
+        document.body.removeChild(link);
+      }
       window.URL.revokeObjectURL(url);
-    }, 100);
+    }, 500);
+    
+    return true;
   } catch (error) {
     console.error("PDF Download Error:", error);
+    
+    // تلاش برای استخراج پیام خطا از Blob در صورت وجود
+    if (error.response && error.response.data instanceof Blob) {
+      try {
+        const text = await error.response.data.text();
+        const errorData = JSON.parse(text);
+        throw new Error(errorData.error || errorData.detail || 'خطا در دریافت فایل PDF');
+      } catch (e) {
+        // اگر پارس کردن متن شکست خورد، ادامه می‌دهیم با خطای اصلی
+      }
+    }
+
     if (error.response && error.response.status === 401) {
       throw new Error('خطای احراز هویت. لطفا دوباره وارد شوید.');
     }

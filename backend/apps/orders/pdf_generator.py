@@ -98,53 +98,50 @@ def generate_order_pdf(order):
         bottomMargin=2*cm
     )
     
-    # تعریف استایل‌ها
-    styles = getSampleStyleSheet()
+    # تعریف استایل‌ها - استفاده از StyleSheet1 به جای getSampleStyleSheet برای جلوگیری از تداخل
+    from reportlab.lib.styles import StyleSheet1
+    styles = StyleSheet1()
     
     # استایل راست‌چین
-    if 'RTL' not in styles:
-        styles.add(ParagraphStyle(
-            name='RTL',
-            fontName='Vazir',
-            alignment=TA_RIGHT,
-            fontSize=11,
-            leading=16,
-            spaceAfter=6
-        ))
+    styles.add(ParagraphStyle(
+        name='RTL',
+        fontName='Vazir',
+        alignment=TA_RIGHT,
+        fontSize=11,
+        leading=16,
+        spaceAfter=6
+    ))
     
     # استایل راست‌چین پررنگ
-    if 'RTL-Bold' not in styles:
-        styles.add(ParagraphStyle(
-            name='RTL-Bold',
-            fontName='Vazir-Bold',
-            alignment=TA_RIGHT,
-            fontSize=12,
-            leading=16,
-            spaceAfter=8
-        ))
+    styles.add(ParagraphStyle(
+        name='RTL-Bold',
+        fontName='Vazir-Bold',
+        alignment=TA_RIGHT,
+        fontSize=12,
+        leading=16,
+        spaceAfter=8
+    ))
     
     # استایل وسط‌چین
-    if 'Center' not in styles:
-        styles.add(ParagraphStyle(
-            name='Center',
-            fontName='Vazir-Bold',
-            alignment=TA_CENTER,
-            fontSize=16,
-            leading=20,
-            spaceAfter=12
-        ))
+    styles.add(ParagraphStyle(
+        name='Center',
+        fontName='Vazir-Bold',
+        alignment=TA_CENTER,
+        fontSize=16,
+        leading=20,
+        spaceAfter=12
+    ))
     
     # استایل عنوان اصلی
-    if 'MainTitle' not in styles:
-        styles.add(ParagraphStyle(
-            name='MainTitle',
-            fontName='Vazir-Bold',
-            alignment=TA_CENTER,
-            fontSize=20,
-            leading=24,
-            spaceAfter=20,
-            textColor=colors.HexColor('#3b82f6')
-        ))
+    styles.add(ParagraphStyle(
+        name='MainTitle',
+        fontName='Vazir-Bold',
+        alignment=TA_CENTER,
+        fontSize=20,
+        leading=24,
+        spaceAfter=20,
+        textColor=colors.HexColor('#3b82f6')
+    ))
     
     # لیست عناصر PDF
     elements = []
