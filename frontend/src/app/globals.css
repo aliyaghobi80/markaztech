@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* === تم روشن (Light Mode) === */
+    
+    /* پس‌زمینه‌ها */
+    --background: 0 0% 100%;           /* پس‌زمینه اصلی - سفید */
+    --background-secondary: 210 40% 98%; /* پس‌زمینه ثانویه - خاکستری خیلی روشن */
+    
+    /* متن‌ها */
+    --foreground: 222.2 84% 4.9%;      /* متن اصلی - مشکی */
+    --foreground-secondary: 215.4 16.3% 46.9%; /* متن ثانویه - خاکستری */
+    --foreground-muted: 215.4 16.3% 56.9%;     /* متن کم‌اهمیت - خاکستری روشن */
+    
+    /* کارت‌ها و باکس‌ها */
+    --card: 0 0% 100%;                 /* پس‌زمینه کارت - سفید */
+    --card-foreground: 222.2 84% 4.9%; /* متن کارت - مشکی */
+    
+    /* رنگ اصلی برند */
+    --primary: 221.2 83.2% 53.3%;      /* آبی اصلی */
+    --primary-foreground: 210 40% 98%; /* متن روی آبی - سفید */
+    --primary-hover: 221.2 83.2% 45%;  /* آبی تیره‌تر برای hover */
+    
+    /* رنگ ثانویه */
+    --secondary: 210 40% 96%;          /* خاکستری روشن */
+    --secondary-foreground: 222.2 84% 4.9%; /* متن روی خاکستری - مشکی */
+    
+    /* حاشیه‌ها */
+    --border: 214.3 31.8% 91.4%;      /* خاکستری کم‌رنگ */
+    --border-hover: 214.3 31.8% 85%;  /* خاکستری کمی تیره‌تر */
+    
+    /* وضعیت‌ها */
+    --success: 142.1 76.2% 36.3%;     /* سبز */
+    --success-foreground: 355.7 100% 97.3%;
+    --warning: 32.2 95% 44.1%;        /* نارنجی */
+    --warning-foreground: 355.7 100% 97.3%;
+    --error: 0 84.2% 60.2%;           /* قرمز */
+    --error-foreground: 355.7 100% 97.3%;
+    
+    /* سایه‌ها */
+    --shadow: 220 3% 15%;
+    --shadow-light: 220 13% 91%;
+    
+    /* متغیرهای اضافی برای سازگاری */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+  }
+
+  /* === تم تاریک (Dark Mode) === */
+  .dark {
+    /* پس‌زمینه‌ها */
+    --background: 222.2 84% 4.9%;      /* پس‌زمینه اصلی - مشکی */
+    --background-secondary: 217.2 32.6% 17.5%; /* پس‌زمینه ثانویه - خاکستری تیره */
+    
+    /* متن‌ها */
+    --foreground: 210 40% 98%;         /* متن اصلی - سفید */
+    --foreground-secondary: 215 20.2% 65.1%; /* متن ثانویه - خاکستری روشن */
+    --foreground-muted: 215.4 16.3% 56.9%;   /* متن کم‌اهمیت - خاکستری */
+    
+    /* کارت‌ها و باکس‌ها */
+    --card: 222.2 84% 7%;              /* پس‌زمینه کارت - مشکی کمی روشن‌تر */
+    --card-foreground: 210 40% 98%;    /* متن کارت - سفید */
+    
+    /* رنگ اصلی برند */
+    --primary: 217.2 91.2% 59.8%;      /* آبی روشن */
+    --primary-foreground: 222.2 84% 4.9%; /* متن روی آبی - مشکی */
+    --primary-hover: 217.2 91.2% 65%;  /* آبی روشن‌تر برای hover */
+    
+    /* رنگ ثانویه */
+    --secondary: 217.2 32.6% 17.5%;    /* خاکستری تیره */
+    --secondary-foreground: 210 40% 98%; /* متن روی خاکستری - سفید */
+    
+    /* حاشیه‌ها */
+    --border: 217.2 32.6% 17.5%;      /* خاکستری تیره */
+    --border-hover: 217.2 32.6% 25%;  /* خاکستری کمی روشن‌تر */
+    
+    /* وضعیت‌ها */
+    --success: 142.1 70.6% 45.3%;     /* سبز روشن‌تر */
+    --success-foreground: 144.9 80.4% 10%;
+    --warning: 32.2 95% 54.1%;        /* نارنجی روشن‌تر */
+    --warning-foreground: 20.9 95.3% 90.1%;
+    --error: 0 62.8% 70.6%;           /* قرمز روشن‌تر */
+    --error-foreground: 355.7 100% 97.3%;
+    
+    /* سایه‌ها */
+    --shadow: 0 0% 0%;
+    --shadow-light: 217.2 32.6% 25%;
+    
+    /* متغیرهای اضافی برای سازگاری */
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --input: 217.2 32.6% 22%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground transition-colors duration-300;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  /* کلاس‌های آماده برای استفاده */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary-hover px-4 py-2 rounded-lg font-medium transition-colors;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 rounded-lg font-medium transition-colors;
+  }
+  
+  .card-base {
+    @apply bg-card text-card-foreground border border-border rounded-lg shadow-sm;
+  }
+  
+  .text-muted {
+    @apply text-foreground-muted;
+  }
+  
+  .text-secondary {
+    @apply text-foreground-secondary;
+  }
+  
+  .bg-page {
+    @apply bg-background-secondary;
+  }
+}
