@@ -30,6 +30,5 @@ urlpatterns = [
     path('api/orders/', include('apps.orders.urls')),
 ]
 
-# تنظیمات برای نمایش عکس‌ها در حالت لوکال
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# تنظیمات برای نمایش فایل‌های استاتیک و مدیا
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

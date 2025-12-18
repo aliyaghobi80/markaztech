@@ -1,12 +1,14 @@
 // مسیر: src/lib/axios.js
 import axios from "axios";
 
-// 1. ساخت اینستنس
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+
 const api = axios.create({
-  baseURL: "http://localhost:8000/api", // آدرس بک‌ند
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 30000,
 });
 
 // 2. اینترسپتور درخواست (Request Interceptor)

@@ -1,23 +1,30 @@
 # Django and REST Framework
-Django>=4.2,<5.0
-djangorestframework>=3.14.0
-djangorestframework-simplejwt>=5.2.0
-django-cors-headers>=4.0.0
+Django>=6.0
+djangorestframework>=3.16.0
+djangorestframework-simplejwt>=5.5.0
+django-cors-headers>=4.9.0
 
 # Image processing
-Pillow>=9.0.0
+Pillow>=12.0.0
 
 # Environment variables
-python-decouple>=3.6
+python-decouple>=3.8
 
-# Database (for production)
-psycopg2-binary>=2.9.0  # PostgreSQL adapter
+# Database
+mysqlclient>=2.2.0
 
-# Development tools
-django-debug-toolbar>=4.0.0
+# Static files serving for production
+whitenoise>=6.6.0
+
+# WSGI server for production
+gunicorn>=21.0.0
 
 # Security
-cryptography>=3.4.8
+cryptography>=42.0.0
 
 # Utilities
 python-dateutil>=2.8.0
+
+# PDF generation
+reportlab>=4.0.0
+jdatetime>=5.0.0
