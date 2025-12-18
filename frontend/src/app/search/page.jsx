@@ -26,9 +26,23 @@ function SearchContent() {
     if (data.type === 'product_update') {
       setProducts(prev => {
         if (data.action === 'created') {
-          return [data.product, ...prev];
+          // فقط محصولات فعال را اضافه کن
+          if (data.product.is_active) {
+            return [data.product, ...prev];
+          }
+          return prev;
         } else if (data.action === 'updated') {
-          return prev.map(p => p.id === data.product.id ? { ...p, ...data.product } : p);
+          return prev.map(p => {
+            if (p.id === data.product.id) {
+              // اگر محصول غیرفعال شده، آن را حذف کن
+              if (!data.product.is_active) {
+                return null;
+              }
+              // بروزرسانی محصول با داده‌های جدید
+              return { ...p, ...data.product };
+            }
+            return p;
+          }).filter(Boolean); // حذف null values
         }
         return prev;
       });

@@ -1,10 +1,11 @@
 // مسیر: src/components/admin/AdminProducts.jsx
 "use client";
 
-import { useState } from "react"; // اضافه شده
+import { useState, useCallback } from "react"; // اضافه شده
 import useSWR from "swr";
 import api from "@/lib/axios";
 import { formatPrice } from "@/lib/utils";
+import { useProductWebSocket } from "@/lib/useProductWebSocket";
 import { Plus, Edit, Trash2, X, Upload, Package, Power, PowerOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -14,10 +15,17 @@ const fetcher = (url) => api.get(url).then((res) => res.data.results || res.data
 export default function AdminProducts() {
   const { data: products, mutate } = useSWR("/products/", fetcher, { refreshInterval: 5000 });
   const router = useRouter();
-  
-
-
   const [deleteError, setDeleteError] = useState(null);
+
+  // WebSocket handler for real-time updates
+  const handleWebSocketMessage = useCallback((data) => {
+    if (data.type === 'product_update' || data.type === 'product_delete') {
+      // بروزرسانی فوری داده‌ها
+      mutate();
+    }
+  }, [mutate]);
+
+  useProductWebSocket(handleWebSocketMessage);
 
   const handleDelete = async (id) => {
     if (!confirm("آیا از حذف این محصول مطمئن هستید؟")) return;

@@ -24,7 +24,7 @@ return (
       <div className="p-4 flex flex-col flex-1">
         <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-foreground-muted bg-secondary px-2 py-1 rounded-md">
-                {product.category}
+                {typeof product.category === 'object' ? product.category?.name : product.category}
             </span>
         </div>
 

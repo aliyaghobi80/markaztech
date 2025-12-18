@@ -5,6 +5,18 @@ from asgiref.sync import async_to_sync
 from .models import Product
 
 def get_product_data(product):
+    from django.conf import settings
+    
+    # ساخت URL کامل برای تصویر
+    main_image_url = None
+    if product.main_image:
+        if product.main_image.url.startswith('http'):
+            main_image_url = product.main_image.url
+        else:
+            # اضافه کردن domain برای URL کامل
+            domain = getattr(settings, 'SITE_DOMAIN', 'http://localhost:8000')
+            main_image_url = f"{domain}{product.main_image.url}"
+    
     return {
         'id': product.id,
         'title': product.title,
@@ -12,9 +24,15 @@ def get_product_data(product):
         'price': product.price,
         'discount_price': product.discount_price,
         'is_active': product.is_active,
-        'main_image': product.main_image.url if product.main_image else None,
-        'category': product.category.name if product.category else None,
-        'category_slug': product.category.slug if product.category else None,
+        'main_image': main_image_url,
+        'category': {
+            'id': product.category.id if product.category else None,
+            'name': product.category.name if product.category else None,
+            'slug': product.category.slug if product.category else None,
+        },
+        'delivery_time': product.delivery_time,
+        'description': product.description,
+        'created_at': product.created_at.isoformat() if product.created_at else None,
     }
 
 @receiver(post_save, sender=Product)

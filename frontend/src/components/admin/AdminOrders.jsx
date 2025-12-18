@@ -1,10 +1,11 @@
 // مسیر: src/components/admin/AdminOrders.jsx
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import useSWR from "swr";
 import api from "@/lib/axios";
 import { formatPrice } from "@/lib/utils";
+import { useOrderWebSocket } from "@/lib/useOrderWebSocket";
 import { CheckCircle, XCircle, Edit, Save, X } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -16,6 +17,16 @@ export default function AdminOrders() {
   const { data: orders, error, mutate } = useSWR("/orders/", fetcher);
   const [editingNotes, setEditingNotes] = useState(null);
   const [notesText, setNotesText] = useState("");
+
+  // WebSocket handler for real-time updates
+  const handleWebSocketMessage = useCallback((data) => {
+    if (data.type === 'order_update' || data.type === 'order_delete') {
+      // بروزرسانی فوری داده‌ها
+      mutate();
+    }
+  }, [mutate]);
+
+  useOrderWebSocket(handleWebSocketMessage);
 
   // تغییر وضعیت سفارش
   const changeStatus = async (id, newStatus) => {

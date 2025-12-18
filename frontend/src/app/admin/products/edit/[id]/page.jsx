@@ -149,11 +149,15 @@ export default function EditProductPage() {
         submitData.append('main_image', imageFile);
       }
 
-      await api.patch(`/products/${productId}/`, submitData, {
+      console.log('Submitting form data:', Object.fromEntries(submitData));
+      
+      const response = await api.patch(`/products/${productId}/`, submitData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
+      
+      console.log('Update response:', response.data);
 
       toast.success("محصول با موفقیت بروزرسانی شد");
       router.push("/dashboard");
