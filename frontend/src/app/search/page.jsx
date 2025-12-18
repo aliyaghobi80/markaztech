@@ -15,42 +15,40 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState("newest");
 
-  useEffect(() => {
-    const fetchSearchResults = async () => {
-      if (!query.trim()) {
-        setProducts([]);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const response = await api.get(`/products/?search=${encodeURIComponent(query)}`);
-        // Handle different response structures
-        let fetchedProducts = [];
-        if (response.data) {
-          if (Array.isArray(response.data)) {
-            fetchedProducts = response.data;
-          } else if (response.data.results && Array.isArray(response.data.results)) {
-            fetchedProducts = response.data.results;
-          } else if (response.data.value && Array.isArray(response.data.value)) {
-            fetchedProducts = response.data.value;
-          } else if (typeof response.data === 'object' && response.data.id) {
-            // Single object response
-            fetchedProducts = [response.data];
+    useEffect(() => {
+      const fetchSearchResults = async () => {
+        setLoading(true);
+        try {
+          const url = query.trim() 
+            ? `/products/?search=${encodeURIComponent(query)}` 
+            : `/products/`;
+          
+          const response = await api.get(url);
+          // Handle different response structures
+          let fetchedProducts = [];
+          if (response.data) {
+            if (Array.isArray(response.data)) {
+              fetchedProducts = response.data;
+            } else if (response.data.results && Array.isArray(response.data.results)) {
+              fetchedProducts = response.data.results;
+            } else if (response.data.value && Array.isArray(response.data.value)) {
+              fetchedProducts = response.data.value;
+            } else if (typeof response.data === 'object' && response.data.id) {
+              // Single object response
+              fetchedProducts = [response.data];
+            }
           }
+          setProducts(fetchedProducts);
+        } catch (error) {
+          console.error("خطا در دریافت محصولات:", error);
+          setProducts([]);
+        } finally {
+          setLoading(false);
         }
-        setProducts(fetchedProducts);
-      } catch (error) {
-        console.error("خطا در جستجو:", error);
-        setProducts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchSearchResults();
-  }, [query]);
+      fetchSearchResults();
+    }, [query]);
 
   // منطق مرتب‌سازی
   const sortedProducts = [...products].sort((a, b) => {
@@ -75,11 +73,11 @@ export default function SearchPage() {
         <div className="bg-card border border-border rounded-2xl p-6 mb-8 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-black text-foreground mb-1 flex items-center gap-3">
-                <Search className="w-7 h-7 text-primary" />
-                نتایج جستجو
-                {query && <span className="text-primary">"{query}"</span>}
-              </h1>
+                <h1 className="text-2xl font-black text-foreground mb-1 flex items-center gap-3">
+                  <Search className="w-7 h-7 text-primary" />
+                  {query ? "نتایج جستجو" : "همه محصولات"}
+                  {query && <span className="text-primary">"{query}"</span>}
+                </h1>
               <p className="text-foreground-muted text-sm">
                 {loading ? "در حال جستجو..." : `${products.length} محصول پیدا شد`}
               </p>
@@ -134,24 +132,14 @@ export default function SearchPage() {
               sortedProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))
-            ) : query ? (
-              <div className="col-span-full py-20 text-center">
-                <div className="inline-block p-6 rounded-full bg-secondary mb-4">
-                  <Search className="w-12 h-12 text-foreground-muted" />
-                </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">نتیجه‌ای یافت نشد!</h3>
-                <p className="text-foreground-muted">
-                  برای "{query}" محصولی پیدا نکردیم. کلمات دیگری امتحان کنید.
-                </p>
-              </div>
             ) : (
               <div className="col-span-full py-20 text-center">
                 <div className="inline-block p-6 rounded-full bg-secondary mb-4">
                   <Search className="w-12 h-12 text-foreground-muted" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">جستجو کنید</h3>
+                <h3 className="text-xl font-bold text-foreground mb-2">محصولی یافت نشد!</h3>
                 <p className="text-foreground-muted">
-                  کلمه کلیدی خود را در بالا وارد کنید.
+                  {query ? `برای "${query}" محصولی پیدا نکردیم. کلمات دیگری امتحان کنید.` : "در حال حاضر هیچ محصولی در فروشگاه موجود نیست."}
                 </p>
               </div>
             )}
