@@ -4,8 +4,9 @@
 import useSWR from "swr";
 import api from "@/lib/axios";
 import { formatPrice } from "@/lib/utils";
-import { CheckCircle, XCircle, Eye, FileText } from "lucide-react";
+import { CheckCircle, XCircle, Eye, FileText, Download } from "lucide-react";
 import toast from "react-hot-toast";
+import { downloadOrderPDF } from "@/lib/pdfGenerator";
 
 const fetcher = (url) => api.get(url).then((res) => res.data);
 
@@ -46,17 +47,27 @@ export default function AdminOrdersPage() {
                      </div>
                  </div>
 
-                 {/* نمایش فیش */}
-                 <div className="flex-1 flex justify-center">
-                     {order.payment_receipt ? (
-                         <a href={order.payment_receipt} target="_blank" className="flex items-center gap-2 text-primary hover:underline bg-primary/10 px-4 py-2 rounded-xl">
-                             <FileText className="w-4 h-4" />
-                             مشاهده تصویر فیش
-                         </a>
-                     ) : (
-                         <span className="text-foreground-muted text-sm">فیش آپلود نشده</span>
-                     )}
-                 </div>
+                   {/* نمایش فیش و دانلود PDF */}
+                   <div className="flex-1 flex flex-col items-center gap-2">
+                       {order.payment_receipt ? (
+                           <a href={order.payment_receipt} target="_blank" className="flex items-center gap-2 text-primary hover:underline bg-primary/10 px-4 py-2 rounded-xl text-sm w-full justify-center">
+                               <FileText className="w-4 h-4" />
+                               مشاهده تصویر فیش
+                           </a>
+                       ) : (
+                           <span className="text-foreground-muted text-sm italic">فیش آپلود نشده</span>
+                       )}
+                       
+                       {order.status === 'PAID' && (
+                           <button 
+                               onClick={() => downloadOrderPDF(order).catch(err => toast.error(err.message))}
+                               className="flex items-center gap-2 text-success hover:underline bg-success/10 px-4 py-2 rounded-xl text-sm w-full justify-center"
+                           >
+                               <Download className="w-4 h-4" />
+                               نسخه چاپی (PDF)
+                           </button>
+                       )}
+                   </div>
 
                  {/* دکمه‌های تایید/رد */}
                  <div className="flex items-center gap-2">
