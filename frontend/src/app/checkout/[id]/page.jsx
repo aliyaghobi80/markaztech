@@ -128,9 +128,9 @@ export default function CheckoutPage() {
                         <div className="mb-6">
                             <label className="text-xs opacity-70 block mb-1">شماره کارت</label>
                             <div className="flex items-center gap-3">
-                                <span className="text-2xl font-mono tracking-widest drop-shadow-md">6037 9911 2233 4455</span>
+                                <span className="text-2xl font-mono tracking-widest drop-shadow-md">6037 9973 1026 6797</span>
                                 <button 
-                                    onClick={() => {navigator.clipboard.writeText("6037991122334455"); toast.success("کپی شد")}}
+                                    onClick={() => {navigator.clipboard.writeText("6037997310266797"); toast.success("کپی شد")}}
                                     className="p-1 hover:bg-white/20 rounded-md transition-colors"
                                 >
                                     <Copy className="w-4 h-4" />
@@ -140,7 +140,7 @@ export default function CheckoutPage() {
                         <div className="flex justify-between items-end">
                             <div>
                                 <label className="text-xs opacity-70 block mb-1">به نام</label>
-                                <span className="font-bold">مرکز تک شیراز</span>
+                                <span className="font-bold">علی یعقوبی - بانک ملی</span>
                             </div>
                             <div>
                                 <label className="text-xs opacity-70 block mb-1">مبلغ قابل پرداخت</label>
