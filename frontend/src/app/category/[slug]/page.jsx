@@ -1,24 +1,44 @@
 // مسیر: src/app/category/[slug]/page.jsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import api from "@/lib/axios";
+import { useProductWebSocket } from "@/lib/useProductWebSocket";
 import ProductCard from "@/components/ProductCard";
 import { useLoading } from "@/context/LoadingContext";
 import { SlidersHorizontal, ArrowDownWideNarrow, ArrowUpNarrowWide, Clock } from "lucide-react";
 
 export default function CategoryPage() {
-  const { slug } = useParams(); // دریافت نام دسته از URL (مثلا: ai)
+  const { slug } = useParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sortOrder, setSortOrder] = useState("newest"); // حالت پیش‌فرض مرتب‌سازی
+  const [sortOrder, setSortOrder] = useState("newest");
   const [error, setError] = useState(null);
   const { showLoading, hideLoading } = useLoading();
   
   const categorySlug = slug ? decodeURIComponent(slug) : "";
 
-  // Reset products when slug changes
+  const handleWebSocketMessage = useCallback((data) => {
+    if (data.type === 'product_update') {
+      setProducts(prev => {
+        if (data.action === 'created') {
+          if (data.product.category?.slug === categorySlug) {
+            return [data.product, ...prev];
+          }
+          return prev;
+        } else if (data.action === 'updated') {
+          return prev.map(p => p.id === data.product.id ? { ...p, ...data.product } : p);
+        }
+        return prev;
+      });
+    } else if (data.type === 'product_delete') {
+      setProducts(prev => prev.filter(p => p.id !== data.product_id));
+    }
+  }, [categorySlug]);
+
+  useProductWebSocket(handleWebSocketMessage);
+
   useEffect(() => {
     setProducts([]);
     setLoading(true);

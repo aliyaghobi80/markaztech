@@ -21,6 +21,7 @@ CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -31,8 +32,9 @@ INSTALLED_APPS = [
     # پکیج‌های نصب شده
     'rest_framework',
     'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist', # برای امنیت بیشتر (لیست سیاه)
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'channels',
 
     # اپلیکیشن‌های ما
     'apps.users',
@@ -69,6 +71,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 
 # Database

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import api from "@/lib/axios";
+import { useProductWebSocket } from "@/lib/useProductWebSocket";
 import HeroSection from "@/components/HeroSection";
 import ProductCard from "@/components/ProductCard";
 import { Sparkles, Shield, Zap, Clock, HeadphonesIcon, CreditCard } from "lucide-react";
@@ -9,6 +10,23 @@ import { Sparkles, Shield, Zap, Clock, HeadphonesIcon, CreditCard } from "lucide
 export default function Home() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const handleWebSocketMessage = useCallback((data) => {
+    if (data.type === 'product_update') {
+      setProducts(prev => {
+        if (data.action === 'created') {
+          return [data.product, ...prev];
+        } else if (data.action === 'updated') {
+          return prev.map(p => p.id === data.product.id ? { ...p, ...data.product } : p);
+        }
+        return prev;
+      });
+    } else if (data.type === 'product_delete') {
+      setProducts(prev => prev.filter(p => p.id !== data.product_id));
+    }
+  }, []);
+
+  useProductWebSocket(handleWebSocketMessage);
 
   useEffect(() => {
     const fetchProducts = async () => {

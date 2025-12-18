@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import api from "@/lib/axios";
+import { useProductWebSocket } from "@/lib/useProductWebSocket";
 import ProductCard from "@/components/ProductCard";
 import { Search, SlidersHorizontal, ArrowDownWideNarrow, ArrowUpNarrowWide, Clock, Grid3X3, LayoutGrid, X, Filter, Package, Sparkles } from "lucide-react";
 
@@ -20,6 +21,23 @@ function SearchContent() {
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
+
+  const handleWebSocketMessage = useCallback((data) => {
+    if (data.type === 'product_update') {
+      setProducts(prev => {
+        if (data.action === 'created') {
+          return [data.product, ...prev];
+        } else if (data.action === 'updated') {
+          return prev.map(p => p.id === data.product.id ? { ...p, ...data.product } : p);
+        }
+        return prev;
+      });
+    } else if (data.type === 'product_delete') {
+      setProducts(prev => prev.filter(p => p.id !== data.product_id));
+    }
+  }, []);
+
+  useProductWebSocket(handleWebSocketMessage);
 
   useEffect(() => {
     const fetchCategories = async () => {
