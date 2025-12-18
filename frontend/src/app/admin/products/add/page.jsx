@@ -59,6 +59,19 @@ export default function AddProductPage() {
     }
   };
 
+  const getFlattenedCategories = (cats, level = 0) => {
+    let flat = [];
+    cats.forEach(cat => {
+      flat.push({ ...cat, displayName: `${"—— ".repeat(level)}${cat.name}` });
+      if (cat.children && cat.children.length > 0) {
+        flat = [...flat, ...getFlattenedCategories(cat.children, level + 1)];
+      }
+    });
+    return flat;
+  };
+
+  const flattenedCategories = getFlattenedCategories(categories);
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -230,25 +243,26 @@ export default function AddProductPage() {
                 </div>
               </div>
 
-              {/* دسته‌بندی */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  دسته‌بندی *
-                </label>
-                <select
-                  required
-                  className="w-full bg-secondary border border-border rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-primary text-foreground"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                >
-                  <option value="">انتخاب دسته‌بندی</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                {/* دسته‌بندی */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    دسته‌بندی *
+                  </label>
+                  <select
+                    required
+                    className="w-full bg-secondary border border-border rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-primary text-foreground"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  >
+                    <option value="">انتخاب دسته‌بندی</option>
+                    {flattenedCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.displayName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
 
               {/* قیمت اصلی */}
               <div>

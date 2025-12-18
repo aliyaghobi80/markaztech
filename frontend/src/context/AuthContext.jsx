@@ -75,10 +75,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!user) return;
 
-    const intervalId = setInterval(() => {
-      refreshUser();
-    }, 30000);
-
     // رفرش هنگام برگشت به تب
     const handleFocus = () => {
       refreshUser();
@@ -86,7 +82,6 @@ export function AuthProvider({ children }) {
     window.addEventListener('focus', handleFocus);
 
     return () => {
-      clearInterval(intervalId);
       window.removeEventListener('focus', handleFocus);
     };
   }, [user?.id]);

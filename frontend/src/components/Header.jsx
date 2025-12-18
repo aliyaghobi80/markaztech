@@ -21,6 +21,8 @@ export default function Header() {
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   useEffect(() => {
@@ -66,15 +68,23 @@ export default function Header() {
       <div className="container mx-auto px-4">
         <div className="h-16 md:h-18 flex items-center justify-between gap-4">
 
-          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <span className="text-white font-black text-sm">M</span>
-            </div>
-            <span className="text-xl font-black hidden sm:block">
-              <span className="text-primary">Markaz</span>
-              <span className="text-foreground">Tech</span>
-            </span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setIsMenuOpen(true)}
+              className="lg:hidden p-2.5 hover:bg-secondary rounded-xl transition-colors text-foreground-muted hover:text-foreground"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+              <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <span className="text-white font-black text-sm">M</span>
+              </div>
+              <span className="text-xl font-black hidden sm:block">
+                <span className="text-primary">Markaz</span>
+                <span className="text-foreground">Tech</span>
+              </span>
+            </Link>
+          </div>
 
           <nav className="hidden lg:flex items-center gap-1">
             <Link href="/" className="flex items-center gap-2 px-4 py-2 text-foreground-muted hover:text-foreground hover:bg-secondary rounded-xl transition-all text-sm font-medium">
@@ -207,6 +217,102 @@ export default function Header() {
         isOpen={searchModalOpen} 
         onClose={() => setSearchModalOpen(false)} 
       />
+
+      {/* موبایل منو */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 z-[60] lg:hidden">
+          {/* بک‌دراپ */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setIsMenuOpen(false)}
+          />
+          
+          {/* محتوای منو */}
+          <div className="absolute top-0 right-0 bottom-0 w-[280px] bg-card border-l border-border shadow-2xl flex flex-col transform transition-transform duration-300">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <span className="font-black text-primary">Markaz Tech</span>
+              <button 
+                onClick={() => setIsMenuOpen(false)}
+                className="p-2 hover:bg-secondary rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 rotate-180" />
+              </button>
+            </div>
+
+            <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+              <Link 
+                href="/" 
+                onClick={() => setIsMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-foreground hover:bg-secondary rounded-xl font-medium transition-all"
+              >
+                <Home className="w-5 h-5 text-foreground-muted" />
+                خانه
+              </Link>
+              <Link 
+                href="/search" 
+                onClick={() => setIsMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-foreground hover:bg-secondary rounded-xl font-medium transition-all"
+              >
+                <Grid3X3 className="w-5 h-5 text-foreground-muted" />
+                محصولات
+              </Link>
+              {user && (
+                <Link 
+                  href="/dashboard" 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-foreground hover:bg-secondary rounded-xl font-medium transition-all"
+                >
+                  <LayoutDashboard className="w-5 h-5 text-foreground-muted" />
+                  داشبورد
+                </Link>
+              )}
+
+              <div className="pt-4 mt-4 border-t border-border">
+                <h3 className="px-4 text-xs font-bold text-foreground-muted uppercase tracking-wider mb-2">دسته‌بندی‌ها</h3>
+                {categories.map((cat) => (
+                  <div key={cat.id} className="space-y-1">
+                    <Link 
+                      href={`/category/${cat.slug}`}
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center justify-between px-4 py-2.5 text-foreground hover:text-primary transition-colors font-medium text-sm"
+                    >
+                      {cat.name}
+                    </Link>
+                    {cat.children && cat.children.length > 0 && (
+                      <div className="mr-4 space-y-1 border-r border-border pr-2">
+                        {cat.children.map((child) => (
+                          <Link 
+                            key={child.id}
+                            href={`/category/${child.slug}`}
+                            onClick={() => setIsMenuOpen(false)}
+                            className="block px-4 py-2 text-sm text-foreground-secondary hover:text-primary transition-colors"
+                          >
+                            {child.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </nav>
+
+            {user && (
+              <div className="p-4 border-t border-border bg-secondary/30">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
+                    {user.first_name?.[0] || user.username?.[0] || 'U'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-foreground">{user.first_name || user.username}</p>
+                    <p className="text-xs text-foreground-muted">{formatPrice(user.wallet_balance || 0)} تومان</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }
