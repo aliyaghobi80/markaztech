@@ -15,23 +15,23 @@ export default function Home() {
     if (data.type === 'product_update') {
       setProducts(prev => {
         if (data.action === 'created') {
-          // فقط محصولات فعال را اضافه کن
           if (data.product.is_active) {
             return [data.product, ...prev];
           }
           return prev;
         } else if (data.action === 'updated') {
-          return prev.map(p => {
-            if (p.id === data.product.id) {
-              // اگر محصول غیرفعال شده، آن را حذف کن
-              if (!data.product.is_active) {
-                return null;
-              }
-              // بروزرسانی محصول با داده‌های جدید
-              return { ...p, ...data.product };
+          const existingIndex = prev.findIndex(p => p.id === data.product.id);
+          
+          if (existingIndex !== -1) {
+            if (!data.product.is_active) {
+              return prev.filter(p => p.id !== data.product.id);
             }
-            return p;
-          }).filter(Boolean); // حذف null values
+            return prev.map(p => p.id === data.product.id ? { ...p, ...data.product } : p);
+          } else {
+            if (data.product.is_active) {
+              return [data.product, ...prev];
+            }
+          }
         }
         return prev;
       });
