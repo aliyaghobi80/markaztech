@@ -50,13 +50,14 @@ export default function AdminProductsPage() {
         <div className="overflow-x-auto">
             <table className="w-full">
                 <thead className="bg-secondary border-b border-border">
-                    <tr>
-                        <th className="px-6 py-4 text-right text-sm font-bold text-foreground-muted">تصویر</th>
-                        <th className="px-6 py-4 text-right text-sm font-bold text-foreground-muted">نام محصول</th>
-                        <th className="px-6 py-4 text-right text-sm font-bold text-foreground-muted">دسته‌بندی</th>
-                        <th className="px-6 py-4 text-right text-sm font-bold text-foreground-muted">قیمت</th>
-                        <th className="px-6 py-4 text-center text-sm font-bold text-foreground-muted">عملیات</th>
-                    </tr>
+                        <tr>
+                          <th className="px-6 py-4 text-right text-sm font-bold text-foreground-muted">تصویر</th>
+                          <th className="px-6 py-4 text-right text-sm font-bold text-foreground-muted">نام محصول</th>
+                          <th className="px-6 py-4 text-right text-sm font-bold text-foreground-muted">دسته‌بندی</th>
+                          <th className="px-6 py-4 text-right text-sm font-bold text-foreground-muted">قیمت</th>
+                          <th className="px-6 py-4 text-right text-sm font-bold text-foreground-muted">وضعیت</th>
+                          <th className="px-6 py-4 text-center text-sm font-bold text-foreground-muted">عملیات</th>
+                      </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                     {products.map((product) => (
@@ -74,9 +75,16 @@ export default function AdminProductsPage() {
                                     {product.category}
                                 </span>
                             </td>
-                            <td className="px-6 py-3 font-bold text-foreground">
-                                {formatPrice(product.price)}
-                            </td>
+                              <td className="px-6 py-3 font-bold text-foreground">
+                                  {formatPrice(product.price)}
+                              </td>
+                              <td className="px-6 py-3">
+                                  {product.is_active ? (
+                                      <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded-md text-xs font-bold">فعال</span>
+                                  ) : (
+                                      <span className="bg-red-500/10 text-red-500 px-2 py-1 rounded-md text-xs font-bold">غیرفعال</span>
+                                  )}
+                              </td>
                             <td className="px-6 py-3">
                                 <div className="flex items-center justify-center gap-2">
                                     <button className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors" title="ویرایش">
