@@ -38,24 +38,50 @@ def register_persian_fonts():
         return False
 
 def persian_text(text):
+    """Convert Persian/Arabic text to proper display form for PDF"""
     if not text:
         return ""
-    reshaped = arabic_reshaper.reshape(str(text))
-    return get_display(reshaped)
+    text = str(text)
+    reshaped = arabic_reshaper.reshape(text)
+    bidi_text = get_display(reshaped)
+    return bidi_text
+
+def format_persian_number(num):
+    """Convert number to Persian digits"""
+    if num is None:
+        return persian_text("۰")
+    
+    persian_digits = '۰۱۲۳۴۵۶۷۸۹'
+    english_digits = '0123456789'
+    
+    num_str = str(int(num))
+    result = ""
+    for char in num_str:
+        if char in english_digits:
+            result += persian_digits[int(char)]
+        else:
+            result += char
+    
+    return result
 
 def format_persian_price(price):
+    """Format price with Persian digits and thousand separators"""
     if not price:
-        return persian_text("۰")
+        return format_persian_number(0)
     
     persian_digits = '۰۱۲۳۴۵۶۷۸۹'
     english_digits = '0123456789'
     
     formatted_price = f"{int(price):,}"
     
-    for i, digit in enumerate(english_digits):
-        formatted_price = formatted_price.replace(digit, persian_digits[i])
+    result = ""
+    for char in formatted_price:
+        if char in english_digits:
+            result += persian_digits[int(char)]
+        else:
+            result += char
     
-    return persian_text(formatted_price)
+    return result
 
 def get_product_image(product):
     try:
@@ -100,7 +126,8 @@ def generate_order_pdf(order):
         alignment=TA_RIGHT,
         fontSize=10,
         leading=16,
-        spaceAfter=4
+        spaceAfter=4,
+        wordWrap='RTL'
     ))
     
     styles.add(ParagraphStyle(
@@ -109,7 +136,8 @@ def generate_order_pdf(order):
         alignment=TA_RIGHT,
         fontSize=11,
         leading=16,
-        spaceAfter=6
+        spaceAfter=6,
+        wordWrap='RTL'
     ))
     
     styles.add(ParagraphStyle(
@@ -175,20 +203,23 @@ def generate_order_pdf(order):
     except:
         shamsi_date = order.created_at.strftime('%Y/%m/%d')
     
-    status_text = persian_text("پرداخت شده ✓") if order.status == "PAID" else persian_text("در انتظار پرداخت")
+    status_display = "پرداخت شده" if order.status == "PAID" else "در انتظار پرداخت"
     status_color = colors.HexColor('#059669') if order.status == "PAID" else colors.HexColor('#dc2626')
+    
+    customer_name = order.user.full_name if order.user and order.user.full_name else "نامشخص"
+    customer_mobile = order.user.mobile if order.user and order.user.mobile else "نامشخص"
     
     info_data = [
         [
-            persian_text(f'{shamsi_date}'),
+            shamsi_date,
             persian_text('تاریخ:'),
-            persian_text(f'#{order.id}'),
+            f'#{order.id}',
             persian_text('شماره سفارش:')
         ],
         [
-            persian_text(f'{order.user.mobile if order.user else "نامشخص"}'),
+            customer_mobile,
             persian_text('شماره تماس:'),
-            persian_text(f'{order.user.full_name if order.user else "نامشخص"}'),
+            persian_text(customer_name),
             persian_text('نام مشتری:')
         ],
     ]
@@ -216,7 +247,7 @@ def generate_order_pdf(order):
     elements.append(Spacer(1, 0.3*cm))
     
     status_data = [[
-        status_text,
+        persian_text(status_display),
         persian_text('وضعیت سفارش:')
     ]]
     status_table = Table(status_data, colWidths=[12*cm, 6*cm])
@@ -266,12 +297,14 @@ def generate_order_pdf(order):
             item_total = item.price * item.quantity
             total_amount += item_total
             
+            product_title = item.product.title if item.product else 'محصول حذف شده'
+            
             products_data.append([
-                persian_text(f'{format_persian_price(item_total)} تومان'),
-                persian_text(f'{format_persian_price(item.price)} تومان'),
-                format_persian_price(item.quantity),
-                persian_text(item.product.title if item.product else 'محصول حذف شده'),
-                format_persian_price(row_num)
+                format_persian_price(item_total) + ' ' + persian_text('تومان'),
+                format_persian_price(item.price) + ' ' + persian_text('تومان'),
+                format_persian_number(item.quantity),
+                persian_text(product_title),
+                format_persian_number(row_num)
             ])
             row_num += 1
     else:
@@ -280,7 +313,7 @@ def generate_order_pdf(order):
             '',
             '',
             persian_text('هیچ محصولی یافت نشد'),
-            persian_text('۱')
+            format_persian_number(1)
         ])
     
     products_table = Table(products_data, colWidths=[4*cm, 4*cm, 2*cm, 6*cm, 2*cm])
@@ -305,7 +338,7 @@ def generate_order_pdf(order):
     
     total_data = [
         [
-            persian_text(f'{format_persian_price(order.total_price)} تومان'),
+            format_persian_price(order.total_price) + ' ' + persian_text('تومان'),
             persian_text('مبلغ کل سفارش')
         ]
     ]
@@ -371,7 +404,7 @@ def generate_order_pdf(order):
     
     elements.append(Paragraph(persian_text('با تشکر از خرید شما'), styles['Center']))
     elements.append(Paragraph(persian_text('مرکز تک - فروشگاه اکانت‌های پریمیوم هوش مصنوعی'), styles['SubTitle']))
-    elements.append(Paragraph(persian_text('support@markaztech.com'), styles['SubTitle']))
+    elements.append(Paragraph('support@markaztech.com', styles['SubTitle']))
     
     doc.build(elements)
     
