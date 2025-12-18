@@ -1,32 +1,45 @@
-// مسیر: src/app/admin/products/page.jsx
 "use client";
 
-import useSWR from "swr"; // کتابخانه جادویی ریل‌تایم
+import useSWR from "swr";
 import api from "@/lib/axios";
 import { formatPrice } from "@/lib/utils";
-import { Plus, Edit, Trash2, Search, Package } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Package, Power } from "lucide-react";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { useState } from "react";
 
-// تابع Fetcher برای SWR
 const fetcher = (url) => api.get(url).then((res) => res.data.results || res.data);
 
 export default function AdminProductsPage() {
-  // این خط معجزه می‌کند: هر وقت دیتا سمت سرور عوض شود، اینجا هم عوض می‌شود
-  // refreshInterval: 1000 یعنی هر ۱ ثانیه چک کن (برای حس ریل‌تایم بودن)
   const { data: products, error, mutate } = useSWR("/products/", fetcher, { 
-    refreshInterval: 5000 // هر 5 ثانیه آپدیت خودکار
+    refreshInterval: 5000
   });
+  const [togglingId, setTogglingId] = useState(null);
 
   const handleDelete = async (id) => {
     if (!confirm("آیا از حذف این محصول مطمئن هستید؟")) return;
     
     try {
-      await api.delete(`/products/${id}/`); // اصلاح آدرس حذف
+      await api.delete(`/products/${id}/`);
       toast.success("محصول حذف شد");
-      mutate(); // رفرش آنی لیست بدون ریلود صفحه
+      mutate();
     } catch (err) {
       toast.error("خطا در حذف محصول");
+    }
+  };
+
+  const handleToggleActive = async (product) => {
+    setTogglingId(product.id);
+    try {
+      await api.patch(`/products/${product.id}/`, {
+        is_active: !product.is_active
+      });
+      toast.success(product.is_active ? "محصول غیرفعال شد" : "محصول فعال شد");
+      mutate();
+    } catch (err) {
+      toast.error("خطا در تغییر وضعیت محصول");
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -34,19 +47,21 @@ export default function AdminProductsPage() {
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
             <h1 className="text-2xl font-black text-foreground">مدیریت محصولات</h1>
             <p className="text-foreground-muted text-sm">لیست تمام محصولات فعال و غیرفعال</p>
         </div>
         
-        <Link href="/admin/products/add" className="bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all">
+        <Link href="/admin/products/add" className="bg-primary hover:bg-primary-hover text-primary-foreground px-4 sm:px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all text-sm sm:text-base">
             <Plus className="w-5 h-5" />
-            افزودن محصول جدید
+            <span className="hidden sm:inline">افزودن محصول جدید</span>
+            <span className="sm:hidden">افزودن</span>
         </Link>
       </div>
 
-      <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden">
+      {/* Desktop Table */}
+      <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden hidden md:block">
         <div className="overflow-x-auto">
             <table className="w-full">
                 <thead className="bg-secondary border-b border-border">
@@ -79,11 +94,24 @@ export default function AdminProductsPage() {
                                   {formatPrice(product.price)}
                               </td>
                               <td className="px-6 py-3">
-                                  {product.is_active ? (
-                                      <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded-md text-xs font-bold">فعال</span>
-                                  ) : (
-                                      <span className="bg-red-500/10 text-red-500 px-2 py-1 rounded-md text-xs font-bold">غیرفعال</span>
-                                  )}
+                                  <div className="flex items-center gap-2">
+                                      <button
+                                          onClick={() => handleToggleActive(product)}
+                                          disabled={togglingId === product.id}
+                                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                                              product.is_active ? 'bg-green-500' : 'bg-gray-400'
+                                          } ${togglingId === product.id ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+                                      >
+                                          <span
+                                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                  product.is_active ? 'translate-x-1' : 'translate-x-6'
+                                              }`}
+                                          />
+                                      </button>
+                                      <span className={`text-xs font-bold ${product.is_active ? 'text-green-500' : 'text-gray-500'}`}>
+                                          {product.is_active ? 'فعال' : 'غیرفعال'}
+                                      </span>
+                                  </div>
                               </td>
                             <td className="px-6 py-3">
                                 <div className="flex items-center justify-center gap-2">
@@ -103,6 +131,59 @@ export default function AdminProductsPage() {
                 </tbody>
             </table>
         </div>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-4">
+        {products.map((product) => (
+          <div key={product.id} className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+            <div className="flex gap-3">
+              <div className="w-16 h-16 rounded-xl bg-secondary overflow-hidden flex-shrink-0">
+                <img src={product.main_image} alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-foreground truncate">{product.title}</h3>
+                <p className="text-primary font-bold text-sm">{formatPrice(product.price)}</p>
+                <span className="inline-block bg-primary/10 text-primary px-2 py-0.5 rounded text-xs font-bold mt-1">
+                  {product.category?.name}
+                </span>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleToggleActive(product)}
+                  disabled={togglingId === product.id}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                    product.is_active ? 'bg-green-500' : 'bg-gray-400'
+                  } ${togglingId === product.id ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      product.is_active ? 'translate-x-1' : 'translate-x-6'
+                    }`}
+                  />
+                </button>
+                <span className={`text-xs font-bold ${product.is_active ? 'text-green-500' : 'text-gray-500'}`}>
+                  {product.is_active ? 'فعال' : 'غیرفعال'}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <Link href={`/admin/products/edit/${product.id}`} className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                  <Edit className="w-4 h-4" />
+                </Link>
+                <button 
+                  onClick={() => handleDelete(product.id)}
+                  className="p-2 text-error hover:bg-error/10 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

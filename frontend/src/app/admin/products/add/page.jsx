@@ -116,8 +116,8 @@ export default function AddProductPage() {
         },
       });
 
-      toast.success("محصول جدید با موفقیت اضافه شد");
-      router.push("/dashboard");
+        toast.success("محصول جدید با موفقیت اضافه شد");
+        router.push("/admin/products");
     } catch (error) {
       console.error("Error creating product:", error);
       const errorMsg = error.response?.data?.detail || "خطا در ایجاد محصول";
