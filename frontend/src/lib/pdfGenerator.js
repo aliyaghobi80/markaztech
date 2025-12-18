@@ -44,35 +44,50 @@ export const downloadOrderPDF = async (order) => {
     
     console.log('PDF download completed successfully');
     
-  } catch (error) {
-    console.error('Error downloading PDF:', error);
-    
-    // Fallback: باز کردن صفحه چاپ فارسی
-    try {
-      console.log('Using fallback print method...');
-      const printContent = createPrintableReceipt(order);
-      const printWindow = window.open('', '_blank', 'width=800,height=600');
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
       
-      if (printWindow) {
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-        
-        // Wait for content to load, then show print dialog once
-        printWindow.onload = function() {
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
-        };
-        
-        printWindow.focus();
-      } else {
-        throw new Error('Could not open print window');
+      // تلاش برای استخراج پیام خطا از پاسخ Axios
+      let errorMessage = 'خطا در دانلود PDF';
+      if (error.response && error.response.data instanceof Blob) {
+        // چون responseType: 'blob' است، باید دیتا را به متن تبدیل کنیم تا پیام خطا را ببینیم
+        try {
+          const text = await error.response.data.text();
+          const errorData = JSON.parse(text);
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          console.error('Could not parse error blob:', e);
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
       }
-    } catch (fallbackError) {
-      console.error('Fallback also failed:', fallbackError);
-      throw new Error(error.message || 'خطا در دانلود PDF');
+      
+      // Fallback: باز کردن صفحه چاپ فارسی
+      try {
+        console.log('Using fallback print method...');
+        const printContent = createPrintableReceipt(order);
+        const printWindow = window.open('', '_blank', 'width=800,height=600');
+        
+        if (printWindow) {
+          printWindow.document.write(printContent);
+          printWindow.document.close();
+          
+          // Wait for content to load, then show print dialog once
+          printWindow.onload = function() {
+            setTimeout(() => {
+              printWindow.print();
+            }, 500);
+          };
+          
+          printWindow.focus();
+        } else {
+          throw new Error('Could not open print window');
+        }
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        throw new Error(errorMessage);
+      }
     }
-  }
 };
 
 // تابع کمکی برای ایجاد محتوای قابل چاپ با فونت فارسی

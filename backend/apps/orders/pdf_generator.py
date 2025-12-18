@@ -102,56 +102,60 @@ def generate_order_pdf(order):
     styles = getSampleStyleSheet()
     
     # استایل راست‌چین
-    styles.add(ParagraphStyle(
-        name='RTL',
-        fontName='Vazir',
-        alignment=TA_RIGHT,
-        fontSize=11,
-        leading=16,
-        spaceAfter=6
-    ))
+    if 'RTL' not in styles:
+        styles.add(ParagraphStyle(
+            name='RTL',
+            fontName='Vazir',
+            alignment=TA_RIGHT,
+            fontSize=11,
+            leading=16,
+            spaceAfter=6
+        ))
     
     # استایل راست‌چین پررنگ
-    styles.add(ParagraphStyle(
-        name='RTL-Bold',
-        fontName='Vazir-Bold',
-        alignment=TA_RIGHT,
-        fontSize=12,
-        leading=16,
-        spaceAfter=8
-    ))
+    if 'RTL-Bold' not in styles:
+        styles.add(ParagraphStyle(
+            name='RTL-Bold',
+            fontName='Vazir-Bold',
+            alignment=TA_RIGHT,
+            fontSize=12,
+            leading=16,
+            spaceAfter=8
+        ))
     
     # استایل وسط‌چین
-    styles.add(ParagraphStyle(
-        name='Center',
-        fontName='Vazir-Bold',
-        alignment=TA_CENTER,
-        fontSize=16,
-        leading=20,
-        spaceAfter=12
-    ))
+    if 'Center' not in styles:
+        styles.add(ParagraphStyle(
+            name='Center',
+            fontName='Vazir-Bold',
+            alignment=TA_CENTER,
+            fontSize=16,
+            leading=20,
+            spaceAfter=12
+        ))
     
     # استایل عنوان اصلی
-    styles.add(ParagraphStyle(
-        name='Title',
-        fontName='Vazir-Bold',
-        alignment=TA_CENTER,
-        fontSize=20,
-        leading=24,
-        spaceAfter=20,
-        textColor=colors.HexColor('#3b82f6')
-    ))
+    if 'MainTitle' not in styles:
+        styles.add(ParagraphStyle(
+            name='MainTitle',
+            fontName='Vazir-Bold',
+            alignment=TA_CENTER,
+            fontSize=20,
+            leading=24,
+            spaceAfter=20,
+            textColor=colors.HexColor('#3b82f6')
+        ))
     
     # لیست عناصر PDF
     elements = []
     
     # هدر
-    elements.append(Paragraph('مرکز تک', styles['Title']))
+    elements.append(Paragraph('مرکز تک', styles['MainTitle']))
     elements.append(Paragraph('فروشگاه اکانت‌های پریمیوم هوش مصنوعی', styles['Center']))
     elements.append(Spacer(1, 0.5*cm))
     
     # عنوان رسید
-    elements.append(Paragraph('رسید سفارش', styles['Title']))
+    elements.append(Paragraph('رسید سفارش', styles['MainTitle']))
     elements.append(Spacer(1, 0.3*cm))
     
     # تبدیل تاریخ به شمسی
