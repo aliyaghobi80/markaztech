@@ -1,12 +1,15 @@
 # مسیر: backend/apps/users/urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UserViewSet, ProfileViewSet, CustomTokenObtainPairView, UserRegistrationView, WalletTopUpViewSet, WalletPurchaseView
+from .views import (
+    UserViewSet, ProfileViewSet, CustomTokenObtainPairView, UserRegistrationView,
+    WalletTopUpRequestViewSet, AdminWalletAdjustmentView, AdminStatisticsView
+)
 from rest_framework_simplejwt.views import TokenRefreshView
 
 router = DefaultRouter()
 router.register(r'list', UserViewSet, basename='user-management')
-router.register(r'wallet/topup', WalletTopUpViewSet, basename='wallet-topup')
+router.register(r'wallet-requests', WalletTopUpRequestViewSet, basename='wallet-requests')
 
 urlpatterns = [
     # Authentication endpoints
@@ -17,9 +20,10 @@ urlpatterns = [
     # Profile management
     path('profile/', ProfileViewSet.as_view({'get': 'me', 'patch': 'me'}), name='user-profile'),
     
-    # Wallet purchase
-    path('wallet/purchase/', WalletPurchaseView.as_view(), name='wallet-purchase'),
+    # Admin endpoints
+    path('wallet/adjust/', AdminWalletAdjustmentView.as_view(), name='admin-wallet-adjust'),
+    path('admin/statistics/', AdminStatisticsView.as_view(), name='admin-statistics'),
     
-    # Admin user management
+    # Admin user management and wallet requests
     path('', include(router.urls)),
 ]

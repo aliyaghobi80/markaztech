@@ -91,6 +91,56 @@ class OrderViewSet(viewsets.ModelViewSet):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=['post'])
+    def pay_with_wallet(self, request, pk=None):
+        """Pay for an order using wallet balance."""
+        try:
+            order = self.get_object()
+        except Order.DoesNotExist:
+            return Response(
+                {'error': 'سفارش یافت نشد'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if order.user != request.user:
+            return Response(
+                {'error': 'شما فقط می‌توانید سفارش‌های خود را پرداخت کنید'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if order.status != Order.Status.PENDING:
+            return Response(
+                {'error': 'این سفارش قبلاً پرداخت شده است'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user = request.user
+        if user.wallet_balance < order.total_price:
+            return Response(
+                {
+                    'error': 'موجودی کیف پول کافی نیست',
+                    'wallet_balance': user.wallet_balance,
+                    'required_amount': order.total_price,
+                    'shortage': order.total_price - user.wallet_balance
+                }, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        from django.db import transaction
+        with transaction.atomic():
+            user.wallet_balance -= order.total_price
+            user.save()
+            
+            order.status = Order.Status.PAID
+            order.save()
+        
+        return Response({
+            'message': 'پرداخت با موفقیت انجام شد',
+            'order_id': order.id,
+            'paid_amount': order.total_price,
+            'new_wallet_balance': user.wallet_balance
+        })
+
     @action(detail=True, methods=['get'])
     def download_pdf(self, request, pk=None):
         """Download PDF receipt for a paid order."""

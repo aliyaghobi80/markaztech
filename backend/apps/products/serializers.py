@@ -20,6 +20,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     """Serializer for Product model with category details."""
+    # به جای ID دسته، نام و اسلاگ آن را می‌فرستیم تا در فرانت راحت باشیم
     category = serializers.CharField(source='category.name', read_only=True)
     category_slug = serializers.CharField(source='category.slug', read_only=True)
 
@@ -29,9 +30,8 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'slug', 'description', 
             'price', 'discount_price', 'main_image', 
-            'delivery_time', 'category', 'category_slug', 'is_active'
+            'delivery_time', 'category', 'category_slug'
         ]
-        read_only_fields = ['id', 'slug', 'category', 'category_slug']
 
 
 class CreateProductSerializer(serializers.ModelSerializer):

@@ -5,57 +5,64 @@ import useSWR from "swr";
 import api from "@/lib/axios";
 import { formatPrice } from "@/lib/utils";
 import { 
-  Wallet, CheckCircle, XCircle, Clock, 
-  User, Phone, Calendar, Image, Eye, X,
-  Search, Filter
+  Wallet, CheckCircle, XCircle, Clock, Eye, X, 
+  User, Calendar, CreditCard, Image as ImageIcon 
 } from "lucide-react";
 import toast from "react-hot-toast";
 
 const fetcher = (url) => api.get(url).then((res) => res.data.results || res.data);
 
 export default function AdminWalletRequests() {
-  const { data: requests, error, mutate } = useSWR("/users/wallet/topup/", fetcher, { refreshInterval: 5000 });
-  const [filterStatus, setFilterStatus] = useState("ALL");
-  const [selectedImage, setSelectedImage] = useState(null);
+  const { data: requests, error, mutate } = useSWR("/users/wallet-requests/", fetcher);
+  const [selectedRequest, setSelectedRequest] = useState(null);
   const [adminNote, setAdminNote] = useState("");
-  const [processingId, setProcessingId] = useState(null);
+  const [processing, setProcessing] = useState(false);
 
   const handleApprove = async (id) => {
-    setProcessingId(id);
+    if (!confirm("آیا از تایید این درخواست اطمینان دارید؟")) return;
+    setProcessing(true);
     try {
-      await api.post(`/users/wallet/topup/${id}/approve/`, { admin_note: adminNote });
+      await api.post(`/users/wallet-requests/${id}/approve/`, { admin_note: adminNote });
       toast.success("درخواست تایید شد و موجودی کاربر افزایش یافت");
+      setSelectedRequest(null);
       setAdminNote("");
       mutate();
     } catch (err) {
       toast.error(err.response?.data?.error || "خطا در تایید درخواست");
     } finally {
-      setProcessingId(null);
+      setProcessing(false);
     }
   };
 
   const handleReject = async (id) => {
-    setProcessingId(id);
+    if (!confirm("آیا از رد این درخواست اطمینان دارید؟")) return;
+    setProcessing(true);
     try {
-      await api.post(`/users/wallet/topup/${id}/reject/`, { admin_note: adminNote || "رد شده توسط ادمین" });
+      await api.post(`/users/wallet-requests/${id}/reject/`, { admin_note: adminNote || "درخواست توسط ادمین رد شد." });
       toast.success("درخواست رد شد");
+      setSelectedRequest(null);
       setAdminNote("");
       mutate();
     } catch (err) {
       toast.error(err.response?.data?.error || "خطا در رد درخواست");
     } finally {
-      setProcessingId(null);
+      setProcessing(false);
     }
+  };
+
+  const getStatusConfig = (status) => {
+    const configs = {
+      PENDING: { label: "در انتظار بررسی", bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-600 dark:text-amber-400", icon: Clock },
+      APPROVED: { label: "تایید شده", bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-600 dark:text-green-400", icon: CheckCircle },
+      REJECTED: { label: "رد شده", bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-600 dark:text-red-400", icon: XCircle }
+    };
+    return configs[status] || configs.PENDING;
   };
 
   if (error) return <div className="text-center py-10 text-error">خطا در دریافت درخواست‌ها</div>;
   if (!requests) return <div className="text-center py-10 text-foreground-muted">در حال بارگذاری...</div>;
 
-  const filteredRequests = filterStatus === "ALL" 
-    ? requests 
-    : requests.filter(r => r.status === filterStatus);
-
-  const pendingCount = requests.filter(r => r.status === "PENDING").length;
+  const pendingCount = requests.filter(r => r.status === 'PENDING').length;
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -64,157 +71,212 @@ export default function AdminWalletRequests() {
           <span className="w-2 h-8 bg-primary rounded-full"></span>
           درخواست‌های شارژ کیف پول
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {pendingCount > 0 && (
-            <span className="bg-warning/10 text-warning px-3 py-1 rounded-full text-sm font-bold animate-pulse">
+            <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-bold">
               {pendingCount} در انتظار
             </span>
           )}
-          <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-bold">
+          <span className="bg-secondary text-foreground-muted px-3 py-1 rounded-full text-xs">
             {requests.length} درخواست
           </span>
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-2xl p-4 mb-6">
-        <div className="flex items-center gap-4">
-          <Filter className="w-5 h-5 text-foreground-muted" />
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-secondary border border-border rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-primary text-foreground"
-          >
-            <option value="ALL">همه درخواست‌ها</option>
-            <option value="PENDING">در انتظار بررسی</option>
-            <option value="APPROVED">تایید شده</option>
-            <option value="REJECTED">رد شده</option>
-          </select>
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-secondary/50 border-b border-border">
+              <tr>
+                <th className="text-right p-4 font-bold text-foreground">کاربر</th>
+                <th className="text-right p-4 font-bold text-foreground">مبلغ</th>
+                <th className="text-right p-4 font-bold text-foreground">وضعیت</th>
+                <th className="text-right p-4 font-bold text-foreground">تاریخ</th>
+                <th className="text-center p-4 font-bold text-foreground">عملیات</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {requests.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="p-12 text-center text-foreground-muted">
+                    <Wallet className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <p>هیچ درخواستی ثبت نشده است</p>
+                  </td>
+                </tr>
+              )}
+              {requests.map((req) => {
+                const statusConfig = getStatusConfig(req.status);
+                const StatusIcon = statusConfig.icon;
+                
+                return (
+                  <tr key={req.id} className="hover:bg-secondary/30 transition-colors">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-foreground-muted" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-foreground">{req.user?.full_name || "نام نامشخص"}</p>
+                          <p className="text-xs text-foreground-muted">{req.user?.mobile}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className="font-black text-primary text-lg">{formatPrice(req.amount)}</span>
+                      <span className="text-xs text-foreground-muted mr-1">تومان</span>
+                    </td>
+                    <td className="p-4">
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${statusConfig.bg} ${statusConfig.text}`}>
+                        <StatusIcon className="w-3 h-3" />
+                        {statusConfig.label}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-1 text-foreground-muted text-sm">
+                        <Calendar className="w-4 h-4" />
+                        {new Date(req.created_at).toLocaleDateString('fa-IR')}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => setSelectedRequest(req)}
+                          className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                          title="مشاهده جزئیات"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        {req.status === 'PENDING' && (
+                          <>
+                            <button
+                              onClick={() => handleApprove(req.id)}
+                              className="p-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors"
+                              title="تایید"
+                              disabled={processing}
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleReject(req.id)}
+                              className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                              title="رد"
+                              disabled={processing}
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div className="space-y-4">
-        {filteredRequests.length === 0 ? (
-          <div className="text-center py-20 text-foreground-muted bg-card rounded-2xl border border-dashed border-border">
-            <Wallet className="w-16 h-16 mx-auto mb-4 opacity-20" />
-            <p className="text-lg font-medium">درخواستی یافت نشد</p>
-          </div>
-        ) : (
-          filteredRequests.map((request) => (
-            <div key={request.id} className="bg-card border border-border rounded-2xl p-6 hover:shadow-lg transition-all">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
-                    request.status === 'PENDING' ? 'bg-warning/10 text-warning' :
-                    request.status === 'APPROVED' ? 'bg-success/10 text-success' :
-                    'bg-error/10 text-error'
-                  }`}>
-                    {request.status === 'PENDING' ? <Clock className="w-7 h-7" /> :
-                     request.status === 'APPROVED' ? <CheckCircle className="w-7 h-7" /> :
-                     <XCircle className="w-7 h-7" />}
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <User className="w-4 h-4 text-foreground-muted" />
-                      <span className="font-bold text-foreground">{request.user?.full_name || "بدون نام"}</span>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-foreground-muted">
-                      <span className="flex items-center gap-1">
-                        <Phone className="w-3 h-3" />
-                        {request.user?.mobile}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(request.created_at).toLocaleDateString('fa-IR')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-6">
-                  <div className="text-left">
-                    <p className="text-2xl font-black text-primary">{formatPrice(request.amount)}</p>
-                    <p className="text-xs text-foreground-muted">تومان</p>
-                  </div>
-
-                  <button
-                    onClick={() => setSelectedImage(request.receipt_image)}
-                    className="p-3 bg-secondary hover:bg-secondary/80 rounded-xl transition-colors"
-                    title="مشاهده رسید"
-                  >
-                    <Image className="w-5 h-5 text-foreground-muted" />
-                  </button>
-
-                  {request.status === 'PENDING' && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleApprove(request.id)}
-                        disabled={processingId === request.id}
-                        className="px-4 py-2 bg-success/10 text-success hover:bg-success/20 rounded-xl transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        تایید
-                      </button>
-                      <button
-                        onClick={() => handleReject(request.id)}
-                        disabled={processingId === request.id}
-                        className="px-4 py-2 bg-error/10 text-error hover:bg-error/20 rounded-xl transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        رد
-                      </button>
-                    </div>
-                  )}
-
-                  {request.status !== 'PENDING' && (
-                    <StatusBadge status={request.status} />
-                  )}
-                </div>
-              </div>
-
-              {request.admin_note && (
-                <div className="mt-4 p-3 bg-secondary/50 rounded-xl text-sm text-foreground-muted">
-                  <span className="font-medium">یادداشت ادمین:</span> {request.admin_note}
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-
-      {selectedImage && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setSelectedImage(null)}>
-          <div className="bg-card rounded-2xl p-4 max-w-2xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-foreground">تصویر رسید پرداخت</h3>
-              <button onClick={() => setSelectedImage(null)} className="p-2 hover:bg-secondary rounded-lg">
+      {selectedRequest && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-foreground">جزئیات درخواست شارژ</h3>
+              <button
+                onClick={() => { setSelectedRequest(null); setAdminNote(""); }}
+                className="p-2 text-foreground-muted hover:bg-secondary rounded-lg transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <img 
-              src={selectedImage.startsWith('http') ? selectedImage : `http://127.0.0.1:8000${selectedImage}`} 
-              alt="رسید پرداخت" 
-              className="w-full rounded-xl"
-            />
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 p-4 bg-secondary/50 rounded-xl">
+                <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
+                  <User className="w-6 h-6 text-foreground-muted" />
+                </div>
+                <div>
+                  <p className="font-bold text-foreground">{selectedRequest.user?.full_name || "نام نامشخص"}</p>
+                  <p className="text-sm text-foreground-muted">{selectedRequest.user?.mobile}</p>
+                  <p className="text-xs text-foreground-muted mt-1">
+                    موجودی فعلی: <span className="font-bold text-primary">{formatPrice(selectedRequest.user?.wallet_balance || 0)} تومان</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-secondary/50 rounded-xl">
+                  <p className="text-xs text-foreground-muted mb-1">مبلغ درخواستی</p>
+                  <p className="font-black text-xl text-primary">{formatPrice(selectedRequest.amount)} تومان</p>
+                </div>
+                <div className="p-4 bg-secondary/50 rounded-xl">
+                  <p className="text-xs text-foreground-muted mb-1">تاریخ درخواست</p>
+                  <p className="font-bold text-foreground">
+                    {new Date(selectedRequest.created_at).toLocaleDateString('fa-IR', {
+                      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              {selectedRequest.receipt_image && (
+                <div className="p-4 bg-secondary/50 rounded-xl">
+                  <p className="text-xs text-foreground-muted mb-2 flex items-center gap-1">
+                    <ImageIcon className="w-4 h-4" />
+                    تصویر رسید پرداخت
+                  </p>
+                  <img 
+                    src={selectedRequest.receipt_image} 
+                    alt="رسید پرداخت" 
+                    className="w-full rounded-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => window.open(selectedRequest.receipt_image, '_blank')}
+                  />
+                </div>
+              )}
+
+              {selectedRequest.status === 'PENDING' && (
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">توضیحات ادمین (اختیاری)</label>
+                  <textarea
+                    value={adminNote}
+                    onChange={(e) => setAdminNote(e.target.value)}
+                    placeholder="توضیحات خود را وارد کنید..."
+                    className="w-full bg-secondary border border-border rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-primary text-foreground resize-none"
+                    rows="3"
+                  />
+                </div>
+              )}
+
+              {selectedRequest.admin_note && (
+                <div className="p-4 bg-secondary/50 rounded-xl">
+                  <p className="text-xs text-foreground-muted mb-1">توضیحات ادمین</p>
+                  <p className="text-foreground">{selectedRequest.admin_note}</p>
+                </div>
+              )}
+
+              {selectedRequest.status === 'PENDING' && (
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => handleApprove(selectedRequest.id)}
+                    disabled={processing}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                  >
+                    <CheckCircle className="w-5 h-5" />
+                    تایید و شارژ کیف پول
+                  </button>
+                  <button
+                    onClick={() => handleReject(selectedRequest.id)}
+                    disabled={processing}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                  >
+                    <XCircle className="w-5 h-5" />
+                    رد درخواست
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
     </div>
-  );
-}
-
-function StatusBadge({ status }) {
-  const styles = {
-    PENDING: { bg: "bg-warning/10", text: "text-warning", label: "در انتظار بررسی" },
-    APPROVED: { bg: "bg-success/10", text: "text-success", label: "تایید شده" },
-    REJECTED: { bg: "bg-error/10", text: "text-error", label: "رد شده" },
-  };
-
-  const style = styles[status] || { bg: "bg-secondary", text: "text-foreground-muted", label: status };
-
-  return (
-    <span className={`px-3 py-1.5 rounded-xl text-sm font-bold ${style.bg} ${style.text}`}>
-      {style.label}
-    </span>
   );
 }

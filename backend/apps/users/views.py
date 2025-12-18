@@ -6,13 +6,52 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
+from django.db import transaction
+from django.db.models import Sum
 
-from .serializers import UserSerializer, UserRegistrationSerializer, CustomTokenObtainPairSerializer, WalletTopUpRequestSerializer, WalletTopUpCreateSerializer
+from .serializers import (
+    UserSerializer, UserRegistrationSerializer, CustomTokenObtainPairSerializer,
+    WalletTopUpRequestSerializer, WalletTopUpCreateSerializer, WalletAdjustmentSerializer
+)
 from .models import WalletTopUpRequest
-from decimal import Decimal
 
 
 User = get_user_model()
+
+
+class AdminStatisticsView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+    
+    def get(self, request):
+        from apps.orders.models import Order
+        from apps.products.models import Product
+        
+        total_users = User.objects.count()
+        total_products = Product.objects.count()
+        active_products = Product.objects.filter(is_active=True).count()
+        
+        total_orders = Order.objects.count()
+        pending_orders = Order.objects.filter(status=Order.Status.PENDING).count()
+        paid_orders = Order.objects.filter(status=Order.Status.PAID).count()
+        
+        total_sales = Order.objects.filter(
+            status__in=[Order.Status.PAID, Order.Status.SENT]
+        ).aggregate(total=Sum('total_price'))['total'] or 0
+        
+        pending_wallet_requests = WalletTopUpRequest.objects.filter(
+            status=WalletTopUpRequest.Status.PENDING
+        ).count()
+        
+        return Response({
+            'total_users': total_users,
+            'total_products': total_products,
+            'active_products': active_products,
+            'total_orders': total_orders,
+            'pending_orders': pending_orders,
+            'paid_orders': paid_orders,
+            'total_sales': total_sales,
+            'pending_wallet_requests': pending_wallet_requests,
+        })
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -80,15 +119,10 @@ class ProfileViewSet(viewsets.ViewSet):
         return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class WalletTopUpViewSet(viewsets.ModelViewSet):
-    """ViewSet for wallet top-up requests."""
+class WalletTopUpRequestViewSet(viewsets.ModelViewSet):
+    serializer_class = WalletTopUpRequestSerializer
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
-    
-    def get_serializer_class(self):
-        if self.action == 'create':
-            return WalletTopUpCreateSerializer
-        return WalletTopUpRequestSerializer
     
     def get_queryset(self):
         user = self.request.user
@@ -96,100 +130,83 @@ class WalletTopUpViewSet(viewsets.ModelViewSet):
             return WalletTopUpRequest.objects.all().order_by('-created_at')
         return WalletTopUpRequest.objects.filter(user=user).order_by('-created_at')
     
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return WalletTopUpCreateSerializer
+        return WalletTopUpRequestSerializer
+    
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def approve(self, request, pk=None):
-        """Approve a wallet top-up request (Admin only)."""
-        if not request.user.is_staff:
-            return Response({'error': 'دسترسی فقط برای ادمین'}, status=status.HTTP_403_FORBIDDEN)
+        wallet_request = self.get_object()
         
-        topup_request = self.get_object()
+        if wallet_request.status != WalletTopUpRequest.Status.PENDING:
+            return Response(
+                {'error': 'این درخواست قبلاً بررسی شده است.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
-        if topup_request.status != WalletTopUpRequest.Status.PENDING:
-            return Response({'error': 'این درخواست قبلا پردازش شده است'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        topup_request.status = WalletTopUpRequest.Status.APPROVED
-        topup_request.admin_note = request.data.get('admin_note', '')
-        topup_request.save()
-        
-        topup_request.user.wallet_balance += Decimal(topup_request.amount)
-        topup_request.user.save()
+        with transaction.atomic():
+            wallet_request.status = WalletTopUpRequest.Status.APPROVED
+            wallet_request.admin_note = request.data.get('admin_note', '')
+            wallet_request.save()
+            
+            user = wallet_request.user
+            user.wallet_balance += wallet_request.amount
+            user.save()
         
         return Response({
-            'message': 'درخواست تایید شد و موجودی کیف پول بروزرسانی شد',
-            'new_balance': topup_request.user.wallet_balance
+            'message': 'درخواست تایید شد و موجودی کیف پول کاربر افزایش یافت.',
+            'new_balance': user.wallet_balance
         })
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def reject(self, request, pk=None):
-        """Reject a wallet top-up request (Admin only)."""
-        if not request.user.is_staff:
-            return Response({'error': 'دسترسی فقط برای ادمین'}, status=status.HTTP_403_FORBIDDEN)
+        wallet_request = self.get_object()
         
-        topup_request = self.get_object()
+        if wallet_request.status != WalletTopUpRequest.Status.PENDING:
+            return Response(
+                {'error': 'این درخواست قبلاً بررسی شده است.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
-        if topup_request.status != WalletTopUpRequest.Status.PENDING:
-            return Response({'error': 'این درخواست قبلا پردازش شده است'}, status=status.HTTP_400_BAD_REQUEST)
+        wallet_request.status = WalletTopUpRequest.Status.REJECTED
+        wallet_request.admin_note = request.data.get('admin_note', 'درخواست توسط ادمین رد شد.')
+        wallet_request.save()
         
-        topup_request.status = WalletTopUpRequest.Status.REJECTED
-        topup_request.admin_note = request.data.get('admin_note', 'رد شده توسط ادمین')
-        topup_request.save()
-        
-        return Response({'message': 'درخواست رد شد'})
+        return Response({'message': 'درخواست رد شد.'})
 
 
-class WalletPurchaseView(APIView):
-    """API view for purchasing products using wallet balance."""
-    permission_classes = [permissions.IsAuthenticated]
+class AdminWalletAdjustmentView(APIView):
+    permission_classes = [permissions.IsAdminUser]
     
     def post(self, request):
-        """Process a wallet purchase."""
-        from apps.products.models import Product
-        from apps.orders.models import Order, OrderItem
+        serializer = WalletAdjustmentSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        product_id = request.data.get('product_id')
-        quantity = int(request.data.get('quantity', 1))
-        
-        if not product_id:
-            return Response({'error': 'شناسه محصول الزامی است'}, status=status.HTTP_400_BAD_REQUEST)
+        user_id = serializer.validated_data['user_id']
+        amount = serializer.validated_data['amount']
         
         try:
-            product = Product.objects.get(id=product_id, is_active=True)
-        except Product.DoesNotExist:
-            return Response({'error': 'محصول یافت نشد'}, status=status.HTTP_404_NOT_FOUND)
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'کاربر یافت نشد.'}, status=status.HTTP_404_NOT_FOUND)
         
-        price = product.discount_price if product.discount_price else product.price
-        total_price = price * quantity
+        new_balance = user.wallet_balance + amount
+        if new_balance < 0:
+            return Response(
+                {'error': 'موجودی کیف پول نمی‌تواند منفی شود.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
-        if request.user.wallet_balance < total_price:
-            return Response({
-                'error': 'موجودی کیف پول کافی نیست',
-                'required': total_price,
-                'balance': request.user.wallet_balance,
-                'shortage': total_price - request.user.wallet_balance
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        order = Order.objects.create(
-            user=request.user,
-            total_price=total_price,
-            status=Order.Status.PAID
-        )
-        
-        OrderItem.objects.create(
-            order=order,
-            product=product,
-            quantity=quantity,
-            price=price
-        )
-        
-        request.user.wallet_balance -= Decimal(total_price)
-        request.user.save()
+        user.wallet_balance = new_balance
+        user.save()
         
         return Response({
-            'message': 'خرید با موفقیت انجام شد',
-            'order_id': order.id,
-            'total_price': total_price,
-            'new_balance': request.user.wallet_balance
-        }, status=status.HTTP_201_CREATED)
+            'message': 'موجودی کیف پول با موفقیت تغییر کرد.',
+            'user_id': user.id,
+            'new_balance': user.wallet_balance
+        })

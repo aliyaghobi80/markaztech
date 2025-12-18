@@ -20,8 +20,6 @@ export default function ProductPage() {
   const { addToCart } = useCart();
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-    
     if (!slug) return;
     const fetchProduct = async () => {
       try {

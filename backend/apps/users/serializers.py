@@ -1,7 +1,7 @@
 # مسیر: backend/apps/users/serializers.py
 
 from rest_framework import serializers
-from .models import User
+from .models import User, WalletTopUpRequest
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -62,37 +62,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         
         return data
 
-from .models import WalletTopUpRequest
-
-class WalletTopUpRequestSerializer(serializers.ModelSerializer):
-    """Serializer for wallet top-up requests."""
-    user = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = WalletTopUpRequest
-        fields = ['id', 'user', 'amount', 'receipt_image', 'status', 'admin_note', 'created_at', 'updated_at']
-        read_only_fields = ['user', 'created_at', 'updated_at']
-    
-    def get_user(self, obj):
-        return {
-            'id': obj.user.id,
-            'mobile': obj.user.mobile,
-            'full_name': obj.user.full_name,
-        }
-
-
-class WalletTopUpCreateSerializer(serializers.ModelSerializer):
-    """Serializer for creating wallet top-up requests."""
-    
-    class Meta:
-        model = WalletTopUpRequest
-        fields = ['amount', 'receipt_image']
-    
-    def create(self, validated_data):
-        validated_data['user'] = self.context['request'].user
-        return super().create(validated_data)
-
-
 # این کلاس را به تهِ فایل serializers.py اضافه کن
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for user list in admin panel and profile management."""
@@ -123,3 +92,62 @@ class UserSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.avatar.url)
             return obj.avatar.url
         return None
+
+
+class WalletTopUpRequestSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    receipt_image = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = WalletTopUpRequest
+        fields = ['id', 'user', 'amount', 'receipt_image', 'status', 'admin_note', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_user(self, obj):
+        return {
+            'id': obj.user.id,
+            'mobile': obj.user.mobile,
+            'full_name': obj.user.full_name,
+            'wallet_balance': obj.user.wallet_balance,
+        }
+    
+    def get_receipt_image(self, obj):
+        if obj.receipt_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.receipt_image.url)
+            return obj.receipt_image.url
+        return None
+
+
+class WalletTopUpCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WalletTopUpRequest
+        fields = ['amount', 'receipt_image']
+    
+    def validate_amount(self, value):
+        if value < 10000:
+            raise serializers.ValidationError("حداقل مبلغ شارژ ۱۰,۰۰۰ تومان است.")
+        if value > 50000000:
+            raise serializers.ValidationError("حداکثر مبلغ شارژ ۵۰,۰۰۰,۰۰۰ تومان است.")
+        return value
+    
+    def validate_receipt_image(self, value):
+        if value:
+            if value.size > 5 * 1024 * 1024:
+                raise serializers.ValidationError("حجم فایل نباید بیشتر از 5 مگابایت باشد.")
+            allowed_types = ['image/jpeg', 'image/png', 'image/jpg']
+            if value.content_type not in allowed_types:
+                raise serializers.ValidationError("فقط فایل‌های تصویری (JPG, PNG) مجاز هستند.")
+        return value
+
+
+class WalletAdjustmentSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+    amount = serializers.IntegerField()
+    reason = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    
+    def validate_amount(self, value):
+        if value == 0:
+            raise serializers.ValidationError("مبلغ نمی‌تواند صفر باشد.")
+        return value

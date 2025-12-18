@@ -11,7 +11,8 @@ import toast from "react-hot-toast";
 import { 
   User, LogOut, Wallet, ShoppingBag, 
   CreditCard, Package, Users, MessageSquare,
-  Eye, Calendar, ArrowLeft, Clock, CheckCircle, XCircle
+  Eye, Calendar, ArrowLeft, Clock, CheckCircle, XCircle,
+  Plus, Upload, Loader2, TrendingUp, DollarSign, Activity, BarChart3
 } from "lucide-react";
 import Link from "next/link";
 
@@ -30,6 +31,7 @@ export default function DashboardPage() {
   const [userOrders, setUserOrders] = useState([]);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const [adminStats, setAdminStats] = useState(null);
 
   // ریدایرکت اگر لاگین نیست
   useEffect(() => {
@@ -42,6 +44,16 @@ export default function DashboardPage() {
         api.get("/orders/").then(res => setUserOrders(res.data)).catch(err => console.log(err));
     }
   }, [activeTab]);
+
+  // گرفتن آمار برای ادمین
+  useEffect(() => {
+    const isAdmin = user?.is_staff || user?.is_superuser || user?.role === 'ADMIN';
+    if (isAdmin) {
+      api.get("/users/admin/statistics/")
+        .then(res => setAdminStats(res.data))
+        .catch(err => console.log(err));
+    }
+  }, [user]);
 
 
 
@@ -56,12 +68,11 @@ export default function DashboardPage() {
     // لیست منوها
     const menuItems = [
       { id: "my-orders", label: "سفارش‌های من", icon: ShoppingBag, adminOnly: false },
-      { id: "wallet-topup", label: "شارژ کیف پول", icon: Wallet, adminOnly: false },
+      { id: "wallet-charge", label: "افزایش موجودی", icon: Wallet, adminOnly: false },
       { id: "admin-products", label: "مدیریت محصولات", icon: Package, adminOnly: true },
       { id: "admin-orders", label: "مدیریت پرداخت‌ها", icon: CreditCard, adminOnly: true },
-      { id: "admin-wallet", label: "درخواست‌های شارژ", icon: Wallet, adminOnly: true },
+      { id: "admin-wallet-requests", label: "درخواست‌های شارژ", icon: Wallet, adminOnly: true },
       { id: "admin-users", label: "مدیریت کاربران", icon: Users, adminOnly: true },
-      { id: "admin-comments", label: "نظرات و تیکت‌ها", icon: MessageSquare, adminOnly: true },
     ];
 
   return (
@@ -89,6 +100,81 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Admin Statistics Section */}
+        {isAdmin && adminStats && (
+          <div className="mb-8">
+            <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              آمار کلی سیستم
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center">
+                    <DollarSign className="w-6 h-6 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-foreground-muted">فروش کل</p>
+                    <p className="text-lg font-black text-green-500">{formatPrice(adminStats.total_sales)} <span className="text-xs font-normal">تومان</span></p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <ShoppingBag className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-foreground-muted">سفارشات</p>
+                    <p className="text-lg font-black text-foreground">{adminStats.total_orders}</p>
+                    {adminStats.pending_orders > 0 && (
+                      <p className="text-xs text-amber-500">{adminStats.pending_orders} در انتظار</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                    <Users className="w-6 h-6 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-foreground-muted">کاربران</p>
+                    <p className="text-lg font-black text-foreground">{adminStats.total_users}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center">
+                    <Package className="w-6 h-6 text-purple-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-foreground-muted">محصولات</p>
+                    <p className="text-lg font-black text-foreground">{adminStats.active_products} <span className="text-xs font-normal text-foreground-muted">فعال</span></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {adminStats.pending_wallet_requests > 0 && (
+              <div className="mt-4 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Wallet className="w-5 h-5 text-amber-500" />
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">
+                    {adminStats.pending_wallet_requests} درخواست شارژ کیف پول در انتظار بررسی
+                  </span>
+                </div>
+                <button 
+                  onClick={() => setActiveTab('admin-wallet-requests')}
+                  className="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg hover:bg-amber-600 transition-colors"
+                >
+                  مشاهده
+                </button>
+              </div>
+            )}
+          </div>
+        )}
         
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
@@ -300,110 +386,157 @@ export default function DashboardPage() {
                 </div>
             )}
 
-            {/* 2. مدیریت محصولات (ادمین) */}
+            {/* 2. شارژ کیف پول */}
+            {activeTab === 'wallet-charge' && <WalletChargeSection user={user} />}
+
+            {/* 3. مدیریت محصولات (ادمین) */}
             {activeTab === 'admin-products' && isAdmin && <AdminProducts />}
 
-            {/* 3. مدیریت سفارشات (ادمین) */}
+            {/* 4. مدیریت سفارشات (ادمین) */}
             {activeTab === 'admin-orders' && isAdmin && <AdminOrders />}
 
-            {/* 4. مدیریت کاربران (ادمین) - 🔴 اضافه شد */}
+            {/* 5. مدیریت درخواست‌های شارژ (ادمین) */}
+            {activeTab === 'admin-wallet-requests' && isAdmin && <AdminWalletRequests />}
+
+            {/* 6. مدیریت کاربران (ادمین) */}
             {activeTab === 'admin-users' && isAdmin && <AdminUsers />}
-
-            {/* 5. مدیریت درخواست‌های شارژ کیف پول (ادمین) */}
-            {activeTab === 'admin-wallet' && isAdmin && <AdminWalletRequests />}
-
-            {/* 6. شارژ کیف پول (کاربر) */}
-            {activeTab === 'wallet-topup' && <WalletTopUpSection user={user} />}
-
-            {/* 7. نظرات (ادمین) */}
-            {activeTab === 'admin-comments' && isAdmin && (
-                <div className="text-center py-20 text-foreground-muted bg-card rounded-2xl border border-dashed border-border">
-                    <MessageSquare className="w-10 h-10 mx-auto mb-2 opacity-20"/>
-                    بخش مدیریت نظرات به زودی اضافه می‌شود...
-                </div>
-            )}
 
           </div>
 
         </div>
       </div>
-
-
-
-
     </div>
   );
 }
 
 
-function WalletTopUpSection({ user }) {
+function WalletChargeSection({ user }) {
   const [amount, setAmount] = useState("");
-  const [receipt, setReceipt] = useState(null);
+  const [receiptFile, setReceiptFile] = useState(null);
+  const [receiptPreview, setReceiptPreview] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [requests, setRequests] = useState([]);
+  const [myRequests, setMyRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
 
+  const bankCardNumber = "6037997310266797";
+  const bankCardOwner = "علی یعقوبی - بانک ملی";
+
+  const predefinedAmounts = [50000, 100000, 200000, 500000, 1000000];
+
   useEffect(() => {
-    fetchRequests();
+    fetchMyRequests();
   }, []);
 
-  const fetchRequests = async () => {
+  const fetchMyRequests = async () => {
     try {
-      const res = await api.get("/users/wallet/topup/");
-      setRequests(res.data.results || res.data || []);
-    } catch (err) {
-      console.error(err);
+      const response = await api.get("/users/wallet-requests/");
+      setMyRequests(response.data.results || response.data || []);
+    } catch (error) {
+      console.error("Error fetching requests:", error);
     } finally {
       setLoadingRequests(false);
     }
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("حجم فایل نباید بیشتر از 5 مگابایت باشد");
+        return;
+      }
+      setReceiptFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setReceiptPreview(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const copyCardNumber = () => {
+    navigator.clipboard.writeText(bankCardNumber);
+    toast.success("شماره کارت کپی شد");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!amount || !receipt) {
-      toast.error("لطفا مبلغ و تصویر رسید را وارد کنید");
+    
+    if (!amount || parseInt(amount) < 10000) {
+      toast.error("حداقل مبلغ شارژ ۱۰,۰۰۰ تومان است");
       return;
     }
-
+    
+    if (!receiptFile) {
+      toast.error("لطفاً تصویر رسید پرداخت را آپلود کنید");
+      return;
+    }
+    
     setLoading(true);
-    const formData = new FormData();
-    formData.append("amount", amount);
-    formData.append("receipt_image", receipt);
-
+    
     try {
-      await api.post("/users/wallet/topup/", formData, {
+      const formData = new FormData();
+      formData.append("amount", amount);
+      formData.append("receipt_image", receiptFile);
+      
+      await api.post("/users/wallet-requests/", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      toast.success("درخواست شارژ با موفقیت ثبت شد");
+      
+      toast.success("درخواست شارژ با موفقیت ثبت شد. پس از تایید ادمین، موجودی شما افزایش می‌یابد.");
       setAmount("");
-      setReceipt(null);
-      fetchRequests();
-    } catch (err) {
-      toast.error(err.response?.data?.error || "خطا در ثبت درخواست");
+      setReceiptFile(null);
+      setReceiptPreview(null);
+      fetchMyRequests();
+    } catch (error) {
+      const errorMsg = error.response?.data?.amount?.[0] || 
+                       error.response?.data?.receipt_image?.[0] || 
+                       "خطا در ثبت درخواست";
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
-  const presetAmounts = [50000, 100000, 200000, 500000];
+  const getStatusConfig = (status) => {
+    const configs = {
+      PENDING: { label: "در انتظار بررسی", bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-600 dark:text-amber-400", icon: Clock },
+      APPROVED: { label: "تایید شده", bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-600 dark:text-green-400", icon: CheckCircle },
+      REJECTED: { label: "رد شده", bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-600 dark:text-red-400", icon: XCircle }
+    };
+    return configs[status] || configs.PENDING;
+  };
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-black text-foreground flex items-center gap-2">
           <span className="w-2 h-8 bg-primary rounded-full"></span>
-          شارژ کیف پول
+          افزایش موجودی کیف پول
         </h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-card border border-border rounded-2xl p-6">
-          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-6 mb-6 border border-primary/20">
-            <div className="flex items-center gap-3 mb-2">
-              <Wallet className="w-6 h-6 text-primary" />
-              <span className="text-foreground-muted">موجودی فعلی</span>
+          <div className="mb-6 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl border border-primary/20">
+            <p className="text-sm text-foreground-muted mb-1">موجودی فعلی</p>
+            <p className="text-3xl font-black text-primary">{formatPrice(user?.wallet_balance || 0)} <span className="text-lg font-normal">تومان</span></p>
+          </div>
+
+          <div className="mb-6 p-4 bg-secondary/50 rounded-xl">
+            <p className="text-sm font-medium text-foreground mb-3">اطلاعات کارت برای واریز:</p>
+            <div className="flex items-center justify-between p-3 bg-card rounded-lg border border-border">
+              <div>
+                <p className="text-lg font-mono tracking-widest text-foreground" dir="ltr" style={{ direction: 'ltr' }}>
+                  {bankCardNumber.replace(/(\d{4})/g, '$1-').slice(0, -1)}
+                </p>
+                <p className="text-sm text-foreground-muted mt-1">{bankCardOwner}</p>
+              </div>
+              <button
+                onClick={copyCardNumber}
+                className="px-3 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors text-sm font-medium"
+              >
+                کپی
+              </button>
             </div>
-            <p className="text-3xl font-black text-primary">{formatPrice(user?.wallet_balance || 0)} تومان</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -413,49 +546,56 @@ function WalletTopUpSection({ user }) {
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="مثلا: 100000"
+                placeholder="مبلغ را وارد کنید..."
                 className="w-full bg-secondary border border-border rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-primary text-foreground"
+                min="10000"
+                required
               />
               <div className="flex flex-wrap gap-2 mt-3">
-                {presetAmounts.map((preset) => (
+                {predefinedAmounts.map((amt) => (
                   <button
-                    key={preset}
+                    key={amt}
                     type="button"
-                    onClick={() => setAmount(preset.toString())}
+                    onClick={() => setAmount(amt.toString())}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      amount === preset.toString()
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-foreground-muted hover:bg-secondary/80"
+                      amount === amt.toString()
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-secondary text-foreground-muted hover:bg-secondary/80'
                     }`}
                   >
-                    {formatPrice(preset)}
+                    {formatPrice(amt)}
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="bg-secondary/50 rounded-xl p-4 border border-border">
-              <p className="font-bold text-foreground mb-2">اطلاعات کارت برای واریز:</p>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-foreground-muted">شماره کارت:</span>
-                  <span dir="ltr" className="font-mono font-bold text-foreground">6037-9973-1026-6797</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-foreground-muted">نام صاحب حساب:</span>
-                  <span className="font-bold text-foreground">علی یعقوبی - بانک ملی</span>
-                </div>
-              </div>
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">تصویر رسید پرداخت</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setReceipt(e.target.files[0])}
-                className="w-full bg-secondary border border-border rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-primary text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer"
-              />
+              <div 
+                className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
+                  receiptPreview ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  required
+                />
+                {receiptPreview ? (
+                  <div className="space-y-3">
+                    <img src={receiptPreview} alt="پیش‌نمایش رسید" className="max-h-40 mx-auto rounded-lg" />
+                    <p className="text-sm text-primary">برای تغییر کلیک کنید</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Upload className="w-10 h-10 mx-auto text-foreground-muted" />
+                    <p className="text-foreground-muted">برای آپلود کلیک کنید</p>
+                    <p className="text-xs text-foreground-muted">فرمت‌های مجاز: JPG, PNG (حداکثر 5MB)</p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <button
@@ -465,12 +605,12 @@ function WalletTopUpSection({ user }) {
             >
               {loading ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  در حال ثبت...
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  در حال ارسال...
                 </>
               ) : (
                 <>
-                  <Wallet className="w-5 h-5" />
+                  <Plus className="w-5 h-5" />
                   ثبت درخواست شارژ
                 </>
               )}
@@ -479,54 +619,49 @@ function WalletTopUpSection({ user }) {
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-6">
-          <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-foreground-muted" />
-            درخواست‌های اخیر شما
-          </h3>
+          <h3 className="text-lg font-bold text-foreground mb-4">درخواست‌های قبلی من</h3>
           
           {loadingRequests ? (
-            <div className="text-center py-10 text-foreground-muted">در حال بارگذاری...</div>
-          ) : requests.length === 0 ? (
-            <div className="text-center py-10 text-foreground-muted">
-              <Wallet className="w-12 h-12 mx-auto mb-2 opacity-20" />
+            <div className="text-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto text-foreground-muted" />
+            </div>
+          ) : myRequests.length === 0 ? (
+            <div className="text-center py-8 text-foreground-muted">
+              <Wallet className="w-12 h-12 mx-auto mb-3 opacity-20" />
               <p>هنوز درخواستی ثبت نکرده‌اید</p>
             </div>
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {requests.map((req) => (
-                <div key={req.id} className="bg-secondary/50 rounded-xl p-4 border border-border">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-lg font-bold text-primary">{formatPrice(req.amount)} تومان</span>
-                    <StatusBadge status={req.status} />
-                  </div>
-                  <p className="text-xs text-foreground-muted">
-                    {new Date(req.created_at).toLocaleDateString('fa-IR')} - {new Date(req.created_at).toLocaleTimeString('fa-IR')}
-                  </p>
-                  {req.admin_note && (
-                    <p className="text-xs text-foreground-muted mt-2 p-2 bg-background rounded-lg">
-                      {req.admin_note}
+              {myRequests.map((req) => {
+                const statusConfig = getStatusConfig(req.status);
+                const StatusIcon = statusConfig.icon;
+                
+                return (
+                  <div key={req.id} className="p-4 bg-secondary/50 rounded-xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-foreground">{formatPrice(req.amount)} تومان</span>
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${statusConfig.bg} ${statusConfig.text}`}>
+                        <StatusIcon className="w-3 h-3" />
+                        {statusConfig.label}
+                      </span>
+                    </div>
+                    <p className="text-xs text-foreground-muted">
+                      {new Date(req.created_at).toLocaleDateString('fa-IR', {
+                        year: 'numeric', month: 'long', day: 'numeric'
+                      })}
                     </p>
-                  )}
-                </div>
-              ))}
+                    {req.admin_note && (
+                      <p className="text-xs text-foreground-muted mt-2 p-2 bg-secondary rounded-lg">
+                        توضیحات: {req.admin_note}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
       </div>
     </div>
-  );
-}
-
-function StatusBadge({ status }) {
-  const styles = {
-    PENDING: { bg: "bg-warning/10", text: "text-warning", label: "در انتظار" },
-    APPROVED: { bg: "bg-success/10", text: "text-success", label: "تایید شده" },
-    REJECTED: { bg: "bg-error/10", text: "text-error", label: "رد شده" },
-  };
-  const style = styles[status] || { bg: "bg-secondary", text: "text-foreground-muted", label: status };
-  return (
-    <span className={`px-2 py-1 rounded-lg text-xs font-bold ${style.bg} ${style.text}`}>
-      {style.label}
-    </span>
   );
 }

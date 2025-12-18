@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import { 
   Users, Search, Filter, MoreVertical, 
   Shield, User, Wallet, Calendar, Phone,
-  Edit, Trash2, Plus, X
+  Edit, Trash2, Plus, X, Loader2
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
@@ -68,6 +68,17 @@ export default function AdminUsers() {
       fetchUsers();
     } catch (error) {
       toast.error("خطا در بروزرسانی کاربر");
+    }
+  };
+
+  // تنظیم موجودی کیف پول
+  const handleWalletAdjust = async (userId, amount) => {
+    try {
+      await api.post("/users/wallet/adjust/", { user_id: userId, amount: amount });
+      toast.success("موجودی کیف پول با موفقیت تغییر کرد");
+      fetchUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.error || "خطا در تغییر موجودی");
     }
   };
 
@@ -215,34 +226,49 @@ export default function AdminUsers() {
         )}
       </div>
 
-      {/* مودال ویرایش کاربر */}
-      {showEditModal && selectedUser && (
-        <EditUserModal
-          user={selectedUser}
-          onClose={() => setShowEditModal(false)}
-          onSave={handleEditUser}
-        />
-      )}
+        {/* مودال ویرایش کاربر */}
+        {showEditModal && selectedUser && (
+          <EditUserModal
+            user={selectedUser}
+            onClose={() => setShowEditModal(false)}
+            onSave={handleEditUser}
+            onWalletAdjust={handleWalletAdjust}
+          />
+        )}
     </div>
   );
 }
 
 // کامپوننت مودال ویرایش
-function EditUserModal({ user, onClose, onSave }) {
+function EditUserModal({ user, onClose, onSave, onWalletAdjust }) {
   const [formData, setFormData] = useState({
     full_name: user.full_name || "",
-    role: user.role || "CUSTOMER",
-    wallet_balance: user.wallet_balance || 0,
   });
+  const [walletAdjustAmount, setWalletAdjustAmount] = useState("");
+  const [walletLoading, setWalletLoading] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave(formData);
   };
 
+  const handleWalletChange = async (isIncrease) => {
+    const amount = parseInt(walletAdjustAmount);
+    if (!amount || amount <= 0) {
+      toast.error("لطفاً مبلغ معتبر وارد کنید");
+      return;
+    }
+    
+    setWalletLoading(true);
+    const finalAmount = isIncrease ? amount : -amount;
+    await onWalletAdjust(user.id, finalAmount);
+    setWalletAdjustAmount("");
+    setWalletLoading(false);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md">
+      <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-foreground">ویرایش کاربر</h3>
           <button
@@ -251,6 +277,62 @@ function EditUserModal({ user, onClose, onSave }) {
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        <div className="mb-6 p-4 bg-secondary/50 rounded-xl">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
+              {user.avatar ? (
+                <img src={user.avatar} alt="پروفایل" className="w-full h-full rounded-full object-cover" />
+              ) : (
+                <User className="w-5 h-5 text-foreground-muted" />
+              )}
+            </div>
+            <div>
+              <p className="font-bold text-foreground">{user.full_name || "نام نامشخص"}</p>
+              <p className="text-sm text-foreground-muted">{user.mobile}</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between p-3 bg-card rounded-lg border border-border">
+            <div className="flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-primary" />
+              <span className="text-sm text-foreground-muted">موجودی فعلی:</span>
+            </div>
+            <span className="font-black text-lg text-primary">{formatPrice(user.wallet_balance || 0)} تومان</span>
+          </div>
+        </div>
+
+        <div className="mb-6 p-4 bg-secondary/50 rounded-xl">
+          <h4 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+            <Wallet className="w-4 h-4" />
+            تنظیم موجودی کیف پول
+          </h4>
+          <input
+            type="number"
+            placeholder="مبلغ (تومان)"
+            className="w-full bg-card border border-border rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-primary text-foreground mb-3"
+            value={walletAdjustAmount}
+            onChange={(e) => setWalletAdjustAmount(e.target.value)}
+            min="1"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleWalletChange(true)}
+              disabled={walletLoading}
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
+            >
+              <Plus className="w-4 h-4" />
+              افزایش
+            </button>
+            <button
+              onClick={() => handleWalletChange(false)}
+              disabled={walletLoading}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
+            >
+              <Trash2 className="w-4 h-4" />
+              کاهش
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -264,39 +346,17 @@ function EditUserModal({ user, onClose, onSave }) {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">نقش</label>
-            <select
-              className="w-full bg-secondary border border-border rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-primary text-foreground"
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-            >
-              <option value="CUSTOMER">مشتری</option>
-              <option value="ADMIN">مدیر</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">موجودی کیف پول (تومان)</label>
-            <input
-              type="number"
-              className="w-full bg-secondary border border-border rounded-xl py-2.5 px-4 outline-none focus:ring-2 focus:ring-primary text-foreground"
-              value={formData.wallet_balance}
-              onChange={(e) => setFormData({ ...formData, wallet_balance: parseInt(e.target.value) || 0 })}
-            />
-          </div>
-
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              className="flex-1 btn-primary py-2.5 rounded-xl"
+              className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-xl font-medium hover:bg-primary/90 transition-colors"
             >
               ذخیره تغییرات
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 btn-secondary py-2.5 rounded-xl"
+              className="flex-1 bg-secondary text-foreground py-2.5 rounded-xl font-medium hover:bg-secondary/80 transition-colors"
             >
               لغو
             </button>
