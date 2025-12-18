@@ -22,22 +22,31 @@ export default function CheckoutPage() {
   const { user, loading: authLoading, refreshUser } = useAuth();
   const { clearCart } = useCart();
 
-  useEffect(() => {
-    if (authLoading) return;
-    const fetchOrder = async () => {
-      try {
-        const response = await api.get(`/orders/${id}/`);
-        setOrder(response.data);
-      } catch (error) {
-        console.error(error);
-        toast.error("سفارش یافت نشد");
-        router.push("/dashboard"); // ریدایرکت در صورت خطا
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (id) fetchOrder();
-  }, [id, router]);
+    useEffect(() => {
+      if (authLoading) return;
+      const fetchOrder = async () => {
+        try {
+          const response = await api.get(`/orders/${id}/`);
+          setOrder(response.data);
+          
+          if (response.data.status === "paid") {
+            toast.success("این سفارش قبلاً پرداخت شده است");
+            router.push("/dashboard");
+            return;
+          }
+
+          // اگر موجودی کافی بود، روش پرداخت را روی کیف پول نگه دار
+          // و به کاربر اطلاع بده که می‌تواند سریع پرداخت کند
+        } catch (error) {
+          console.error(error);
+          toast.error("سفارش یافت نشد");
+          router.push("/dashboard");
+        } finally {
+          setLoading(false);
+        }
+      };
+      if (id) fetchOrder();
+    }, [id, router, authLoading]);
 
   const handleUpload = async () => {
     if (!file) {
@@ -98,31 +107,34 @@ export default function CheckoutPage() {
     };
 
     const handleWalletPayment = async () => {
-      if (!user) {
-        toast.error("لطفا ابتدا وارد حساب کاربری شوید");
-        return;
-      }
+        if (!user) {
+          toast.error("لطفا ابتدا وارد حساب کاربری شوید");
+          return;
+        }
 
-      if (user.wallet_balance < order.total_price) {
-        toast.error("موجودی کیف پول کافی نیست");
-        return;
-      }
+        if (user.wallet_balance < order.total_price) {
+          toast.error("موجودی کیف پول کافی نیست");
+          return;
+        }
 
-      setWalletPaying(true);
-      try {
-        const response = await api.post(`/orders/${id}/pay_with_wallet/`);
-        toast.success("پرداخت با موفقیت انجام شد!");
-        clearCart();
-        if (refreshUser) refreshUser();
-        setTimeout(() => router.push("/dashboard"), 2000);
-      } catch (error) {
-        console.error("Wallet payment error:", error);
-        const errorMsg = error.response?.data?.error || "خطا در پرداخت با کیف پول";
-        toast.error(errorMsg);
-      } finally {
-        setWalletPaying(false);
-      }
-    };
+        setWalletPaying(true);
+        const loadingToast = toast.loading("در حال کسر از کیف پول...");
+        try {
+          const response = await api.post(`/orders/${id}/pay_with_wallet/`);
+          toast.dismiss(loadingToast);
+          toast.success("پرداخت با موفقیت انجام شد!", { duration: 3000 });
+          clearCart();
+          if (refreshUser) refreshUser();
+          router.push("/dashboard");
+        } catch (error) {
+          toast.dismiss(loadingToast);
+          console.error("Wallet payment error:", error);
+          const errorMsg = error.response?.data?.error || "خطا در پرداخت با کیف پول";
+          toast.error(errorMsg);
+        } finally {
+          setWalletPaying(false);
+        }
+      };
 
     const walletBalance = user?.wallet_balance || 0;
     const canPayWithWallet = walletBalance >= (order?.total_price || 0);
@@ -220,13 +232,14 @@ export default function CheckoutPage() {
               )}
 
               {canPayWithWallet && (
-                <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-6">
-                  <div className="flex items-center gap-2 text-green-500">
+                <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-6 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-green-500/5 translate-x-full group-hover:translate-x-0 transition-transform duration-500"></div>
+                  <div className="flex items-center gap-2 text-green-500 relative z-10">
                     <CheckCircle2 className="w-5 h-5" />
-                    <span className="font-medium text-sm">موجودی کافی برای پرداخت</span>
+                    <span className="font-bold text-sm">پرداخت سریع فعال است</span>
                   </div>
-                  <p className="text-green-400 text-xs mt-1">
-                    پس از پرداخت، موجودی شما: {formatPrice(walletBalance - order.total_price)} تومان
+                  <p className="text-green-400 text-xs mt-1 relative z-10">
+                    موجودی کافی است. برای تکمیل سفارش کلیک کنید.
                   </p>
                 </div>
               )}
