@@ -24,7 +24,7 @@ import AdminWalletRequests from "@/components/admin/AdminWalletRequests";
 
 
 export default function DashboardPage() {
-  const { user, logout, loading: authLoading } = useAuth();
+  const { user, logout, loading: authLoading, refreshUser } = useAuth();
   const router = useRouter();
   
   const [activeTab, setActiveTab] = useState("my-orders");
@@ -32,6 +32,13 @@ export default function DashboardPage() {
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [adminStats, setAdminStats] = useState(null);
+
+  // رفرش اطلاعات کاربر هنگام ورود به داشبورد
+  useEffect(() => {
+    if (user) {
+      refreshUser();
+    }
+  }, []);
 
   // ریدایرکت اگر لاگین نیست
   useEffect(() => {

@@ -71,6 +71,26 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // رفرش خودکار اطلاعات کاربر هر 30 ثانیه (برای موجودی کیف پول و غیره)
+  useEffect(() => {
+    if (!user) return;
+
+    const intervalId = setInterval(() => {
+      refreshUser();
+    }, 30000);
+
+    // رفرش هنگام برگشت به تب
+    const handleFocus = () => {
+      refreshUser();
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [user?.id]);
+
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, updateUser, refreshUser }}>
       {children}
