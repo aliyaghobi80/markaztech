@@ -144,47 +144,49 @@ export default function EditProductPage() {
   };
 
     const handleSubmit = async (e) => {
-      e.preventDefault();
-      setSaving(true);
+        e.preventDefault();
+        setSaving(true);
 
-      try {
-        const submitData = new FormData();
-        
-        submitData.append('title', formData.title);
-        submitData.append('slug', formData.slug);
-        submitData.append('description', formData.description);
-        submitData.append('price', formData.price);
-        if (formData.discount_price) {
-          submitData.append('discount_price', formData.discount_price);
+        try {
+          const submitData = new FormData();
+          
+          submitData.append('title', formData.title);
+          submitData.append('slug', formData.slug);
+          submitData.append('description', formData.description);
+          submitData.append('price', formData.price);
+          if (formData.discount_price) {
+            submitData.append('discount_price', formData.discount_price);
+          }
+          if (formData.category) {
+            submitData.append('category', parseInt(formData.category));
+          }
+          submitData.append('delivery_time', formData.delivery_time);
+          submitData.append('is_active', formData.is_active ? 'true' : 'false');
+
+          if (imageFile) {
+            submitData.append('main_image', imageFile);
+          }
+
+          console.log('Submitting form data:', Object.fromEntries(submitData));
+          
+          const response = await api.patch(`/products/${productId}/`, submitData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+          
+          console.log('Update response:', response.data);
+
+          toast.success("محصول با موفقیت بروزرسانی شد");
+          router.push("/admin/products");
+        } catch (error) {
+          console.error("Error updating product:", error);
+          const errorMsg = error.response?.data?.detail || error.response?.data?.category?.[0] || "خطا در بروزرسانی محصول";
+          toast.error(errorMsg);
+        } finally {
+          setSaving(false);
         }
-        submitData.append('category', formData.category);
-        submitData.append('delivery_time', formData.delivery_time);
-        submitData.append('is_active', formData.is_active);
-
-        if (imageFile) {
-          submitData.append('main_image', imageFile);
-        }
-
-        console.log('Submitting form data:', Object.fromEntries(submitData));
-        
-        const response = await api.patch(`/products/${productId}/`, submitData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        
-        console.log('Update response:', response.data);
-
-        toast.success("محصول با موفقیت بروزرسانی شد");
-        router.push("/admin/products");
-      } catch (error) {
-        console.error("Error updating product:", error);
-        const errorMsg = error.response?.data?.detail || error.response?.data?.category?.[0] || "خطا در بروزرسانی محصول";
-        toast.error(errorMsg);
-      } finally {
-        setSaving(false);
-      }
-    };
+      };
 
   if (authLoading || loading) {
     return (

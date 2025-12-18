@@ -44,10 +44,32 @@ class ProductSerializer(serializers.ModelSerializer):
 
 class UpdateProductSerializer(serializers.ModelSerializer):
     """Serializer for updating products - allows is_active and category to be writable."""
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    is_active = serializers.BooleanField(required=False)
     
     class Meta:
         model = Product
         fields = ['title', 'slug', 'description', 'price', 'discount_price', 'main_image', 'delivery_time', 'category', 'is_active']
+    
+    def to_internal_value(self, data):
+        """Handle string boolean values from FormData."""
+        mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
+        if 'is_active' in mutable_data:
+            val = mutable_data['is_active']
+            if isinstance(val, str):
+                mutable_data['is_active'] = val.lower() in ('true', '1', 'yes')
+        return super().to_internal_value(mutable_data)
+    
+    def to_representation(self, instance):
+        """Return full category info after update."""
+        ret = super().to_representation(instance)
+        if instance.category:
+            ret['category'] = {
+                'id': instance.category.id,
+                'name': instance.category.name,
+                'slug': instance.category.slug
+            }
+        return ret
 
 
 class CreateProductSerializer(serializers.ModelSerializer):
