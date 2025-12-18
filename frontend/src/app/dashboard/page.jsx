@@ -19,6 +19,7 @@ import Link from "next/link";
 import AdminProducts from "@/components/admin/AdminProducts";
 import AdminOrders from "@/components/admin/AdminOrders";
 import AdminUsers from "@/components/admin/AdminUsers";
+import AdminWalletRequests from "@/components/admin/AdminWalletRequests";
 
 
 export default function DashboardPage() {
@@ -52,14 +53,16 @@ export default function DashboardPage() {
   // ما هم is_staff (استاندارد جنگو) را چک میکنیم هم role (اگر دستی ساختید)
   const isAdmin = user.is_staff || user.is_superuser || user.role === 'ADMIN';
 
-  // لیست منوها
-  const menuItems = [
-    { id: "my-orders", label: "سفارش‌های من", icon: ShoppingBag, adminOnly: false },
-    { id: "admin-products", label: "مدیریت محصولات", icon: Package, adminOnly: true },
-    { id: "admin-orders", label: "مدیریت پرداخت‌ها", icon: CreditCard, adminOnly: true },
-    { id: "admin-users", label: "مدیریت کاربران", icon: Users, adminOnly: true },
-    { id: "admin-comments", label: "نظرات و تیکت‌ها", icon: MessageSquare, adminOnly: true },
-  ];
+    // لیست منوها
+    const menuItems = [
+      { id: "my-orders", label: "سفارش‌های من", icon: ShoppingBag, adminOnly: false },
+      { id: "wallet-topup", label: "شارژ کیف پول", icon: Wallet, adminOnly: false },
+      { id: "admin-products", label: "مدیریت محصولات", icon: Package, adminOnly: true },
+      { id: "admin-orders", label: "مدیریت پرداخت‌ها", icon: CreditCard, adminOnly: true },
+      { id: "admin-wallet", label: "درخواست‌های شارژ", icon: Wallet, adminOnly: true },
+      { id: "admin-users", label: "مدیریت کاربران", icon: Users, adminOnly: true },
+      { id: "admin-comments", label: "نظرات و تیکت‌ها", icon: MessageSquare, adminOnly: true },
+    ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20 py-8 transition-colors duration-300">
@@ -306,7 +309,13 @@ export default function DashboardPage() {
             {/* 4. مدیریت کاربران (ادمین) - 🔴 اضافه شد */}
             {activeTab === 'admin-users' && isAdmin && <AdminUsers />}
 
-            {/* 5. نظرات (ادمین) */}
+            {/* 5. مدیریت درخواست‌های شارژ کیف پول (ادمین) */}
+            {activeTab === 'admin-wallet' && isAdmin && <AdminWalletRequests />}
+
+            {/* 6. شارژ کیف پول (کاربر) */}
+            {activeTab === 'wallet-topup' && <WalletTopUpSection user={user} />}
+
+            {/* 7. نظرات (ادمین) */}
             {activeTab === 'admin-comments' && isAdmin && (
                 <div className="text-center py-20 text-foreground-muted bg-card rounded-2xl border border-dashed border-border">
                     <MessageSquare className="w-10 h-10 mx-auto mb-2 opacity-20"/>
@@ -323,5 +332,201 @@ export default function DashboardPage() {
 
 
     </div>
+  );
+}
+
+
+function WalletTopUpSection({ user }) {
+  const [amount, setAmount] = useState("");
+  const [receipt, setReceipt] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [requests, setRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(true);
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const fetchRequests = async () => {
+    try {
+      const res = await api.get("/users/wallet/topup/");
+      setRequests(res.data.results || res.data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!amount || !receipt) {
+      toast.error("لطفا مبلغ و تصویر رسید را وارد کنید");
+      return;
+    }
+
+    setLoading(true);
+    const formData = new FormData();
+    formData.append("amount", amount);
+    formData.append("receipt_image", receipt);
+
+    try {
+      await api.post("/users/wallet/topup/", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      toast.success("درخواست شارژ با موفقیت ثبت شد");
+      setAmount("");
+      setReceipt(null);
+      fetchRequests();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "خطا در ثبت درخواست");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const presetAmounts = [50000, 100000, 200000, 500000];
+
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-black text-foreground flex items-center gap-2">
+          <span className="w-2 h-8 bg-primary rounded-full"></span>
+          شارژ کیف پول
+        </h1>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-card border border-border rounded-2xl p-6">
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-6 mb-6 border border-primary/20">
+            <div className="flex items-center gap-3 mb-2">
+              <Wallet className="w-6 h-6 text-primary" />
+              <span className="text-foreground-muted">موجودی فعلی</span>
+            </div>
+            <p className="text-3xl font-black text-primary">{formatPrice(user?.wallet_balance || 0)} تومان</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">مبلغ شارژ (تومان)</label>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="مثلا: 100000"
+                className="w-full bg-secondary border border-border rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-primary text-foreground"
+              />
+              <div className="flex flex-wrap gap-2 mt-3">
+                {presetAmounts.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setAmount(preset.toString())}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      amount === preset.toString()
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-foreground-muted hover:bg-secondary/80"
+                    }`}
+                  >
+                    {formatPrice(preset)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-secondary/50 rounded-xl p-4 border border-border">
+              <p className="font-bold text-foreground mb-2">اطلاعات کارت برای واریز:</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-foreground-muted">شماره کارت:</span>
+                  <span dir="ltr" className="font-mono font-bold text-foreground">6037-9973-1026-6797</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-foreground-muted">نام صاحب حساب:</span>
+                  <span className="font-bold text-foreground">علی یعقوبی - بانک ملی</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">تصویر رسید پرداخت</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setReceipt(e.target.files[0])}
+                className="w-full bg-secondary border border-border rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-primary text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  در حال ثبت...
+                </>
+              ) : (
+                <>
+                  <Wallet className="w-5 h-5" />
+                  ثبت درخواست شارژ
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        <div className="bg-card border border-border rounded-2xl p-6">
+          <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-foreground-muted" />
+            درخواست‌های اخیر شما
+          </h3>
+          
+          {loadingRequests ? (
+            <div className="text-center py-10 text-foreground-muted">در حال بارگذاری...</div>
+          ) : requests.length === 0 ? (
+            <div className="text-center py-10 text-foreground-muted">
+              <Wallet className="w-12 h-12 mx-auto mb-2 opacity-20" />
+              <p>هنوز درخواستی ثبت نکرده‌اید</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {requests.map((req) => (
+                <div key={req.id} className="bg-secondary/50 rounded-xl p-4 border border-border">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-lg font-bold text-primary">{formatPrice(req.amount)} تومان</span>
+                    <StatusBadge status={req.status} />
+                  </div>
+                  <p className="text-xs text-foreground-muted">
+                    {new Date(req.created_at).toLocaleDateString('fa-IR')} - {new Date(req.created_at).toLocaleTimeString('fa-IR')}
+                  </p>
+                  {req.admin_note && (
+                    <p className="text-xs text-foreground-muted mt-2 p-2 bg-background rounded-lg">
+                      {req.admin_note}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const styles = {
+    PENDING: { bg: "bg-warning/10", text: "text-warning", label: "در انتظار" },
+    APPROVED: { bg: "bg-success/10", text: "text-success", label: "تایید شده" },
+    REJECTED: { bg: "bg-error/10", text: "text-error", label: "رد شده" },
+  };
+  const style = styles[status] || { bg: "bg-secondary", text: "text-foreground-muted", label: status };
+  return (
+    <span className={`px-2 py-1 rounded-lg text-xs font-bold ${style.bg} ${style.text}`}>
+      {style.label}
+    </span>
   );
 }

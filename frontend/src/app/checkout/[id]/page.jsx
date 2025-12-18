@@ -17,7 +17,9 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const { loading: authLoading } = useAuth();
+  const [walletPaying, setWalletPaying] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("card"); // 'card' or 'wallet'
+  const { user, loading: authLoading, refreshUser } = useAuth();
   const { clearCart } = useCart();
 
   useEffect(() => {
@@ -95,20 +97,109 @@ export default function CheckoutPage() {
     }
   };
 
+  const handleWalletPurchase = async () => {
+    if (!user) {
+      toast.error("لطفا ابتدا وارد حساب کاربری شوید");
+      return;
+    }
+
+    if (user.wallet_balance < order.total_price) {
+      toast.error(`موجودی کیف پول کافی نیست. موجودی: ${formatPrice(user.wallet_balance)} - نیاز: ${formatPrice(order.total_price)}`);
+      return;
+    }
+
+    setWalletPaying(true);
+    try {
+      const productId = order.items[0]?.product_id || order.items[0]?.product;
+      if (!productId) {
+        toast.error("خطا در دریافت اطلاعات محصول");
+        return;
+      }
+
+      const response = await api.post("/users/wallet/purchase/", {
+        product_id: productId,
+        quantity: order.items[0]?.quantity || 1
+      });
+
+      toast.success("خرید با موفقیت انجام شد!");
+      clearCart();
+      if (refreshUser) refreshUser();
+      setTimeout(() => router.push(`/order/${response.data.order_id}`), 1500);
+    } catch (error) {
+      console.error("Wallet purchase error:", error);
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error("خطا در پرداخت با کیف پول");
+      }
+    } finally {
+      setWalletPaying(false);
+    }
+  };
+
+  const canPayWithWallet = user && user.wallet_balance >= (order?.total_price || 0);
+
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center text-foreground-muted">در حال بارگذاری سفارش...</div>;
 
-  // 🔴 اصلاحیه مهم: اگر لودینگ تمام شد ولی اردر نال بود (مثلا در حال ریدایرکت)، هیچی نشون نده تا کرش نکنه
   if (!order) return null;
 
   return (
     <div className="min-h-screen bg-background py-12 px-4 transition-colors duration-300">
       <div className="max-w-3xl mx-auto">
         
-        {/* هدر صفحه */}
-        <div className="text-center mb-10">
-            <h1 className="text-3xl font-black text-foreground mb-2">تکمیل فرآیند خرید</h1>
-            <p className="text-foreground-muted">لطفا مبلغ سفارش را به شماره کارت زیر واریز کرده و فیش را آپلود کنید.</p>
-        </div>
+{/* هدر صفحه */}
+          <div className="text-center mb-10">
+              <h1 className="text-3xl font-black text-foreground mb-2">تکمیل فرآیند خرید</h1>
+              <p className="text-foreground-muted">روش پرداخت را انتخاب کنید</p>
+          </div>
+
+          {/* انتخاب روش پرداخت */}
+          {user && (
+            <div className="flex gap-4 mb-8">
+              <button
+                onClick={() => setPaymentMethod("wallet")}
+                className={`flex-1 p-4 rounded-2xl border-2 transition-all flex items-center gap-3 ${
+                  paymentMethod === "wallet"
+                    ? "border-primary bg-primary/10"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  paymentMethod === "wallet" ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground-muted"
+                }`}>
+                  <Wallet className="w-6 h-6" />
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-foreground">پرداخت با کیف پول</p>
+                  <p className="text-sm text-foreground-muted">
+                    موجودی: {formatPrice(user?.wallet_balance || 0)} تومان
+                  </p>
+                </div>
+                {canPayWithWallet && (
+                  <CheckCircle2 className="w-5 h-5 text-success mr-auto" />
+                )}
+              </button>
+
+              <button
+                onClick={() => setPaymentMethod("card")}
+                className={`flex-1 p-4 rounded-2xl border-2 transition-all flex items-center gap-3 ${
+                  paymentMethod === "card"
+                    ? "border-primary bg-primary/10"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  paymentMethod === "card" ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground-muted"
+                }`}>
+                  <CreditCard className="w-6 h-6" />
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-foreground">کارت به کارت</p>
+                  <p className="text-sm text-foreground-muted">واریز و ارسال فیش</p>
+                </div>
+              </button>
+            </div>
+          )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             
@@ -177,56 +268,132 @@ export default function CheckoutPage() {
                 </div>
             </div>
 
-            {/* ستون چپ: آپلود فیش */}
+            {/* ستون چپ: پرداخت */}
             <div className="bg-card border border-border rounded-3xl p-6 md:p-8 flex flex-col justify-between">
-                <div>
-                    <h3 className="font-bold text-foreground text-lg mb-6 flex items-center gap-2">
-                        <UploadCloud className="w-6 h-6 text-primary" />
-                        آپلود رسید پرداخت
-                    </h3>
-                    
-                    <label className="block w-full cursor-pointer group">
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${file ? 'border-green-500 bg-green-50 dark:bg-green-900/10' : 'border-border hover:border-primary hover:bg-secondary'}`}>
-                            {file ? (
-                                <div className="flex flex-col items-center gap-2 text-green-600 dark:text-green-400">
-                                    <CheckCircle2 className="w-10 h-10" />
-                                    <span className="font-bold text-sm truncate max-w-[200px]">{file.name}</span>
-                                    <span className="text-xs text-foreground-muted">برای تغییر کلیک کنید</span>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center gap-3 text-foreground-muted group-hover:text-primary">
-                                    <UploadCloud className="w-10 h-10" />
-                                    <span className="font-bold text-sm">انتخاب تصویر فیش</span>
-                                    <span className="text-xs opacity-70">JPG, PNG (max 5MB)</span>
-                                </div>
-                            )}
-                            <input 
-                                type="file" 
-                                className="hidden" 
-                                accept="image/*"
-                                onChange={(e) => setFile(e.target.files[0])}
-                            />
+                {paymentMethod === "wallet" ? (
+                  <>
+                    <div>
+                      <h3 className="font-bold text-foreground text-lg mb-6 flex items-center gap-2">
+                        <Wallet className="w-6 h-6 text-primary" />
+                        پرداخت با کیف پول
+                      </h3>
+                      
+                      <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-6 mb-6 border border-primary/20">
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-foreground-muted">موجودی فعلی</span>
+                          <span className="text-xl font-black text-primary">{formatPrice(user?.wallet_balance || 0)} تومان</span>
                         </div>
-                    </label>
-                </div>
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-foreground-muted">مبلغ سفارش</span>
+                          <span className="text-lg font-bold text-foreground">{formatPrice(order.total_price)} تومان</span>
+                        </div>
+                        <div className="border-t border-primary/20 pt-4 flex items-center justify-between">
+                          <span className="text-foreground-muted">موجودی پس از خرید</span>
+                          <span className={`text-lg font-bold ${canPayWithWallet ? 'text-success' : 'text-error'}`}>
+                            {formatPrice((user?.wallet_balance || 0) - order.total_price)} تومان
+                          </span>
+                        </div>
+                      </div>
 
-                <div className="mt-8 space-y-3">
-                    <button 
-                        onClick={handleUpload}
-                        disabled={uploading || !file}
-                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-4 rounded-xl font-bold shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                    >
-                        {uploading ? "در حال ارسال..." : "تایید و ثبت نهایی"}
-                    </button>
-                    
-                    <button 
+                      {!canPayWithWallet && (
+                        <div className="bg-error/10 border border-error/20 rounded-xl p-4 mb-4">
+                          <p className="text-error text-sm font-medium">
+                            موجودی کیف پول کافی نیست. لطفا ابتدا کیف پول خود را شارژ کنید.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-8 space-y-3">
+                      {canPayWithWallet ? (
+                        <button 
+                          onClick={handleWalletPurchase}
+                          disabled={walletPaying}
+                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-4 rounded-xl font-bold shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                        >
+                          {walletPaying ? (
+                            <>
+                              <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                              در حال پرداخت...
+                            </>
+                          ) : (
+                            <>
+                              <Wallet className="w-5 h-5" />
+                              پرداخت فوری با کیف پول
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => router.push('/dashboard')}
+                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-4 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
+                        >
+                          <Wallet className="w-5 h-5" />
+                          شارژ کیف پول
+                        </button>
+                      )}
+                      
+                      <button 
                         onClick={() => router.push('/dashboard')}
                         className="w-full py-3 text-foreground-muted hover:text-foreground text-sm font-medium transition-colors flex items-center justify-center gap-1"
-                    >
+                      >
                         <ArrowLeft className="w-4 h-4" />
-                        بازگشت به داشبورد (پرداخت بعداً)
-                    </button>
-                </div>
+                        بازگشت به داشبورد
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                        <h3 className="font-bold text-foreground text-lg mb-6 flex items-center gap-2">
+                            <UploadCloud className="w-6 h-6 text-primary" />
+                            آپلود رسید پرداخت
+                        </h3>
+                        
+                        <label className="block w-full cursor-pointer group">
+                            <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${file ? 'border-green-500 bg-green-50 dark:bg-green-900/10' : 'border-border hover:border-primary hover:bg-secondary'}`}>
+                                {file ? (
+                                    <div className="flex flex-col items-center gap-2 text-green-600 dark:text-green-400">
+                                        <CheckCircle2 className="w-10 h-10" />
+                                        <span className="font-bold text-sm truncate max-w-[200px]">{file.name}</span>
+                                        <span className="text-xs text-foreground-muted">برای تغییر کلیک کنید</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center gap-3 text-foreground-muted group-hover:text-primary">
+                                        <UploadCloud className="w-10 h-10" />
+                                        <span className="font-bold text-sm">انتخاب تصویر فیش</span>
+                                        <span className="text-xs opacity-70">JPG, PNG (max 5MB)</span>
+                                    </div>
+                                )}
+                                <input 
+                                    type="file" 
+                                    className="hidden" 
+                                    accept="image/*"
+                                    onChange={(e) => setFile(e.target.files[0])}
+                                />
+                            </div>
+                        </label>
+                    </div>
+
+                    <div className="mt-8 space-y-3">
+                        <button 
+                            onClick={handleUpload}
+                            disabled={uploading || !file}
+                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-4 rounded-xl font-bold shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                        >
+                            {uploading ? "در حال ارسال..." : "تایید و ثبت نهایی"}
+                        </button>
+                        
+                        <button 
+                            onClick={() => router.push('/dashboard')}
+                            className="w-full py-3 text-foreground-muted hover:text-foreground text-sm font-medium transition-colors flex items-center justify-center gap-1"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            بازگشت به داشبورد (پرداخت بعداً)
+                        </button>
+                    </div>
+                  </>
+                )}
             </div>
 
         </div>

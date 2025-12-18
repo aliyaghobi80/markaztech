@@ -62,6 +62,37 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         
         return data
 
+from .models import WalletTopUpRequest
+
+class WalletTopUpRequestSerializer(serializers.ModelSerializer):
+    """Serializer for wallet top-up requests."""
+    user = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = WalletTopUpRequest
+        fields = ['id', 'user', 'amount', 'receipt_image', 'status', 'admin_note', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'created_at', 'updated_at']
+    
+    def get_user(self, obj):
+        return {
+            'id': obj.user.id,
+            'mobile': obj.user.mobile,
+            'full_name': obj.user.full_name,
+        }
+
+
+class WalletTopUpCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating wallet top-up requests."""
+    
+    class Meta:
+        model = WalletTopUpRequest
+        fields = ['amount', 'receipt_image']
+    
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
+
+
 # این کلاس را به تهِ فایل serializers.py اضافه کن
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for user list in admin panel and profile management."""

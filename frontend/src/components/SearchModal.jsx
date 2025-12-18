@@ -162,27 +162,36 @@ export default function SearchModal({ isOpen, onClose }) {
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center pt-20">
       <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden">
         
-        {/* هدر جستجو */}
-        <div className="flex items-center gap-4 p-6 border-b border-border">
-          <div className="flex-1 relative">
-            <Search className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="جستجو در بین محصولات..."
-              className="w-full bg-secondary border border-border text-foreground rounded-xl py-3 pr-12 pl-4 outline-none focus:ring-2 focus:ring-primary transition-all"
-            />
+          {/* هدر جستجو */}
+          <div className="flex items-center gap-4 p-6 border-b border-border">
+            <div className="flex-1 relative">
+              <Search className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="جستجو در بین محصولات..."
+                className="w-full bg-secondary border border-border text-foreground rounded-xl py-3 pr-12 pl-12 outline-none focus:ring-2 focus:ring-primary transition-all"
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery("")}
+                  className="absolute left-4 top-3 p-0.5 hover:bg-secondary rounded-full transition-colors"
+                  title="پاک کردن جستجو"
+                >
+                  <X className="w-4 h-4 text-foreground-muted hover:text-foreground" />
+                </button>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-secondary rounded-lg transition-colors"
+            >
+              <X className="w-6 h-6 text-foreground-muted" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-secondary rounded-lg transition-colors"
-          >
-            <X className="w-6 h-6 text-foreground-muted" />
-          </button>
-        </div>
 
         {/* محتوای جستجو */}
         <div className="max-h-96 overflow-y-auto">

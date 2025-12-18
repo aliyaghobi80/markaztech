@@ -56,3 +56,28 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.mobile
+
+
+class WalletTopUpRequest(models.Model):
+    """Model for wallet top-up requests via card-to-card payment."""
+    
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'در انتظار بررسی'
+        APPROVED = 'APPROVED', 'تایید شده'
+        REJECTED = 'REJECTED', 'رد شده'
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='topup_requests', verbose_name='کاربر')
+    amount = models.PositiveBigIntegerField('مبلغ (تومان)')
+    receipt_image = models.ImageField('تصویر رسید پرداخت', upload_to='receipts/topup/')
+    status = models.CharField('وضعیت', max_length=20, choices=Status.choices, default=Status.PENDING)
+    admin_note = models.TextField('یادداشت ادمین', blank=True, null=True)
+    created_at = models.DateTimeField('تاریخ ثبت', auto_now_add=True)
+    updated_at = models.DateTimeField('تاریخ بروزرسانی', auto_now=True)
+
+    class Meta:
+        verbose_name = 'درخواست شارژ کیف پول'
+        verbose_name_plural = 'درخواست‌های شارژ کیف پول'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"درخواست شارژ {self.amount} تومان - {self.user.mobile}"
