@@ -22,7 +22,11 @@ export default function AdminWalletRequests() {
     if (!confirm("آیا از تایید این درخواست اطمینان دارید؟")) return;
     setProcessing(true);
     try {
-      await api.post(`/users/wallet-requests/${id}/approve/`, { admin_note: adminNote });
+      const formData = new FormData();
+      formData.append('admin_note', adminNote);
+      await api.post(`/users/wallet-requests/${id}/approve/`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       toast.success("درخواست تایید شد و موجودی کاربر افزایش یافت");
       setSelectedRequest(null);
       setAdminNote("");
@@ -38,7 +42,11 @@ export default function AdminWalletRequests() {
     if (!confirm("آیا از رد این درخواست اطمینان دارید؟")) return;
     setProcessing(true);
     try {
-      await api.post(`/users/wallet-requests/${id}/reject/`, { admin_note: adminNote || "درخواست توسط ادمین رد شد." });
+      const formData = new FormData();
+      formData.append('admin_note', adminNote || "درخواست توسط ادمین رد شد.");
+      await api.post(`/users/wallet-requests/${id}/reject/`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       toast.success("درخواست رد شد");
       setSelectedRequest(null);
       setAdminNote("");
