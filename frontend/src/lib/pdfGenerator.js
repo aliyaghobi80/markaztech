@@ -1,6 +1,7 @@
 // مسیر: src/lib/pdfGenerator.js
 import jsPDF from 'jspdf';
 import { formatPrice } from './utils';
+import api from './axios';
 
 // تابع برای دانلود PDF از بک‌اند Django
 export const downloadOrderPDF = async (order) => {
@@ -17,32 +18,17 @@ export const downloadOrderPDF = async (order) => {
       throw new Error('فقط سفارشات پرداخت شده قابل دانلود هستند');
     }
 
-    console.log('Requesting PDF from backend...');
+    console.log('Requesting PDF from backend using api instance...');
     
-    // درخواست PDF از بک‌اند
-    const response = await fetch(`http://127.0.0.1:8000/api/orders/${order.id}/download_pdf/`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        'Content-Type': 'application/json',
-      },
+    // استفاده از نمونه api برای حفظ هدرها و توکن
+    const response = await api.get(`/orders/${order.id}/download_pdf/`, {
+      responseType: 'blob'
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `خطای سرور: ${response.status}`);
-    }
-
-    // دریافت فایل PDF
-    const blob = await response.blob();
-    
-    if (blob.size === 0) {
-      throw new Error('فایل PDF خالی دریافت شد');
-    }
 
     console.log('PDF received, starting download...');
 
     // ایجاد لینک دانلود
+    const blob = new Blob([response.data], { type: 'application/pdf' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
