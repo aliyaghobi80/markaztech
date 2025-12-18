@@ -4,7 +4,7 @@ import { useState } from "react";
 import api from "@/lib/axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { UserPlus, Phone, Lock, User, Loader2, Eye, EyeOff, Camera, Sparkles, CheckCircle2 } from "lucide-react";
+import { UserPlus, Phone, Lock, User, Loader2, Eye, EyeOff, Camera, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function RegisterPage() {
@@ -157,94 +157,98 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            <div className="relative">
-              <User className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />
-              <input
-                type="text"
-                placeholder="نام و نام خانوادگی"
-                className="w-full bg-secondary border border-border rounded-xl py-3 pr-12 pl-4 outline-none focus:ring-2 focus:ring-primary text-foreground placeholder:text-foreground-muted transition-all"
-                value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                required
-                minLength={2}
-              />
-            </div>
+              <div className="relative">
+                <User className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="نام و نام خانوادگی"
+                  className={`w-full bg-secondary border rounded-xl py-3 pr-12 pl-4 outline-none focus:ring-2 text-foreground placeholder:text-foreground-muted transition-all ${
+                    formData.full_name && formData.full_name.trim().length >= 2
+                      ? 'border-green-500 focus:ring-green-500'
+                      : 'border-border focus:ring-primary'
+                  }`}
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  required
+                  minLength={2}
+                />
+              </div>
 
-            <div className="relative">
-              <Phone className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />
-              <input
-                type="tel"
-                placeholder="شماره موبایل (09xxxxxxxxx)"
-                className={`w-full bg-secondary border rounded-xl py-3 pr-12 pl-4 outline-none focus:ring-2 text-foreground placeholder:text-foreground-muted transition-all ${
-                  formData.mobile && !validateMobile(formData.mobile) 
-                    ? 'border-red-500 focus:ring-red-500' 
-                    : 'border-border focus:ring-primary'
-                }`}
-                value={formData.mobile}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '');
-                  if (value.length <= 11) {
-                    setFormData({ ...formData, mobile: value });
-                  }
-                }}
-                required
-                maxLength={11}
-                dir="ltr"
-              />
-              {formData.mobile && validateMobile(formData.mobile) && (
-                <CheckCircle2 className="absolute left-4 top-3.5 w-5 h-5 text-green-500" />
-              )}
-            </div>
+              <div className="relative">
+                <Phone className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />
+                <input
+                  type="tel"
+                  placeholder="شماره موبایل (09xxxxxxxxx)"
+                  className={`w-full bg-secondary border rounded-xl py-3 pr-12 pl-4 outline-none focus:ring-2 text-foreground placeholder:text-foreground-muted transition-all ${
+                    formData.mobile && !validateMobile(formData.mobile) 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : formData.mobile && validateMobile(formData.mobile)
+                        ? 'border-green-500 focus:ring-green-500'
+                        : 'border-border focus:ring-primary'
+                  }`}
+                  value={formData.mobile}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (value.length <= 11) {
+                      setFormData({ ...formData, mobile: value });
+                    }
+                  }}
+                  required
+                  maxLength={11}
+                  dir="ltr"
+                />
+              </div>
 
-            <div className="relative">
-              <Lock className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="رمز عبور (حداقل 6 کاراکتر)"
-                className={`w-full bg-secondary border rounded-xl py-3 pr-12 pl-12 outline-none focus:ring-2 text-foreground placeholder:text-foreground-muted transition-all ${
-                  formData.password && !validatePassword(formData.password)
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-border focus:ring-primary'
-                }`}
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-                minLength={6}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute left-4 top-3.5 text-foreground-muted hover:text-foreground transition-colors"
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
+              <div className="relative">
+                <Lock className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="رمز عبور (حداقل 6 کاراکتر)"
+                  className={`w-full bg-secondary border rounded-xl py-3 pr-12 pl-12 outline-none focus:ring-2 text-foreground placeholder:text-foreground-muted transition-all ${
+                    formData.password && !validatePassword(formData.password)
+                      ? 'border-red-500 focus:ring-red-500'
+                      : formData.password && validatePassword(formData.password)
+                        ? 'border-green-500 focus:ring-green-500'
+                        : 'border-border focus:ring-primary'
+                  }`}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute left-4 top-3.5 text-foreground-muted hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
 
-            <div className="relative">
-              <Lock className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="تکرار رمز عبور"
-                className={`w-full bg-secondary border rounded-xl py-3 pr-12 pl-12 outline-none focus:ring-2 text-foreground placeholder:text-foreground-muted transition-all ${
-                  formData.confirmPassword && formData.password !== formData.confirmPassword
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-border focus:ring-primary'
-                }`}
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute left-4 top-3.5 text-foreground-muted hover:text-foreground transition-colors"
-              >
-                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-              {formData.confirmPassword && formData.password === formData.confirmPassword && (
-                <CheckCircle2 className="absolute left-12 top-3.5 w-5 h-5 text-green-500" />
-              )}
-            </div>
+              <div className="relative">
+                <Lock className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="تکرار رمز عبور"
+                  className={`w-full bg-secondary border rounded-xl py-3 pr-12 pl-12 outline-none focus:ring-2 text-foreground placeholder:text-foreground-muted transition-all ${
+                    formData.confirmPassword && formData.password !== formData.confirmPassword
+                      ? 'border-red-500 focus:ring-red-500'
+                      : formData.confirmPassword && formData.password === formData.confirmPassword
+                        ? 'border-green-500 focus:ring-green-500'
+                        : 'border-border focus:ring-primary'
+                  }`}
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute left-4 top-3.5 text-foreground-muted hover:text-foreground transition-colors"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
 
             <div className="bg-secondary/50 rounded-xl p-3 text-xs text-foreground-muted border border-border">
               <p className="font-medium mb-2 text-foreground-secondary">الزامات رمز عبور:</p>
