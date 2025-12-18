@@ -14,7 +14,7 @@ const fetcher = (url) => api.get(url).then((res) => res.data.results || res.data
 export default function AdminProductsPage() {
   // این خط معجزه می‌کند: هر وقت دیتا سمت سرور عوض شود، اینجا هم عوض می‌شود
   // refreshInterval: 1000 یعنی هر ۱ ثانیه چک کن (برای حس ریل‌تایم بودن)
-  const { data: products, error, mutate } = useSWR("/products/list/", fetcher, { 
+  const { data: products, error, mutate } = useSWR("/products/", fetcher, { 
     refreshInterval: 5000 // هر 5 ثانیه آپدیت خودکار
   });
 
@@ -22,7 +22,7 @@ export default function AdminProductsPage() {
     if (!confirm("آیا از حذف این محصول مطمئن هستید؟")) return;
     
     try {
-      await api.delete(`/products/list/${id}/`); // نیاز به تنظیم ViewSet در جنگو دارد
+      await api.delete(`/products/${id}/`); // اصلاح آدرس حذف
       toast.success("محصول حذف شد");
       mutate(); // رفرش آنی لیست بدون ریلود صفحه
     } catch (err) {
@@ -40,10 +40,10 @@ export default function AdminProductsPage() {
             <p className="text-foreground-muted text-sm">لیست تمام محصولات فعال و غیرفعال</p>
         </div>
         
-        <button className="bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all">
+        <Link href="/admin/products/add" className="bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all">
             <Plus className="w-5 h-5" />
             افزودن محصول جدید
-        </button>
+        </Link>
       </div>
 
       <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden">
@@ -72,7 +72,7 @@ export default function AdminProductsPage() {
                             </td>
                             <td className="px-6 py-3">
                                 <span className="bg-primary/10 text-primary px-2 py-1 rounded-md text-xs font-bold">
-                                    {product.category}
+                                    {product.category?.name}
                                 </span>
                             </td>
                               <td className="px-6 py-3 font-bold text-foreground">
@@ -87,9 +87,9 @@ export default function AdminProductsPage() {
                               </td>
                             <td className="px-6 py-3">
                                 <div className="flex items-center justify-center gap-2">
-                                    <button className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors" title="ویرایش">
+                                    <Link href={`/admin/products/edit/${product.id}`} className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors" title="ویرایش">
                                         <Edit className="w-4 h-4" />
-                                    </button>
+                                    </Link>
                                     <button 
                                         onClick={() => handleDelete(product.id)}
                                         className="p-2 text-error hover:bg-error/10 rounded-lg transition-colors" title="حذف"

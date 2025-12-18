@@ -59,7 +59,7 @@ export default function ProductPage() {
         <nav className="flex items-center gap-2 text-sm text-foreground-muted mb-8 overflow-x-auto whitespace-nowrap pb-2">
           <Link href="/" className="hover:text-primary transition-colors">خانه</Link>
           <span className="text-foreground-muted">/</span>
-          <Link href={`/category/${product.category_slug}`} className="hover:text-primary transition-colors">{product.category}</Link>
+            <Link href={`/category/${product.category_slug}`} className="hover:text-primary transition-colors">{product.category?.name}</Link>
           <span className="text-foreground-muted">/</span>
           <span className="text-foreground font-medium">{product.title}</span>
         </nav>
@@ -105,7 +105,7 @@ export default function ProductPage() {
             <div>
                 <div className="flex items-center gap-2 mb-3">
                     <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold">
-                        {product.category}
+                        {product.category?.name}
                     </span>
                     <div className="flex items-center gap-1 text-yellow-400">
                         <Star className="w-4 h-4 fill-current" />
