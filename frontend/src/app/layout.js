@@ -1,6 +1,7 @@
 import { Vazirmatn } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { LoadingProvider } from "@/context/LoadingContext";
@@ -41,8 +42,9 @@ export default function RootLayout({ children }) {
                 />
 
                 <Header />
-                {children}
-              </CartProvider>
+                  <main className="min-h-screen">{children}</main>
+                  <Footer />
+                </CartProvider>
             </AuthProvider>
           </LoadingProvider>
         </ThemeProvider>

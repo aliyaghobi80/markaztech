@@ -5,7 +5,7 @@ import { useState } from "react"; // اضافه شده
 import useSWR from "swr";
 import api from "@/lib/axios";
 import { formatPrice } from "@/lib/utils";
-import { Plus, Edit, Trash2, X, Upload, Package } from "lucide-react"; // آیکون‌های جدید
+import { Plus, Edit, Trash2, X, Upload, Package, Power, PowerOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -17,16 +17,33 @@ export default function AdminProducts() {
   
 
 
-  // حذف محصول
+  const [deleteError, setDeleteError] = useState(null);
+
   const handleDelete = async (id) => {
     if (!confirm("آیا از حذف این محصول مطمئن هستید؟")) return;
+    setDeleteError(null);
     try {
       await api.delete(`/products/${id}/`);
       toast.success("محصول با موفقیت حذف شد");
-      mutate(); // رفرش لیست
+      mutate();
     } catch (err) {
-      console.error(err);
-      toast.error("خطا در حذف محصول");
+      const errorMessage = err.response?.data?.error || 
+                          (typeof err.response?.data === 'string' && err.response.data.includes('ProtectedError') 
+                            ? "این محصول در سفارشات استفاده شده و قابل حذف نیست. به جای حذف، آن را غیرفعال کنید."
+                            : "خطا در حذف محصول");
+      setDeleteError(errorMessage);
+      toast.error(errorMessage, { duration: 5000 });
+    }
+  };
+
+  const handleToggleActive = async (id, currentStatus) => {
+    try {
+      await api.patch(`/products/${id}/`, { is_active: !currentStatus });
+      toast.success(currentStatus ? "محصول غیرفعال شد" : "محصول فعال شد");
+      setDeleteError(null);
+      mutate();
+    } catch (err) {
+      toast.error("خطا در تغییر وضعیت محصول");
     }
   };
 
@@ -37,6 +54,21 @@ export default function AdminProducts() {
   return (
     <div className="animate-in fade-in zoom-in duration-300 relative">
       
+      {deleteError && (
+        <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-sm font-bold">!</div>
+            <div className="flex-1">
+              <p className="text-amber-800 dark:text-amber-200 font-medium text-sm">{deleteError}</p>
+              <p className="text-amber-600 dark:text-amber-300 text-xs mt-1">می‌توانید به جای حذف، محصول را غیرفعال کنید تا در سفارشات قبلی باقی بماند.</p>
+            </div>
+            <button onClick={() => setDeleteError(null)} className="text-amber-500 hover:text-amber-700">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* هدر و دکمه افزودن */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-foreground">مدیریت محصولات</h2>
@@ -51,17 +83,18 @@ export default function AdminProducts() {
       {/* جدول محصولات */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
         <table className="w-full text-sm text-right">
-            <thead className="bg-secondary text-foreground-muted">
-                <tr>
-                    <th className="p-4 font-medium">تصویر</th>
-                    <th className="p-4 font-medium">نام محصول</th>
-                    <th className="p-4 font-medium">قیمت (تومان)</th>
-                    <th className="p-4 text-center font-medium">عملیات</th>
-                </tr>
-            </thead>
+              <thead className="bg-secondary text-foreground-muted">
+                  <tr>
+                      <th className="p-4 font-medium">تصویر</th>
+                      <th className="p-4 font-medium">نام محصول</th>
+                      <th className="p-4 font-medium">قیمت (تومان)</th>
+                      <th className="p-4 font-medium">وضعیت</th>
+                      <th className="p-4 text-center font-medium">عملیات</th>
+                  </tr>
+              </thead>
             <tbody className="divide-y divide-border">
                 {products.length === 0 && (
-                    <tr><td colSpan="4" className="p-8 text-center text-foreground-muted">محصولی یافت نشد.</td></tr>
+                    <tr><td colSpan="5" className="p-8 text-center text-foreground-muted">محصولی یافت نشد.</td></tr>
                 )}
                 {products.map((p) => (
                     <tr key={p.id} className="hover:bg-secondary/30 transition-colors">
@@ -77,6 +110,11 @@ export default function AdminProducts() {
                         </td>
                         <td className="p-4 font-medium text-foreground">{p.title}</td>
                         <td className="p-4 text-foreground-muted">{formatPrice(p.price)}</td>
+                        <td className="p-4">
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${p.is_active !== false ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>
+                                {p.is_active !== false ? 'فعال' : 'غیرفعال'}
+                            </span>
+                        </td>
                         <td className="p-4 flex justify-center gap-2">
                             <button 
                                 onClick={() => router.push(`/admin/products/edit/${p.id}`)}
@@ -84,6 +122,13 @@ export default function AdminProducts() {
                                 title="ویرایش محصول"
                             >
                                 <Edit className="w-4 h-4"/>
+                            </button>
+                            <button 
+                                onClick={() => handleToggleActive(p.id, p.is_active !== false)} 
+                                className={`p-2 rounded-lg transition-colors ${p.is_active !== false ? 'text-amber-600 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50' : 'text-green-600 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-900/50'}`}
+                                title={p.is_active !== false ? 'غیرفعال کردن' : 'فعال کردن'}
+                            >
+                                {p.is_active !== false ? <PowerOff className="w-4 h-4"/> : <Power className="w-4 h-4"/>}
                             </button>
                             <button 
                                 onClick={() => handleDelete(p.id)} 

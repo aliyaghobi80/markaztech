@@ -1,7 +1,8 @@
 # مسیر: backend/apps/products/views.py
 
-from rest_framework import viewsets, permissions
-from django.db.models import Q
+from rest_framework import viewsets, permissions, status
+from rest_framework.response import Response
+from django.db.models import Q, ProtectedError
 from .models import Product, Category
 from .serializers import ProductSerializer, CategorySerializer, CreateProductSerializer
 
@@ -72,8 +73,20 @@ class ProductViewSet(viewsets.ModelViewSet):
                 Q(description__icontains=search_query) |
                 Q(category__name__icontains=search_query)
             )
-            
+        
         return queryset.order_by('-created_at')
+
+    def destroy(self, request, *args, **kwargs):
+        """Handle product deletion with protection for ordered products."""
+        instance = self.get_object()
+        try:
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ProtectedError:
+            return Response(
+                {"error": "این محصول در سفارشات استفاده شده و قابل حذف نیست. به جای حذف، آن را غیرفعال کنید."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class CategoryViewSet(viewsets.ModelViewSet):

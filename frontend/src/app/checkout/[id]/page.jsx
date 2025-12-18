@@ -126,17 +126,18 @@ export default function CheckoutPage() {
                             <span className="font-bold opacity-80">MarkazTech Bank</span>
                         </div>
                         <div className="mb-6">
-                            <label className="text-xs opacity-70 block mb-1">شماره کارت</label>
-                            <div className="flex items-center gap-3">
-                                <span className="text-2xl font-mono tracking-widest drop-shadow-md">6037 9973 1026 6797</span>
-                                <button 
-                                    onClick={() => {navigator.clipboard.writeText("6037997310266797"); toast.success("کپی شد")}}
-                                    className="p-1 hover:bg-white/20 rounded-md transition-colors"
-                                >
-                                    <Copy className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
+                              <label className="text-xs opacity-70 block mb-1">شماره کارت</label>
+                              <div className="flex items-center gap-3">
+                                  <span dir="ltr" className="text-2xl font-mono tracking-widest drop-shadow-md whitespace-nowrap">6037-9973-1026-6797</span>
+                                  <button 
+                                      onClick={() => {navigator.clipboard.writeText("6037997310266797"); toast.success("شماره کارت کپی شد")}}
+                                      className="p-1.5 hover:bg-white/20 rounded-md transition-colors"
+                                      title="کپی شماره کارت"
+                                  >
+                                      <Copy className="w-5 h-5" />
+                                  </button>
+                              </div>
+                          </div>
                         <div className="flex justify-between items-end">
                             <div>
                                 <label className="text-xs opacity-70 block mb-1">به نام</label>
