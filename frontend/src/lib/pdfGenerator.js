@@ -1,23 +1,43 @@
 // مسیر: src/lib/pdfGenerator.js
-import api from './axios';
+import axios from 'axios';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 // تابع برای دانلود PDF از بک‌اند Django
 export const downloadOrderPDF = async (order) => {
+  // بررسی وجود داده‌های سفارش
+  if (!order || !order.id) {
+    throw new Error('اطلاعات سفارش یافت نشد');
+  }
+
+  // بررسی وضعیت پرداخت
+  if (order.status !== 'PAID') {
+    throw new Error('فقط سفارشات پرداخت شده قابل دانلود هستند');
+  }
+
+  // گرفتن توکن از localStorage
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+
   try {
-    // بررسی وجود داده‌های سفارش
-    if (!order || !order.id) {
-      throw new Error('اطلاعات سفارش یافت نشد');
-    }
-
-    // بررسی وضعیت پرداخت
-    if (order.status !== 'PAID') {
-      throw new Error('فقط سفارشات پرداخت شده قابل دانلود هستند');
-    }
-
-    // استفاده از نمونه api برای حفظ هدرها و توکن
-    const response = await api.get(`/orders/${order.id}/download_pdf/`, {
-      responseType: 'blob'
+    const response = await axios({
+      method: 'GET',
+      url: `${API_BASE_URL}/orders/${order.id}/download_pdf/`,
+      responseType: 'blob',
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+      },
+      timeout: 60000,
     });
+
+    // بررسی نوع پاسخ
+    const contentType = response.headers['content-type'];
+    
+    // اگر پاسخ JSON است (احتمالاً خطا)
+    if (contentType && contentType.includes('application/json')) {
+      const text = await response.data.text();
+      const errorData = JSON.parse(text);
+      throw new Error(errorData.error || errorData.detail || 'خطا در دریافت فایل PDF');
+    }
 
     // ایجاد لینک دانلود
     const blob = new Blob([response.data], { type: 'application/pdf' });
@@ -40,22 +60,33 @@ export const downloadOrderPDF = async (order) => {
     
     return true;
   } catch (error) {
-    console.error("PDF Download Error:", error);
-    
     // تلاش برای استخراج پیام خطا از Blob در صورت وجود
     if (error.response && error.response.data instanceof Blob) {
       try {
         const text = await error.response.data.text();
         const errorData = JSON.parse(text);
         throw new Error(errorData.error || errorData.detail || 'خطا در دریافت فایل PDF');
-      } catch (e) {
+      } catch {
         // اگر پارس کردن متن شکست خورد، ادامه می‌دهیم با خطای اصلی
       }
     }
 
-    if (error.response && error.response.status === 401) {
-      throw new Error('خطای احراز هویت. لطفا دوباره وارد شوید.');
+    if (error.response) {
+      if (error.response.status === 401) {
+        throw new Error('خطای احراز هویت. لطفا دوباره وارد شوید.');
+      }
+      if (error.response.status === 404) {
+        throw new Error('سفارش یافت نشد');
+      }
+      if (error.response.status === 500) {
+        throw new Error('خطای سرور در تولید فاکتور');
+      }
     }
+
+    if (error.code === 'ECONNABORTED') {
+      throw new Error('زمان درخواست به پایان رسید. لطفا دوباره تلاش کنید.');
+    }
+
     throw new Error(error.message || 'خطا در دریافت فایل PDF');
   }
 };

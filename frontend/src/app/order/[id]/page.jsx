@@ -77,19 +77,22 @@ export default function OrderDetailsPage() {
   const [downloading, setDownloading] = useState(false);
 
   const handleDownloadPDF = async () => {
+    if (!order || !order.id) {
+      toast.error("اطلاعات سفارش یافت نشد");
+      return;
+    }
+    
+    if (order.status !== 'PAID') {
+      toast.error("فقط سفارشات پرداخت شده قابل دانلود هستند");
+      return;
+    }
+    
+    setDownloading(true);
+    
     try {
-      console.log('Starting PDF download for order:', order);
-      
-      if (!order || !order.id) {
-        toast.error("اطلاعات سفارش یافت نشد");
-        return;
-      }
-      
-      setDownloading(true);
       await downloadOrderPDF(order);
-      toast.success("فاکتور آماده دانلود شد");
+      toast.success("فاکتور با موفقیت دانلود شد");
     } catch (error) {
-      console.error("Error generating PDF:", error);
       toast.error(error.message || "خطا در دریافت فایل PDF");
     } finally {
       setDownloading(false);
@@ -299,16 +302,26 @@ export default function OrderDetailsPage() {
               </div>
             </div>
 
-            {/* دکمه دانلود PDF */}
-            {order.status === 'PAID' && (
-              <button
-                onClick={handleDownloadPDF}
-                className="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2"
-              >
-                <Download className="w-5 h-5" />
-                دریافت نسخه چاپی
-              </button>
-            )}
+              {/* دکمه دانلود PDF */}
+              {order.status === 'PAID' && (
+                <button
+                  onClick={handleDownloadPDF}
+                  disabled={downloading}
+                  className="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {downloading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      در حال آماده‌سازی...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-5 h-5" />
+                      دریافت نسخه چاپی
+                    </>
+                  )}
+                </button>
+              )}
           </div>
         </div>
       </div>

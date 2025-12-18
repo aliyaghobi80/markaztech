@@ -15,6 +15,7 @@ from PIL import Image as PILImage
 from io import BytesIO
 import arabic_reshaper
 from bidi.algorithm import get_display
+import sys
 
 FONTS_DIR = Path(__file__).resolve().parent.parent.parent / 'assets' / 'fonts'
 
@@ -25,16 +26,25 @@ def register_persian_fonts():
     if _fonts_registered:
         return True
     try:
+        regular_font_path = FONTS_DIR / 'Vazirmatn-Regular.ttf'
+        bold_font_path = FONTS_DIR / 'Vazirmatn-Bold.ttf'
+        
+        if not regular_font_path.exists():
+            return False
+            
+        if not bold_font_path.exists():
+            return False
+        
         pdfmetrics.registerFont(
-            TTFont('Vazir', str(FONTS_DIR / 'Vazirmatn-Regular.ttf'))
+            TTFont('Vazir', str(regular_font_path))
         )
         pdfmetrics.registerFont(
-            TTFont('Vazir-Bold', str(FONTS_DIR / 'Vazirmatn-Bold.ttf'))
+            TTFont('Vazir-Bold', str(bold_font_path))
         )
+        
         _fonts_registered = True
         return True
     except Exception as e:
-        print(f"Error registering fonts: {e}")
         return False
 
 def persian_text(text):
@@ -42,9 +52,16 @@ def persian_text(text):
     if not text:
         return ""
     text = str(text)
-    reshaped = arabic_reshaper.reshape(text)
-    bidi_text = get_display(reshaped)
-    return bidi_text
+    
+    if text.isascii():
+        return text
+    
+    try:
+        reshaped = arabic_reshaper.reshape(text)
+        bidi_text = get_display(reshaped)
+        return bidi_text
+    except Exception:
+        return text
 
 def format_persian_number(num):
     """Convert number to Persian digits"""
@@ -98,13 +115,15 @@ def get_product_image(product):
                 
                 return Image(img_buffer, width=1*cm, height=1*cm)
     except Exception as e:
-        print(f"Error processing product image: {e}")
+        pass
     
     return None
 
 def generate_order_pdf(order):
     if not register_persian_fonts():
         raise Exception("خطا در بارگذاری فونت‌های فارسی")
+    
+
     
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="order-{order.id}.pdf"'
@@ -123,21 +142,21 @@ def generate_order_pdf(order):
     styles.add(ParagraphStyle(
         name='RTL',
         fontName='Vazir',
-        alignment=TA_RIGHT,
+        alignment=TA_LEFT,
         fontSize=10,
         leading=16,
         spaceAfter=4,
-        wordWrap='RTL'
+        rightIndent=0,
+        leftIndent=0
     ))
     
     styles.add(ParagraphStyle(
         name='RTL-Bold',
         fontName='Vazir-Bold',
-        alignment=TA_RIGHT,
+        alignment=TA_LEFT,
         fontSize=11,
         leading=16,
-        spaceAfter=6,
-        wordWrap='RTL'
+        spaceAfter=6
     ))
     
     styles.add(ParagraphStyle(
