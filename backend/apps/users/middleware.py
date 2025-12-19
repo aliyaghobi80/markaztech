@@ -44,11 +44,16 @@ class SiteStatsMiddleware:
 
     def __call__(self, request):
         # Update visit count for any page request (non-API, non-media, non-static)
-        if request.method == 'GET' and not any(request.path.startswith(prefix) for prefix in ['/api/', '/admin/', '/media/', '/static/']):
-            from .utils import broadcast_site_stats
-            SiteStats.objects.get_or_create(id=1)
-            SiteStats.objects.filter(id=1).update(total_visits=F('total_visits') + 1)
-            broadcast_site_stats()
+        # Using session to prevent double-counting on refresh
+        if request.method == 'GET' and not any(request.path.startswith(prefix) for prefix in ['/api/', '/admin/', '/media/', '/static/', '/_next/']):
+            # Only count if user hasn't visited in this session
+            if not request.session.get('has_visited'):
+                from .utils import broadcast_site_stats
+                from .models import SiteStats
+                SiteStats.increment_visit()
+                request.session['has_visited'] = True
+                broadcast_site_stats()
             
         response = self.get_response(request)
         return response
+

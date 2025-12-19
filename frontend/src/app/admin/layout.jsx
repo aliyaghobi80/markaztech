@@ -55,15 +55,16 @@ export default function AdminLayout({ children }) {
         <div className="fixed inset-0 z-[100] md:hidden">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
           <div className="absolute top-0 right-0 bottom-0 w-72 bg-card border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="p-6 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white font-black">A</div>
-                <span className="font-black text-foreground">پنل ادمین</span>
+              <div className="p-6 border-b border-border flex items-center justify-between">
+                <Link href="/" className="flex items-center gap-3 group">
+                  <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white font-black group-hover:scale-110 transition-transform">A</div>
+                  <span className="font-black text-foreground group-hover:text-primary transition-colors">پنل ادمین</span>
+                </Link>
+                <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-secondary rounded-xl transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-secondary rounded-xl transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+
             <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
               {menuItems.map((item) => {
                 const isActive = pathname === item.href;
@@ -95,16 +96,17 @@ export default function AdminLayout({ children }) {
       )}
 
       {/* سایدبار دسکتاپ */}
-      <aside className="w-64 bg-card border-l border-border hidden md:flex flex-col fixed h-full z-40 shadow-xl">
-        <div className="p-6 flex items-center gap-3 border-b border-border">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/20">
-            A
-          </div>
-          <div>
-            <h1 className="font-black text-foreground">پنل مدیریت</h1>
-            <p className="text-xs text-foreground-muted">مرکز تک</p>
-          </div>
-        </div>
+        <aside className="w-64 bg-card border-l border-border hidden md:flex flex-col fixed h-full z-40 shadow-xl">
+          <Link href="/" className="p-6 flex items-center gap-3 border-b border-border group">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+              A
+            </div>
+            <div>
+              <h1 className="font-black text-foreground group-hover:text-primary transition-colors">پنل مدیریت</h1>
+              <p className="text-xs text-foreground-muted">بازگشت به سایت</p>
+            </div>
+          </Link>
+
 
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {menuItems.map((item) => {
