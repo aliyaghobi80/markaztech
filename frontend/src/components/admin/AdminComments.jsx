@@ -177,6 +177,12 @@ export default function AdminComments() {
                   <textarea 
                     value={replyContent}
                     onChange={(e) => setReplyReplyContent(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendReply(comment);
+                      }
+                    }}
                     placeholder="متن پاسخ خود را وارد کنید..."
                     className="w-full bg-card border border-border rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 min-h-[100px] outline-none transition-all mb-3"
                   />

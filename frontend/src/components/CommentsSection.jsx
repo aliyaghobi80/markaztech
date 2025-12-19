@@ -156,12 +156,18 @@ export default function CommentsSection({ productId, comments: initialComments =
             </div>
           </div>
           <div>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="تجربه خود را از استفاده از این محصول بنویسید..."
-              className="w-full bg-secondary border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary/20 min-h-[120px] transition-all"
-            />
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
+                placeholder="تجربه خود را از استفاده از این محصول بنویسید..."
+                className="w-full bg-secondary border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary/20 min-h-[120px] transition-all"
+              />
           </div>
           <div className="flex justify-between items-center">
             <p className="text-[10px] text-foreground-muted">نظرات و پاسخ‌ها پس از ثبت نمایش داده می‌شوند.</p>
@@ -264,12 +270,18 @@ function CommentItem({ comment, user, onReply, replyTo, setReplyTo, handleSubmit
             <CornerDownLeft className="w-3 h-3" />
             در حال پاسخ به {comment.user_name}
           </div>
-          <textarea
-            value={replyTo.content}
-            onChange={(e) => setReplyTo({ ...replyTo, content: e.target.value })}
-            placeholder="پاسخ خود را بنویسید..."
-            className="w-full bg-card border border-border rounded-xl p-3 text-xs focus:ring-2 focus:ring-primary/20 min-h-[80px] outline-none transition-all"
-          />
+            <textarea
+              value={replyTo.content}
+              onChange={(e) => setReplyTo({ ...replyTo, content: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e, comment.id);
+                }
+              }}
+              placeholder="پاسخ خود را بنویسید..."
+              className="w-full bg-card border border-border rounded-xl p-3 text-xs focus:ring-2 focus:ring-primary/20 min-h-[80px] outline-none transition-all"
+            />
           <div className="flex justify-end gap-2 mt-3">
             <button
               onClick={() => setReplyTo(null)}

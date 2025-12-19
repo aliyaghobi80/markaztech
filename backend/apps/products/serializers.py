@@ -48,7 +48,7 @@ class CommentSerializer(serializers.ModelSerializer):
             if user.is_staff:
                 replies = obj.replies.all()
             else:
-                replies = obj.replies.filter(models.Q(is_approved=True) | models.Q(user=user))
+                replies = obj.replies.filter(Q(is_approved=True) | Q(user=user))
         else:
             replies = obj.replies.filter(is_approved=True)
             
@@ -120,7 +120,7 @@ class ProductSerializer(serializers.ModelSerializer):
             if user.is_staff:
                 comments = obj.comments.filter(parent__isnull=True)
             else:
-                comments = obj.comments.filter(models.Q(is_approved=True) | models.Q(user=user), parent__isnull=True)
+                comments = obj.comments.filter(Q(is_approved=True) | Q(user=user), parent__isnull=True)
         else:
             comments = obj.comments.filter(is_approved=True, parent__isnull=True)
             
