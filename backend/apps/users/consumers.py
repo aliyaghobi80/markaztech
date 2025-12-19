@@ -13,11 +13,16 @@ class UserConsumer(AsyncWebsocketConsumer):
         self.session = self.scope.get('session')
         self.room_group_name = 'site_stats'
         
-        # Add to group
+        # Add to site_stats group
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
         )
+        
+        # Add to admin groups if staff
+        if self.user and self.user.is_authenticated and self.user.is_staff:
+            await self.channel_layer.group_add("admin_notifications", self.channel_name)
+            await self.channel_layer.group_add("admin_comments", self.channel_name)
         
         await self.accept()
         
@@ -37,6 +42,49 @@ class UserConsumer(AsyncWebsocketConsumer):
         online_users.add(online_id)
             
         await self.broadcast_stats()
+
+    async def disconnect(self, close_code):
+        # Remove from groups
+        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        if self.user and self.user.is_authenticated and self.user.is_staff:
+            await self.channel_layer.group_discard("admin_notifications", self.channel_name)
+            await self.channel_layer.group_discard("admin_comments", self.channel_name)
+            
+        if hasattr(self, 'online_id') and self.online_id in online_users:
+            online_users.remove(self.online_id)
+            await self.broadcast_stats()
+
+    async def broadcast_stats(self):
+        stats = await self.get_stats()
+        stats['online_users'] = len(online_users)
+        
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                "type": "stats_update",
+                "stats": stats
+            }
+        )
+
+    async def stats_update(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "stats_update",
+            "stats": event["stats"]
+        }))
+
+    async def comment_update(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "comment_update",
+            "comment": event["comment"],
+            "status": event.get("status", "update")
+        }))
+
+    async def ticket_update(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "ticket_update",
+            "ticket_id": event.get("ticket_id"),
+            "status": event.get("status")
+        }))
 
     @database_sync_to_async
     def increment_visit_count(self):
@@ -58,4 +106,3 @@ class UserConsumer(AsyncWebsocketConsumer):
             "total_satisfied_customers": satisfied_votes,
             "satisfaction_rate": round(rate, 1)
         }
-

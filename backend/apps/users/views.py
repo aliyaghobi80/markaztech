@@ -88,6 +88,9 @@ class AdminStatisticsView(APIView):
         from apps.orders.models import Order
         from apps.products.models import Product
         
+        # Get visit stats
+        stats, created = SiteStats.objects.get_or_create(id=1)
+        
         total_users = User.objects.count()
         total_products = Product.objects.count()
         active_products = Product.objects.filter(is_active=True).count()
@@ -113,6 +116,8 @@ class AdminStatisticsView(APIView):
             'paid_orders': paid_orders,
             'total_sales': total_sales,
             'pending_wallet_requests': pending_wallet_requests,
+            'today_visits': stats.today_visits,
+            'total_visits': stats.total_visits,
         })
 
 

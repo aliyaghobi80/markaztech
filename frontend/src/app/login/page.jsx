@@ -23,18 +23,19 @@ export default function LoginPage() {
           password: password
         });
 
-        localStorage.setItem('accessToken', res.data.access);
-        localStorage.setItem('refreshToken', res.data.refresh);
+          localStorage.setItem('accessToken', res.data.access);
+          localStorage.setItem('refreshToken', res.data.refresh);
+          localStorage.setItem('isAdmin', res.data.is_admin);
+          
+          toast.success("ورود موفقیت‌آمیز بود");
         
-        // If remember me is NOT checked, we could theoretically use sessionStorage
-        // But standard practice is to just handle it via token expiry or clearing on close
-        // For now, we'll just implement the UI state.
-        
-        toast.success("ورود موفقیت‌آمیز بود");
-      
-      setTimeout(() => {
-          window.location.href = '/dashboard'; 
-      }, 1000);
+        setTimeout(() => {
+            if (res.data.is_admin) {
+                window.location.href = '/admin';
+            } else {
+                window.location.href = '/dashboard';
+            }
+        }, 1000);
 
     } catch (error) {
       console.error("Login Error Details:", error.response?.data);

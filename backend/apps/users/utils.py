@@ -83,6 +83,16 @@ def send_comment_update(comment):
             "status": "approved" if comment.is_approved else "pending"
         }
     )
+    
+    # Also send to admin comments group
+    async_to_sync(channel_layer.group_send)(
+        "admin_comments",
+        {
+            "type": "comment_update",
+            "comment": serializer.data,
+            "status": "update"
+        }
+    )
 
 def send_product_update(product, action="update"):
     """Sends a product update to the products group."""

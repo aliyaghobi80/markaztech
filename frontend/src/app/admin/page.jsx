@@ -1,18 +1,65 @@
 // مسیر: src/app/admin/page.jsx
 "use client";
 
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { DollarSign, ShoppingBag, Users, Activity } from "lucide-react";
+import { DollarSign, ShoppingBag, Users, Activity, Loader2 } from "lucide-react";
+import api from "@/lib/axios";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await api.get('/users/admin-statistics/');
+        setData(res.data);
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
 
   const stats = [
-    { title: "فروش کل", value: "۱۲,۵۰۰,۰۰۰ تومان", icon: DollarSign, color: "bg-success" },
-    { title: "سفارشات جدید", value: "+۱۵", icon: ShoppingBag, color: "bg-primary" },
-    { title: "کاربران عضو", value: "۱,۲۴۰", icon: Users, color: "bg-warning" },
-    { title: "بازدید امروز", value: "+۳,۰۰۰", icon: Activity, color: "bg-error" },
+    { 
+      title: "فروش کل", 
+      value: data ? `${data.total_sales.toLocaleString()} تومان` : "۰ تومان", 
+      icon: DollarSign, 
+      color: "bg-success" 
+    },
+    { 
+      title: "سفارشات جدید", 
+      value: data ? `+${data.pending_orders}` : "۰", 
+      icon: ShoppingBag, 
+      color: "bg-primary" 
+    },
+    { 
+      title: "کاربران عضو", 
+      value: data ? data.total_users.toLocaleString() : "۰", 
+      icon: Users, 
+      color: "bg-warning" 
+    },
+    { 
+      title: "بازدید امروز", 
+      value: data ? `+${data.today_visits.toLocaleString()}` : "۰", 
+      icon: Activity, 
+      color: "bg-error" 
+    },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-[400px] flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        <p className="text-foreground-muted animate-pulse">در حال بارگذاری آمار...</p>
+      </div>
+    );
+  }
 
   return (
     <div>
