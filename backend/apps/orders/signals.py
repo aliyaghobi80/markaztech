@@ -14,7 +14,7 @@ def get_order_data(order):
         'status': order.status,
         'created_at': order.created_at.isoformat() if order.created_at else None,
         'admin_notes': order.admin_notes,
-        'receipt_image': order.receipt_image.url if order.receipt_image else None,
+        'payment_receipt': order.payment_receipt.url if order.payment_receipt else None,
     }
 
 @receiver(post_save, sender=Order)
