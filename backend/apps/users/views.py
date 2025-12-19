@@ -19,6 +19,21 @@ from .models import WalletTopUpRequest
 User = get_user_model()
 
 
+from rest_framework_simplejwt.tokens import RefreshToken
+
+class LogoutView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        try:
+            refresh_token = request.data.get("refresh")
+            if refresh_token:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            return Response({"message": "خروج با موفقیت انجام شد"}, status=status.HTTP_205_RESET_CONTENT)
+        except Exception:
+            return Response({"error": "توکن نامعتبر است"}, status=status.HTTP_400_BAD_REQUEST)
+
 class AdminStatisticsView(APIView):
     permission_classes = [permissions.IsAdminUser]
     

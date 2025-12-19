@@ -5,6 +5,17 @@ from asgiref.sync import async_to_sync
 from .models import Order
 
 def get_order_data(order):
+    # لاگ برای عیب‌یابی
+    print(f"DEBUG: get_order_data for order {order.id}")
+    print(f"DEBUG: Available attributes: {dir(order)}")
+    
+    payment_receipt_url = None
+    try:
+        if hasattr(order, 'payment_receipt') and order.payment_receipt:
+            payment_receipt_url = order.payment_receipt.url
+    except Exception as e:
+        print(f"DEBUG: Error accessing payment_receipt: {e}")
+
     return {
         'id': order.id,
         'user_id': order.user.id if order.user else None,
@@ -14,7 +25,7 @@ def get_order_data(order):
         'status': order.status,
         'created_at': order.created_at.isoformat() if order.created_at else None,
         'admin_notes': order.admin_notes,
-        'payment_receipt': order.payment_receipt.url if order.payment_receipt else None,
+        'payment_receipt': payment_receipt_url,
     }
 
 @receiver(post_save, sender=Order)
