@@ -6,7 +6,7 @@ import Link from "next/link";
 import { 
   Search, ShoppingCart, User, Menu, ChevronLeft, 
   Sun, Moon, LayoutDashboard, ShieldCheck, X,
-  ShoppingBag, Home
+  ShoppingBag, Home, BookOpen
 } from "lucide-react";
 import api from "@/lib/axios";
 import { useCart } from "@/context/CartContext";
@@ -83,10 +83,14 @@ export default function Header() {
               <Home className="w-4 h-4 text-primary" />
               خانه
             </Link>
-            <Link href="/search" className="px-4 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-sm font-bold flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4 text-primary" />
-              محصولات
-            </Link>
+              <Link href="/search" className="px-4 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-sm font-bold flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4 text-primary" />
+                محصولات
+              </Link>
+              <Link href="/articles" className="px-4 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-sm font-bold flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-primary" />
+                مقالات
+              </Link>
             
             <div className="group relative">
               <button className="px-4 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-sm font-bold flex items-center gap-2">
@@ -198,10 +202,14 @@ export default function Header() {
                 <Home className="w-5 h-5 text-primary" />
                 خانه
               </Link>
-              <Link href="/search" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 hover:bg-secondary rounded-2xl font-bold transition-all border border-transparent hover:border-border">
-                <ShoppingBag className="w-5 h-5 text-primary" />
-                محصولات
-              </Link>
+                <Link href="/search" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 hover:bg-secondary rounded-2xl font-bold transition-all border border-transparent hover:border-border">
+                  <ShoppingBag className="w-5 h-5 text-primary" />
+                  محصولات
+                </Link>
+                <Link href="/articles" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 hover:bg-secondary rounded-2xl font-bold transition-all border border-transparent hover:border-border">
+                  <BookOpen className="w-5 h-5 text-primary" />
+                  مقالات
+                </Link>
               {user && (
                 <Link href="/dashboard" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 hover:bg-secondary rounded-2xl font-bold transition-all border border-transparent hover:border-border">
                   <LayoutDashboard className="w-5 h-5 text-primary" />

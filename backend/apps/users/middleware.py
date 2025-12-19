@@ -43,8 +43,8 @@ class SiteStatsMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Update visit count only for unique sessions or just every request for simplicity
-        if request.method == 'GET' and (request.path == '/' or request.path.startswith('/product/')):
+        # Update visit count for any page request (non-API, non-media, non-static)
+        if request.method == 'GET' and not any(request.path.startswith(prefix) for prefix in ['/api/', '/admin/', '/media/', '/static/']):
             from .utils import broadcast_site_stats
             SiteStats.objects.get_or_create(id=1)
             SiteStats.objects.filter(id=1).update(total_visits=F('total_visits') + 1)

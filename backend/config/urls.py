@@ -28,6 +28,7 @@ urlpatterns = [
     # اضافه کردن مسیر کاربران
     path('api/users/', include('apps.users.urls')),
     path('api/orders/', include('apps.orders.urls')),
+    path('api/articles/', include('apps.articles.urls')),
 ]
 
 # تنظیمات برای نمایش فایل‌های استاتیک و مدیا

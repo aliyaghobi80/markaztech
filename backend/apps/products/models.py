@@ -41,6 +41,7 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    show_in_hero = models.BooleanField(_('نمایش در اسلایدر هیرو'), default=False)
     delivery_time = models.CharField(_('زمان تحویل'), max_length=50, default='آنی')
     stock = models.PositiveIntegerField(_('موجودی'), default=10)
 

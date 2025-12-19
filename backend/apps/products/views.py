@@ -71,6 +71,17 @@ class ProductViewSet(viewsets.ModelViewSet):
         
         return queryset.order_by('-created_at')
 
+    @action(detail=False, methods=['get'])
+    def hero_products(self, request):
+        """Fetch 3 latest products marked for hero slider."""
+        products = Product.objects.filter(is_active=True, show_in_hero=True).order_by('-created_at')[:3]
+        if not products.exists():
+            # Fallback to latest 3 products if none marked for hero
+            products = Product.objects.filter(is_active=True).order_by('-created_at')[:3]
+        
+        serializer = self.get_serializer(products, many=True)
+        return Response(serializer.data)
+
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         try:

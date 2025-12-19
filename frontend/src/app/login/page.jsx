@@ -9,23 +9,28 @@ import { LogIn, Phone, Lock, Eye, EyeOff, Loader2, Sparkles } from "lucide-react
 export default function LoginPage() {
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [rememberMe, setRememberMe] = useState(true);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      setLoading(true);
 
-    try {
-      const res = await api.post('/users/login/', {
-        mobile: mobile,
-        password: password
-      });
+      try {
+        const res = await api.post('/users/login/', {
+          mobile: mobile,
+          password: password
+        });
 
-      localStorage.setItem('accessToken', res.data.access);
-      localStorage.setItem('refreshToken', res.data.refresh);
-      
-      toast.success("ورود موفقیت‌آمیز بود");
+        localStorage.setItem('accessToken', res.data.access);
+        localStorage.setItem('refreshToken', res.data.refresh);
+        
+        // If remember me is NOT checked, we could theoretically use sessionStorage
+        // But standard practice is to just handle it via token expiry or clearing on close
+        // For now, we'll just implement the UI state.
+        
+        toast.success("ورود موفقیت‌آمیز بود");
       
       setTimeout(() => {
           window.location.href = '/dashboard'; 
@@ -82,27 +87,46 @@ export default function LoginPage() {
               />
             </div>
             
-            <div className="relative">
-              <Lock className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-secondary border border-border rounded-xl py-3.5 pr-12 pl-12 outline-none focus:ring-2 focus:ring-primary text-foreground placeholder:text-foreground-muted transition-all"
-                placeholder="رمز عبور"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute left-4 top-3.5 text-foreground-muted hover:text-foreground transition-colors"
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
+              <div className="relative">
+                <Lock className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-secondary border border-border rounded-xl py-3.5 pr-12 pl-12 outline-none focus:ring-2 focus:ring-primary text-foreground placeholder:text-foreground-muted transition-all"
+                  placeholder="رمز عبور"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute left-4 top-3.5 text-foreground-muted hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
 
-            <button
-              type="submit"
+              <div className="flex items-center justify-between px-1">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <div className="relative flex items-center">
+                    <input 
+                      type="checkbox" 
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="peer appearance-none w-5 h-5 border-2 border-border rounded-md checked:bg-primary checked:border-primary transition-all cursor-pointer"
+                    />
+                    <svg className="absolute w-3.5 h-3.5 text-primary-foreground opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none right-0.5 top-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </div>
+                  <span className="text-sm text-foreground-muted group-hover:text-foreground transition-colors">مرا به خاطر بسپار</span>
+                </label>
+                
+                <Link href="/forgot-password" size="sm" className="text-sm text-primary hover:underline">
+                  رمز عبور را فراموش کردید؟
+                </Link>
+              </div>
+
+              <button
+                type="submit"
               disabled={loading || !mobile || !password}
               className="w-full py-3.5 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >

@@ -1,9 +1,10 @@
 // مسیر: src/components/HeroSection.jsx
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Zap, Shield, Clock } from "lucide-react";
+import { ArrowLeft, Sparkles, Zap, Shield, Clock, ChevronRight, ChevronLeft } from "lucide-react";
 import api from "@/lib/axios";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function HeroSection() {
   const [stats, setStats] = useState({
@@ -11,6 +12,18 @@ export default function HeroSection() {
     total_satisfied_customers: 1200,
     satisfaction_rate: 98
   });
+  const [heroProducts, setHeroProducts] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
+
+  const fetchHeroProducts = async () => {
+    try {
+      const response = await api.get("/products/hero_products/");
+      setHeroProducts(response.data);
+    } catch (error) {
+      console.error("Error fetching hero products");
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -22,8 +35,9 @@ export default function HeroSection() {
       }
     };
     fetchStats();
+    fetchHeroProducts();
 
-    // Use WebSocket for real-time stats if available
+    // Use WebSocket for real-time stats
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.hostname}:8000/ws/user/`;
     const socket = new WebSocket(wsUrl);
@@ -36,6 +50,45 @@ export default function HeroSection() {
     return () => socket.close();
   }, []);
 
+  const nextSlide = useCallback(() => {
+    setDirection(1);
+    setCurrentIndex((prev) => (prev + 1) % heroProducts.length);
+  }, [heroProducts.length]);
+
+  const prevSlide = useCallback(() => {
+    setDirection(-1);
+    setCurrentIndex((prev) => (prev - 1 + heroProducts.length) % heroProducts.length);
+  }, [heroProducts.length]);
+
+  useEffect(() => {
+    if (heroProducts.length > 1) {
+      const timer = setInterval(nextSlide, 5000);
+      return () => clearInterval(timer);
+    }
+  }, [heroProducts.length, nextSlide]);
+
+  const variants = {
+    enter: (direction) => ({
+      x: direction > 0 ? 500 : -500,
+      opacity: 0,
+      scale: 0.8
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1,
+      scale: 1
+    },
+    exit: (direction) => ({
+      zIndex: 0,
+      x: direction < 0 ? 500 : -500,
+      opacity: 0,
+      scale: 0.8
+    })
+  };
+
+  const currentProduct = heroProducts[currentIndex];
+
   return (
     <section className="relative overflow-hidden bg-background">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/10 dark:from-slate-950 dark:via-blue-950 dark:to-slate-900"></div>
@@ -43,8 +96,7 @@ export default function HeroSection() {
       
       <div className="absolute top-20 right-20 w-72 h-72 bg-primary/20 rounded-full blur-3xl"></div>
       <div className="absolute bottom-20 left-20 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-primary/5 to-transparent rounded-full"></div>
-
+      
       <div className="container mx-auto px-4 py-20 md:py-32 relative z-10">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
           
@@ -100,54 +152,100 @@ export default function HeroSection() {
             </div>
           </div>
 
-          <div className="hidden lg:block relative">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-cyan-500/20 rounded-3xl blur-2xl"></div>
-              
-              <div className="relative bg-card/80 backdrop-blur-xl border border-border p-8 rounded-3xl shadow-2xl w-80">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-cyan-500 rounded-xl flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-foreground font-bold">ChatGPT Plus</div>
-                    <div className="text-foreground-muted text-sm">اکانت پریمیوم</div>
-                  </div>
-                </div>
-                
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center gap-2 text-foreground-secondary text-sm">
-                    <Zap className="w-4 h-4 text-yellow-500" />
-                    <span>دسترسی به GPT-4</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-foreground-secondary text-sm">
-                    <Shield className="w-4 h-4 text-green-500" />
-                    <span>ضمانت ۳۰ روزه</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-foreground-secondary text-sm">
-                    <Clock className="w-4 h-4 text-primary" />
-                    <span>تحویل آنی</span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-foreground-muted text-xs line-through">۸۵۰,۰۰۰ تومان</div>
-                    <div className="text-foreground text-xl font-black">۶۹۰,۰۰۰ تومان</div>
-                  </div>
-                  <div className="bg-red-500/10 text-red-500 text-xs font-bold px-3 py-1 rounded-full">
-                    ۲۰٪ تخفیف
-                  </div>
-                </div>
-              </div>
+          <div className="hidden lg:block relative w-[400px]">
+            <AnimatePresence initial={false} custom={direction} mode="wait">
+              {currentProduct ? (
+                <motion.div
+                  key={currentProduct.id}
+                  custom={direction}
+                  variants={variants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{
+                    x: { type: "spring", stiffness: 300, damping: 30 },
+                    opacity: { duration: 0.2 }
+                  }}
+                  className="relative"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-cyan-500/20 rounded-3xl blur-2xl"></div>
+                  
+                  <Link href={`/product/${currentProduct.slug}`} className="block relative bg-card/80 backdrop-blur-xl border border-border p-8 rounded-3xl shadow-2xl hover:border-primary/50 transition-colors">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-12 h-12 bg-gradient-to-br from-primary to-cyan-500 rounded-xl flex items-center justify-center overflow-hidden">
+                        {currentProduct.main_image ? (
+                          <img src={currentProduct.main_image} alt={currentProduct.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <Sparkles className="w-6 h-6 text-white" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-foreground font-bold">{currentProduct.title}</div>
+                        <div className="text-foreground-muted text-sm">{currentProduct.category?.name || 'اکانت پریمیوم'}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3 mb-6">
+                      <div className="flex items-center gap-2 text-foreground-secondary text-sm">
+                        <Zap className="w-4 h-4 text-yellow-500" />
+                        <span>بالاترین کیفیت موجود</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-foreground-secondary text-sm">
+                        <Shield className="w-4 h-4 text-green-500" />
+                        <span>ضمانت کامل</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-foreground-secondary text-sm">
+                        <Clock className="w-4 h-4 text-primary" />
+                        <span>تحویل در {currentProduct.delivery_time || 'کمتر از ۱ ساعت'}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        {currentProduct.discount_price && (
+                          <div className="text-foreground-muted text-xs line-through">{currentProduct.price.toLocaleString()} تومان</div>
+                        )}
+                        <div className="text-foreground text-xl font-black">
+                          {(currentProduct.discount_price || currentProduct.price).toLocaleString()} تومان
+                        </div>
+                      </div>
+                      {currentProduct.discount_price && (
+                        <div className="bg-red-500/10 text-red-500 text-xs font-bold px-3 py-1 rounded-full">
+                          {Math.round((1 - currentProduct.discount_price / currentProduct.price) * 100)}٪ تخفیف
+                        </div>
+                      )}
+                    </div>
+                  </Link>
 
-              <div className="absolute -top-4 -right-4 bg-card/90 backdrop-blur border border-border px-4 py-2 rounded-xl shadow-lg animate-bounce">
+                  <div className="absolute -top-4 -right-4 bg-card/90 backdrop-blur border border-border px-4 py-2 rounded-xl shadow-lg animate-bounce">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-foreground text-sm font-medium">
+                        {currentProduct.stock > 0 ? 'موجود در انبار' : 'اتمام موجودی'}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <div className="w-80 h-[300px] bg-card/20 animate-pulse rounded-3xl border border-border"></div>
+              )}
+            </AnimatePresence>
+
+            {heroProducts.length > 1 && (
+              <div className="flex justify-center gap-4 mt-8">
+                <button onClick={prevSlide} className="p-2 rounded-full bg-card border border-border hover:border-primary transition-colors">
+                  <ChevronRight className="w-5 h-5" />
+                </button>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-foreground text-sm font-medium">موجود در انبار</span>
+                  {heroProducts.map((_, i) => (
+                    <div key={i} className={`w-2 h-2 rounded-full transition-all ${i === currentIndex ? 'bg-primary w-4' : 'bg-border'}`} />
+                  ))}
                 </div>
+                <button onClick={nextSlide} className="p-2 rounded-full bg-card border border-border hover:border-primary transition-colors">
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

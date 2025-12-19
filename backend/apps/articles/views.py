@@ -1,0 +1,52 @@
+from rest_framework import viewsets, permissions, status
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from django.db.models import Q
+from .models import Article, ArticleComment
+from .serializers import ArticleSerializer, ArticleDetailSerializer, ArticleCommentSerializer
+
+class ArticleViewSet(viewsets.ModelViewSet):
+    lookup_field = 'slug'
+    
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return ArticleDetailSerializer
+        return ArticleSerializer
+
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.AllowAny()]
+        return [permissions.IsAdminUser()]
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated and self.request.user.is_staff:
+            return Article.objects.all()
+        return Article.objects.filter(is_active=True)
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+class ArticleCommentViewSet(viewsets.ModelViewSet):
+    serializer_class = ArticleCommentSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated and self.request.user.is_staff:
+            return ArticleComment.objects.all()
+        q = Q(is_approved=True)
+        if self.request.user.is_authenticated:
+            q |= Q(user=self.request.user)
+        return ArticleComment.objects.filter(q)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        parent = serializer.validated_data.get('parent')
+        is_approved = user.is_staff or parent is not None
+        serializer.save(user=user, is_approved=is_approved)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def approve(self, request, pk=None):
+        comment = self.get_object()
+        comment.is_approved = True
+        comment.save()
+        return Response({'status': 'approved'})

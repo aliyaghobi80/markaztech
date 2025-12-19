@@ -10,6 +10,7 @@ online_users = set()
 class UserConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.user = self.scope.get('user')
+        self.session = self.scope.get('session')
         self.room_group_name = 'site_stats'
         
         # Add to group
@@ -21,11 +22,16 @@ class UserConsumer(AsyncWebsocketConsumer):
         await self.accept()
         
         # Track online status
+        online_id = None
         if self.user and self.user.is_authenticated:
-            online_users.add(self.user.id)
+            online_id = f"u_{self.user.id}"
+        elif self.session and self.session.session_key:
+            online_id = f"s_{self.session.session_key}"
         else:
-            # For anonymous users, track by channel name or just increment a counter
-            online_users.add(self.channel_name)
+            online_id = f"c_{self.channel_name}"
+            
+        self.online_id = online_id
+        online_users.add(online_id)
             
         await self.broadcast_stats()
 
@@ -37,13 +43,9 @@ class UserConsumer(AsyncWebsocketConsumer):
         )
         
         # Track offline status
-        if self.user and self.user.is_authenticated:
-            if self.user.id in online_users:
-                online_users.remove(self.user.id)
-        else:
-            if self.channel_name in online_users:
-                online_users.remove(self.channel_name)
-                
+        if hasattr(self, 'online_id') and self.online_id in online_users:
+            online_users.remove(self.online_id)
+                  
         await self.broadcast_stats()
 
     async def receive(self, text_data):

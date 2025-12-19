@@ -95,7 +95,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'id', 'title', 'slug', 'description', 
             'price', 'discount_price', 'main_image', 
             'delivery_time', 'stock', 'category', 'category_slug', 'is_active',
-            'comments', 'is_favorite', 'created_at_human'
+            'comments', 'is_favorite', 'created_at_human', 'show_in_hero'
         ]
     
     def get_created_at_human(self, obj):
@@ -139,7 +139,7 @@ class UpdateProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['title', 'slug', 'description', 'price', 'discount_price', 'main_image', 'delivery_time', 'stock', 'category', 'is_active']
+        fields = ['title', 'slug', 'description', 'price', 'discount_price', 'main_image', 'delivery_time', 'stock', 'category', 'is_active', 'show_in_hero']
 
     def to_internal_value(self, data):
         if hasattr(data, 'dict'):
@@ -178,7 +178,7 @@ class CreateProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'title', 'description', 'price', 'discount_price', 
-            'main_image', 'delivery_time', 'stock', 'category'
+            'main_image', 'delivery_time', 'stock', 'category', 'show_in_hero'
         ]
     
     def to_internal_value(self, data):
