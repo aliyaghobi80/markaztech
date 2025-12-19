@@ -21,9 +21,11 @@ const fetcher = (url) => api.get(url).then((res) => res.data);
 export default function ProductPage() {
   const { slug } = useParams();
   const { data: product, error, isLoading, mutate } = useSWR(slug ? `/products/${slug}/` : null, fetcher);
-  const { addToCart } = useCart();
+    const { addToCart } = useCart();
+    const isOutOfStock = product?.stock === 0;
+    const isLowStock = product?.stock > 0 && product?.stock <= 3;
 
-  useEffect(() => {
+    useEffect(() => {
     if (!slug) return;
     
     // WebSocket connection for real-time comment updates
@@ -133,6 +135,27 @@ export default function ProductPage() {
                 <h1 className="text-3xl lg:text-4xl font-black text-foreground leading-tight mb-4">
                     {product.title}
                 </h1>
+                
+                {/* Stock Status */}
+                <div className="flex items-center gap-2 mb-4">
+                    {isOutOfStock ? (
+                        <span className="bg-destructive/10 text-destructive px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            اتمام موجودی
+                        </span>
+                    ) : isLowStock ? (
+                        <span className="bg-orange-500/10 text-orange-600 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 animate-pulse">
+                            <Zap className="w-3 h-3 fill-current" />
+                            تنها {product.stock} عدد در انبار باقیست!
+                        </span>
+                    ) : (
+                        <span className="bg-success/10 text-success px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" />
+                            موجود در انبار
+                        </span>
+                    )}
+                </div>
+
                 <p className="text-foreground-muted leading-relaxed line-clamp-3">
                     این محصول یکی از بهترین گزینه‌ها برای حرفه‌ای‌هاست. با خرید این اکانت، به تمام قابلیت‌های پریمیوم دسترسی خواهید داشت.
                 </p>
@@ -198,17 +221,35 @@ export default function ProductPage() {
                     </div>
                 </div>
 
-                {/* دکمه خرید */}
-                <button 
-                    onClick={() => {
-                        addToCart(product);
-                        toast.success("محصول به سبد خرید اضافه شد");
-                    }}
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-4 rounded-2xl font-bold text-lg shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 mb-4"
-                >
-                    <ShoppingCart className="w-6 h-6" />
-                    افزودن به سبد خرید
-                </button>
+                  {/* دکمه خرید */}
+                  <button 
+                      onClick={() => {
+                          if (isOutOfStock) {
+                              toast.error("این محصول در حال حاضر موجود نیست");
+                              return;
+                          }
+                          addToCart(product);
+                          toast.success("محصول به سبد خرید اضافه شد");
+                      }}
+                      disabled={isOutOfStock}
+                      className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-all flex items-center justify-center gap-2 mb-4 ${
+                          isOutOfStock 
+                          ? "bg-muted text-muted-foreground cursor-not-allowed grayscale" 
+                          : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/25 hover:scale-[1.02] active:scale-[0.98]"
+                      }`}
+                  >
+                      {isOutOfStock ? (
+                          <>
+                              <AlertCircle className="w-6 h-6" />
+                              اتمام موجودی
+                          </>
+                      ) : (
+                          <>
+                              <ShoppingCart className="w-6 h-6" />
+                              افزودن به سبد خرید
+                          </>
+                      )}
+                  </button>
 
                 {/* سیگنال‌های اعتماد */}
                 <div className="grid grid-cols-2 gap-3">

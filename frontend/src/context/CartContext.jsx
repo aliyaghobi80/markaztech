@@ -1,7 +1,8 @@
 // مسیر: src/context/CartContext.jsx
 "use client";
 
-import { createContext, useContext, useState, useEffect, useMemo } from "react";
+  import { createContext, useContext, useState, useEffect, useMemo } from "react";
+  import toast from "react-hot-toast";
 
 const CartContext = createContext();
 
@@ -25,24 +26,34 @@ export function CartProvider({ children }) {
     }
   }, [cart]);
 
-  // افزودن محصول به سبد
-  const addToCart = (product) => {
-    setCart((prev) => {
-      // چک کنیم آیا محصول قبلا هست؟
-      const existingItem = prev.find((item) => item.id === product.id);
-      
-      if (existingItem) {
-        // اگر هست، تعدادش را زیاد کن
-        return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      // اگر نیست، جدید اضافه کن
-      return [...prev, { ...product, quantity: 1 }];
-    });
-  };
+    // افزودن محصول به سبد
+    const addToCart = (product) => {
+      setCart((prev) => {
+        // چک کنیم آیا محصول قبلا هست؟
+        const existingItem = prev.find((item) => item.id === product.id);
+        
+        if (existingItem) {
+          // بررسی موجودی
+          if (product.stock !== undefined && existingItem.quantity >= product.stock) {
+            toast.error(`حداکثر موجودی این محصول ${product.stock} عدد می‌باشد`);
+            return prev;
+          }
+
+          // اگر هست، تعدادش را زیاد کن
+          return prev.map((item) =>
+            item.id === product.id
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          );
+        }
+        // اگر نیست، جدید اضافه کن
+        if (product.stock === 0) {
+          toast.error("این محصول در حال حاضر موجود نیست");
+          return prev;
+        }
+        return [...prev, { ...product, quantity: 1 }];
+      });
+    };
 
   // حذف محصول از سبد
   const removeFromCart = (productId) => {
