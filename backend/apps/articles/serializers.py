@@ -58,8 +58,10 @@ class ArticleSerializer(serializers.ModelSerializer):
         read_only_fields = ['author', 'created_at']
 
     def to_internal_value(self, data):
-        # Convert to mutable if it's a QueryDict
-        if hasattr(data, 'copy'):
+        # Handle QueryDict (from multipart/form-data)
+        if hasattr(data, 'dict'):
+            data = data.dict()
+        elif hasattr(data, 'copy'):
             data = data.copy()
         
         # Handle empty strings for nullable fields
@@ -68,20 +70,24 @@ class ArticleSerializer(serializers.ModelSerializer):
         
         # Handle Boolean strings from FormData
         if 'is_active' in data:
-            if isinstance(data['is_active'], str):
-                data['is_active'] = data['is_active'].lower() == 'true'
+            val = data['is_active']
+            if isinstance(val, str):
+                data['is_active'] = val.lower() == 'true'
         
-        # Handle related_articles from FormData (comma-separated IDs or multiple fields)
+        # Handle related_articles from FormData
         if 'related_articles' in data:
             val = data['related_articles']
             if isinstance(val, str):
-                if val == '' or val == 'null':
+                if val == '' or val == 'null' or val == '[]':
                     data['related_articles'] = []
                 else:
                     try:
-                        # Try parsing as JSON or comma-separated
                         import json
-                        data['related_articles'] = json.loads(val)
+                        parsed = json.loads(val)
+                        if isinstance(parsed, list):
+                            data['related_articles'] = parsed
+                        else:
+                            data['related_articles'] = [parsed]
                     except:
                         data['related_articles'] = [int(x) for x in val.split(',') if x.strip()]
         
