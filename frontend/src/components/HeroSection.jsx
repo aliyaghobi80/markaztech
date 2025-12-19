@@ -24,7 +24,8 @@ export default function HeroSection() {
     fetchStats();
 
     // Use WebSocket for real-time stats if available
-    const wsUrl = `ws://localhost:8000/ws/user/`;
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.hostname}:8000/ws/user/`;
     const socket = new WebSocket(wsUrl);
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);

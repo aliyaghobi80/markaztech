@@ -53,7 +53,10 @@ function AdminTicketListItem({ ticket, onRefresh }) {
 
   useEffect(() => {
     if (showMessages && messages) {
-      scrollToBottom();
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [messages, showMessages]);
 
@@ -166,7 +169,7 @@ function AdminTicketListItem({ ticket, onRefresh }) {
 
       {showMessages && (
         <div className="border-t border-border bg-secondary/20 p-6 space-y-6">
-          <div className="space-y-4 max-h-[400px] overflow-y-auto px-2 custom-scrollbar">
+          <div className="space-y-4 max-h-[400px] overflow-y-auto px-2 custom-scrollbar scroll-smooth">
             {messages?.map((msg) => (
               <div key={msg.id} className={`flex ${msg.is_me ? "justify-end" : "justify-start"}`}>
                 <div className={`group relative max-w-[85%] rounded-2xl p-4 text-sm ${
@@ -215,7 +218,7 @@ function AdminTicketListItem({ ticket, onRefresh }) {
                 </div>
               </div>
             ))}
-            <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} className="h-2" />
           </div>
 
           <div className="flex flex-col gap-4">

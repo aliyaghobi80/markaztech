@@ -23,11 +23,21 @@ class CommentSerializer(serializers.ModelSerializer):
     user_is_staff = serializers.BooleanField(source='user.is_staff', read_only=True)
     product_title = serializers.CharField(source='product.title', read_only=True)
     replies = serializers.SerializerMethodField()
+    created_at_human = serializers.SerializerMethodField()
+    created_at_full = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ['id', 'product', 'product_title', 'user', 'user_name', 'user_mobile', 'user_is_staff', 'content', 'rating', 'parent', 'replies', 'is_approved', 'created_at']
+        fields = ['id', 'product', 'product_title', 'user', 'user_name', 'user_mobile', 'user_is_staff', 'content', 'rating', 'parent', 'replies', 'is_approved', 'created_at', 'created_at_human', 'created_at_full']
         read_only_fields = ['id', 'user', 'is_approved', 'created_at']
+
+    def get_created_at_human(self, obj):
+        from apps.users.utils import jalali_relative_time
+        return jalali_relative_time(obj.created_at)
+
+    def get_created_at_full(self, obj):
+        from apps.users.utils import jalali_full_date
+        return jalali_full_date(obj.created_at)
 
     def get_replies(self, obj):
         request = self.context.get('request')

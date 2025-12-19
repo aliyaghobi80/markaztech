@@ -80,5 +80,6 @@ class UserConsumer(AsyncWebsocketConsumer):
         return {
             "total_visits": stats.total_visits,
             "total_satisfied": satisfied_votes,
+            "total_satisfied_customers": satisfied_votes,
             "satisfaction_rate": round(rate, 1)
         }

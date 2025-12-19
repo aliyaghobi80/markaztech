@@ -31,7 +31,7 @@ export default function UserTickets() {
   };
 
   const handleCreateTicket = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!subject.trim() || !message.trim()) {
       toast.error("لطفاً موضوع و متن پیام را وارد کنید");
       return;
@@ -62,6 +62,13 @@ export default function UserTickets() {
       toast.error(error.response?.data?.attachment?.[0] || "خطا در ایجاد تیکت");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCreateKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleCreateTicket();
     }
   };
 
@@ -118,7 +125,8 @@ export default function UserTickets() {
                 <textarea 
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="جزئیات مشکل یا سوال خود را بنویسید..."
+                  onKeyDown={handleCreateKeyDown}
+                  placeholder="جزئیات مشکل یا سوال خود را بنویسید... (Enter برای ارسال)"
                   className="w-full bg-secondary border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 min-h-[150px]"
                 />
               </div>
@@ -187,7 +195,11 @@ function TicketListItem({ ticket, onRefresh }) {
 
   useEffect(() => {
     if (showMessages && messages) {
-      scrollToBottom();
+      // استفاده از setTimeout برای اطمینان از رندر شدن پیام‌ها قبل از اسکرول
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [messages, showMessages]);
 
@@ -277,7 +289,7 @@ function TicketListItem({ ticket, onRefresh }) {
 
       {showMessages && (
         <div className="border-t border-border bg-secondary/20 p-6 space-y-6">
-          <div className="space-y-4 max-h-[400px] overflow-y-auto px-2 custom-scrollbar">
+          <div className="space-y-4 max-h-[400px] overflow-y-auto px-2 custom-scrollbar scroll-smooth">
             {messages?.map((msg) => (
               <div key={msg.id} className={`flex ${msg.is_me ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[85%] rounded-2xl p-4 text-sm ${
@@ -317,7 +329,7 @@ function TicketListItem({ ticket, onRefresh }) {
                 </div>
               </div>
             ))}
-            <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} className="h-2" />
           </div>
 
           {ticket.status !== 'CLOSED' && (

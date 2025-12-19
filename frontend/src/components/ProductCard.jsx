@@ -60,11 +60,12 @@ export default function ProductCard({ product }) {
                     ? (product.category.name || 'بدون دسته') 
                     : (product.category || 'بدون دسته')}
               </span>
-              {product.stock > 3 && (
-                <span className="text-[10px] text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full font-medium">
-                  موجود در انبار
-                </span>
-              )}
+                {product.stock > 3 && (
+                  <span className="text-[10px] text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full font-medium">
+                    {product.stock} عدد موجود
+                  </span>
+                )}
+
           </div>
 
         <Link href={`/product/${product.slug}`}>

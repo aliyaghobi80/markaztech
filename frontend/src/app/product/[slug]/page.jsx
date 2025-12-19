@@ -151,7 +151,7 @@ export default function ProductPage() {
                     ) : (
                         <span className="bg-success/10 text-success px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" />
-                            موجود در انبار
+                            {product.stock} عدد موجود در انبار
                         </span>
                     )}
                 </div>

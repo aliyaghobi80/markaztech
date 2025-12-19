@@ -43,6 +43,7 @@ def broadcast_site_stats():
     stats_data = {
         "total_visits": stats.total_visits,
         "total_satisfied": satisfied_votes,
+        "total_satisfied_customers": satisfied_votes,  # Added for HeroSection consistency
         "satisfaction_rate": round(rate, 1),
         "online_users": len(online_users)
     }
