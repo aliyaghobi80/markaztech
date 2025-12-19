@@ -36,6 +36,7 @@ class ArticleSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     comments_count = serializers.IntegerField(source='comments.count', read_only=True)
     created_at_human = serializers.SerializerMethodField()
+    image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Article
@@ -59,6 +60,8 @@ class ArticleSerializer(serializers.ModelSerializer):
         # Handle image field - if it's a string (existing URL), ignore it for validation
         if 'image' in data:
             val = data['image']
+            # If it's a string (URL) or empty, remove it from the input data
+            # ImageField expects a file object during validation.
             if isinstance(val, str) or val is None or val == '' or val == 'null':
                 data.pop('image')
         

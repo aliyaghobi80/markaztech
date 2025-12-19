@@ -9,6 +9,7 @@ class CategorySerializer(serializers.ModelSerializer):
     """Serializer for Category model with nested children for mega menu."""
     children = serializers.SerializerMethodField()
     parent_name = serializers.CharField(source='parent.name', read_only=True)
+    icon = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Category
@@ -163,6 +164,7 @@ class ProductSerializer(serializers.ModelSerializer):
 class UpdateProductSerializer(serializers.ModelSerializer):
     """Serializer for updating products."""
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=False)
+    main_image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Product
@@ -210,6 +212,7 @@ class UpdateProductSerializer(serializers.ModelSerializer):
 class CreateProductSerializer(serializers.ModelSerializer):
     """Serializer for creating new products."""
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=True)
+    main_image = serializers.ImageField(required=False, allow_null=True)
     
     class Meta:
         model = Product
@@ -219,11 +222,18 @@ class CreateProductSerializer(serializers.ModelSerializer):
         ]
     
     def to_internal_value(self, data):
-        if hasattr(data, 'dict'):
+        # Use copy instead of dict to preserve file objects in QueryDict
+        if hasattr(data, 'copy'):
+            data = data.copy()
+        elif hasattr(data, 'dict'):
             data = data.dict()
-        else:
-            data = data.copy() if hasattr(data, 'copy') else dict(data)
-            
+        
+        # Handle main_image field - if it's a string (empty), remove it
+        if 'main_image' in data:
+            val = data['main_image']
+            if isinstance(val, str) or val is None or val == '' or val == 'null':
+                data.pop('main_image')
+                
         return super().to_internal_value(data)
 
     def create(self, validated_data):
