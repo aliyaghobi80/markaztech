@@ -7,14 +7,15 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Sum, Q
 
 from .serializers import (
     UserSerializer, UserRegistrationSerializer, CustomTokenObtainPairSerializer,
-    WalletTopUpRequestSerializer, WalletTopUpCreateSerializer, WalletAdjustmentSerializer
+    WalletTopUpRequestSerializer, WalletTopUpCreateSerializer, WalletAdjustmentSerializer,
+    TicketSerializer, TicketMessageSerializer
 )
-from .models import WalletTopUpRequest
-from .utils import send_wallet_update, send_wallet_request_update
+from .models import WalletTopUpRequest, Ticket, TicketMessage
+from .utils import send_wallet_update, send_wallet_request_update, send_ticket_update
 
 
 User = get_user_model()
@@ -96,11 +97,11 @@ class UserRegistrationView(APIView):
                 'avatar': avatar_url
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class UserViewSet(viewsets.ModelViewSet):
     """ViewSet for managing users. Only accessible by admin users."""
     queryset = User.objects.all().order_by('-date_joined')
     serializer_class = UserSerializer
-    # این خط میگه فقط ادمین بتونه لیست همه رو ببینه یا حذف کنه
     permission_classes = [permissions.IsAdminUser]
     
     def get_serializer_context(self):
@@ -112,7 +113,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class ProfileViewSet(viewsets.ViewSet):
     """ViewSet for user profile management including image uploads."""
     permission_classes = [permissions.IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser] # برای آپلود عکس
+    parser_classes = [MultiPartParser, FormParser]
 
     @action(detail=False, methods=['get', 'patch'])
     def me(self, request):
@@ -123,11 +124,9 @@ class ProfileViewSet(viewsets.ViewSet):
             return Response(serializer.data)
         
         elif request.method == 'PATCH':
-            # اینجا برای ویرایش پروفایل و آپلود عکس
             serializer = UserSerializer(user, data=request.data, partial=True, context={'request': request})
             if serializer.is_valid():
                 serializer.save()
-                # Return updated data with full avatar URL
                 updated_serializer = UserSerializer(user, context={'request': request})
                 return Response(updated_serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -159,10 +158,7 @@ class WalletTopUpRequestViewSet(viewsets.ModelViewSet):
         wallet_request = self.get_object()
         
         if wallet_request.status != WalletTopUpRequest.Status.PENDING:
-            return Response(
-                {'error': 'این درخواست قبلاً بررسی شده است.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'error': 'این درخواست قبلاً بررسی شده است.'}, status=status.HTTP_400_BAD_REQUEST)
         
         with transaction.atomic():
             wallet_request.status = WalletTopUpRequest.Status.APPROVED
@@ -173,43 +169,33 @@ class WalletTopUpRequestViewSet(viewsets.ModelViewSet):
             user.wallet_balance += wallet_request.amount
             user.save()
             
-            # ارسال نوتیفیکیشن ریل‌تایم بعد از کامیت شدن تراکنش
             transaction.on_commit(lambda: send_wallet_update(user))
             transaction.on_commit(lambda: send_wallet_request_update(user, wallet_request.id, 'APPROVED', wallet_request.admin_note))
         
         return Response({
-            'message': 'درخواست تایید شد و موجودی کیف پول کاربر افزایش یافت.',
+            'message': 'درخواست تایید شد.',
             'new_balance': user.wallet_balance
         })
     
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def reject(self, request, pk=None):
         wallet_request = self.get_object()
-        
         if wallet_request.status != WalletTopUpRequest.Status.PENDING:
-            return Response(
-                {'error': 'این درخواست قبلاً بررسی شده است.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'error': 'این درخواست قبلاً بررسی شده است.'}, status=status.HTTP_400_BAD_REQUEST)
         
-        with transaction.atomic():
-            wallet_request.status = WalletTopUpRequest.Status.REJECTED
-            wallet_request.admin_note = request.data.get('admin_note', 'درخواست توسط ادمین رد شد.')
-            wallet_request.save()
-            
-            # ارسال نوتیفیکیشن ریل‌تایم بعد از کامیت
-            transaction.on_commit(lambda: send_wallet_request_update(wallet_request.user, wallet_request.id, 'REJECTED', wallet_request.admin_note))
+        wallet_request.status = WalletTopUpRequest.Status.REJECTED
+        wallet_request.admin_note = request.data.get('admin_note', 'درخواست توسط ادمین رد شد.')
+        wallet_request.save()
         
+        send_wallet_request_update(wallet_request.user, wallet_request.id, 'REJECTED', wallet_request.admin_note)
         return Response({'message': 'درخواست رد شد.'})
 
 
 class AdminWalletAdjustmentView(APIView):
     permission_classes = [permissions.IsAdminUser]
-    
     def post(self, request):
         serializer = WalletAdjustmentSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if not serializer.is_valid(): return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         user_id = serializer.validated_data['user_id']
         amount = serializer.validated_data['amount']
@@ -219,21 +205,53 @@ class AdminWalletAdjustmentView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'کاربر یافت نشد.'}, status=status.HTTP_404_NOT_FOUND)
         
-        new_balance = user.wallet_balance + amount
-        if new_balance < 0:
-            return Response(
-                {'error': 'موجودی کیف پول نمی‌تواند منفی شود.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        user.wallet_balance = new_balance
+        user.wallet_balance += amount
         user.save()
-        
-        # ارسال نوتیفیکیشن ریل‌تایم
         send_wallet_update(user)
-        
-        return Response({
-            'message': 'موجودی کیف پول با موفقیت تغییر کرد.',
-            'user_id': user.id,
-            'new_balance': user.wallet_balance
-        })
+        return Response({'message': 'موجودی تغییر کرد.', 'new_balance': user.wallet_balance})
+
+
+class TicketViewSet(viewsets.ModelViewSet):
+    serializer_class = TicketSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return Ticket.objects.all()
+        return Ticket.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def add_message(self, request, pk=None):
+        ticket = self.get_object()
+        serializer = TicketMessageSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save(ticket=ticket, sender=request.user)
+            # Update ticket status
+            if request.user.is_staff:
+                ticket.status = Ticket.Status.OPEN
+            else:
+                ticket.status = Ticket.Status.PENDING
+            ticket.save()
+            
+            # Send real-time update
+            send_ticket_update(ticket)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def messages(self, request, pk=None):
+        ticket = self.get_object()
+        messages = ticket.messages.all()
+        serializer = TicketMessageSerializer(messages, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def close(self, request, pk=None):
+        ticket = self.get_object()
+        ticket.status = Ticket.Status.CLOSED
+        ticket.save()
+        send_ticket_update(ticket)
+        return Response({'status': 'ticket closed'})

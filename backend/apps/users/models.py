@@ -42,7 +42,6 @@ class User(AbstractUser):
     full_name = models.CharField('نام کامل', max_length=100, blank=True)
     national_code = models.CharField('کد ملی', max_length=10, blank=True, null=True)
     
-    # فیلدهای جدید که باعث ارور ادمین شده بودند
     birth_date = models.DateField('تاریخ تولد', blank=True, null=True)
     avatar = models.ImageField('تصویر پروفایل', upload_to='avatars/', blank=True, null=True)
     wallet_balance = models.DecimalField('موجودی کیف پول', max_digits=12, decimal_places=0, default=0)
@@ -79,3 +78,40 @@ class WalletTopUpRequest(models.Model):
     
     def __str__(self):
         return f"{self.user.mobile} - {self.amount} تومان - {self.get_status_display()}"
+
+class Ticket(models.Model):
+    """Support ticket for communication between users and admins."""
+    class Status(models.TextChoices):
+        OPEN = 'OPEN', 'باز'
+        CLOSED = 'CLOSED', 'بسته شده'
+        PENDING = 'PENDING', 'در انتظار پاسخ'
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tickets', verbose_name=_('کاربر'))
+    subject = models.CharField(_('موضوع'), max_length=200)
+    status = models.CharField(_('وضعیت'), max_length=20, choices=Status.choices, default=Status.OPEN)
+    created_at = models.DateTimeField(_('تاریخ ایجاد'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('تاریخ بروزرسانی'), auto_now=True)
+
+    class Meta:
+        verbose_name = _('تیکت')
+        verbose_name_plural = _('تیکت‌ها')
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"{self.subject} - {self.user.mobile}"
+
+class TicketMessage(models.Model):
+    """Messages within a support ticket."""
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='messages', verbose_name=_('تیکت'))
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name=_('فرستنده'))
+    message = models.TextField(_('متن پیام'))
+    attachment = models.FileField(_('پیوست'), upload_to='tickets/attachments/', blank=True, null=True)
+    created_at = models.DateTimeField(_('تاریخ ارسال'), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('پیام تیکت')
+        verbose_name_plural = _('پیام‌های تیکت')
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Message from {self.sender} on {self.ticket.subject}"

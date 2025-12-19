@@ -1,35 +1,73 @@
-# مسیر: backend/apps/products/serializers.py
-
 from rest_framework import serializers
-from .models import Product, Category
+from .models import Product, Category, Comment, Favorite
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class CategorySerializer(serializers.ModelSerializer):
     """Serializer for Category model with nested children for mega menu."""
-    # این خط جادویی باعث می‌شود فرزندان هر دسته هم لیست شوند (برای مگا منو)
     children = serializers.SerializerMethodField()
 
     class Meta:
-        """Meta configuration for CategorySerializer."""
         model = Category
         fields = ['id', 'name', 'slug', 'icon', 'children']
 
     def get_children(self, obj):
-        """Get active children categories for hierarchical menu."""
         children = obj.children.filter(is_active=True)
         return CategorySerializer(children, many=True).data
 
-class ProductSerializer(serializers.ModelSerializer):
-    """Serializer for Product model with category details."""
-    category = serializers.SerializerMethodField()
-    category_slug = serializers.CharField(source='category.slug', read_only=True)
+class CommentSerializer(serializers.ModelSerializer):
+    """Serializer for product comments."""
+    user_name = serializers.CharField(source='user.full_name', read_only=True)
+    user_mobile = serializers.CharField(source='user.mobile', read_only=True)
+    product_title = serializers.CharField(source='product.title', read_only=True)
 
     class Meta:
-        """Meta configuration for ProductSerializer."""
+        model = Comment
+        fields = ['id', 'product', 'product_title', 'user', 'user_name', 'user_mobile', 'content', 'rating', 'is_approved', 'created_at']
+        read_only_fields = ['id', 'user', 'is_approved', 'created_at']
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    """Serializer for user favorites."""
+    product_details = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Favorite
+        fields = ['id', 'product', 'product_details', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    def get_product_details(self, obj):
+        return {
+            'id': obj.product.id,
+            'title': obj.product.title,
+            'slug': obj.product.slug,
+            'price': obj.product.price,
+            'discount_price': obj.product.discount_price,
+            'main_image': self.context['request'].build_absolute_uri(obj.product.main_image.url) if obj.product.main_image else None
+        }
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
+
+class ProductSerializer(serializers.ModelSerializer):
+    """Serializer for Product model with category details and approved comments."""
+    category = serializers.SerializerMethodField()
+    category_slug = serializers.CharField(source='category.slug', read_only=True)
+    comments = serializers.SerializerMethodField()
+    is_favorite = serializers.SerializerMethodField()
+
+    class Meta:
         model = Product
         fields = [
             'id', 'title', 'slug', 'description', 
             'price', 'discount_price', 'main_image', 
-            'delivery_time', 'category', 'category_slug', 'is_active'
+            'delivery_time', 'category', 'category_slug', 'is_active',
+            'comments', 'is_favorite'
         ]
     
     def get_category(self, obj):
@@ -41,9 +79,19 @@ class ProductSerializer(serializers.ModelSerializer):
             }
         return None
 
+    def get_comments(self, obj):
+        approved_comments = obj.comments.filter(is_approved=True)
+        return CommentSerializer(approved_comments, many=True).data
+
+    def get_is_favorite(self, obj):
+        user = self.context.get('request').user if 'request' in self.context else None
+        if user and user.is_authenticated:
+            return Favorite.objects.filter(user=user, product=obj).exists()
+        return False
+
 
 class UpdateProductSerializer(serializers.ModelSerializer):
-    """Serializer for updating products - allows is_active and category to be writable."""
+    """Serializer for updating products."""
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=False)
 
     class Meta:
@@ -51,30 +99,24 @@ class UpdateProductSerializer(serializers.ModelSerializer):
         fields = ['title', 'slug', 'description', 'price', 'discount_price', 'main_image', 'delivery_time', 'category', 'is_active']
 
     def to_internal_value(self, data):
-        """Handle string 'true'/'false' for is_active and ensure category is processed correctly."""
-        # Create a mutable copy of the data if it's a QueryDict (from multipart/form-data)
         if hasattr(data, 'dict'):
             data = data.dict()
         else:
             data = data.copy() if hasattr(data, 'copy') else dict(data)
 
-        # Convert string booleans for is_active
         if 'is_active' in data:
             if isinstance(data['is_active'], str):
                 data['is_active'] = data['is_active'].lower() == 'true'
         
-        # Ensure category is not an empty string if it's optional but provided
         if 'category' in data and data['category'] == '':
             data.pop('category')
             
-        # Handle empty discount_price
         if 'discount_price' in data and data['discount_price'] == '':
             data['discount_price'] = None
 
         return super().to_internal_value(data)
 
     def to_representation(self, instance):
-        """Return full category info after update."""
         ret = super().to_representation(instance)
         if instance.category:
             ret['category'] = {
@@ -90,7 +132,6 @@ class CreateProductSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=True)
     
     class Meta:
-        """Meta configuration for CreateProductSerializer."""
         model = Product
         fields = [
             'title', 'description', 'price', 'discount_price', 
@@ -98,7 +139,6 @@ class CreateProductSerializer(serializers.ModelSerializer):
         ]
     
     def to_internal_value(self, data):
-        """Handle multipart/form-data strings."""
         if hasattr(data, 'dict'):
             data = data.dict()
         else:
@@ -107,8 +147,6 @@ class CreateProductSerializer(serializers.ModelSerializer):
         return super().to_internal_value(data)
 
     def create(self, validated_data):
-        """Create product with automatic slug generation."""
-        # ساخت slug خودکار از title
         from django.utils.text import slugify
         
         title = validated_data['title']
@@ -116,7 +154,6 @@ class CreateProductSerializer(serializers.ModelSerializer):
         slug = base_slug
         counter = 1
         
-        # اطمینان از یکتا بودن slug
         while Product.objects.filter(slug=slug).exists():
             slug = f"{base_slug}-{counter}"
             counter += 1

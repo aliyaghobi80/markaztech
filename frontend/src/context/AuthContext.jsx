@@ -3,36 +3,32 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "@/lib/axios";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { mutate } from "swr";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null); // اطلاعات کاربر
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
-  // چک کردن وضعیت لاگین هنگام لود سایت
   useEffect(() => {
     checkUserLoggedIn();
   }, []);
 
   const checkUserLoggedIn = async () => {
     const token = localStorage.getItem("accessToken");
-
-    // اگر اصلا توکن نداریم، کاری نکن (کاربر مهمان است)
     if (!token) {
       setLoading(false);
       return;
     }
 
     try {
-      const response = await api.get("/users/profile/"); // یا هر آدرسی که یوزر رو میده
+      const response = await api.get("/users/profile/");
       setUser(response.data);
     } catch (error) {
-      // اینجا دیگه لازم نیست کاری کنی، چون axios خودش ریدایرکت میکنه
-      console.log("خطا در شناسایی کاربر، احتمالا توکن پریده");
       setUser(null);
     } finally {
       setLoading(false);
@@ -43,7 +39,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("accessToken", token);
     localStorage.setItem("refreshToken", refreshToken);
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    checkUserLoggedIn(); // دریافت اطلاعات کاربر بلافاصله بعد از لاگین
+    checkUserLoggedIn();
   };
 
   const logout = () => {
@@ -54,74 +50,64 @@ export function AuthProvider({ children }) {
     router.push("/login");
   };
 
-  // تابع برای بروزرسانی اطلاعات کاربر (برای استفاده بعد از ویرایش پروفایل)
   const updateUser = (updatedUserData) => {
     setUser(updatedUserData);
   };
 
-  // تابع برای رفرش اطلاعات کاربر از سرور
   const refreshUser = async () => {
     const token = localStorage.getItem("accessToken");
     if (!token) return;
-
     try {
       const response = await api.get("/users/profile/");
       setUser(response.data);
     } catch (error) {
-      console.error("خطا در رفرش اطلاعات کاربر:", error);
+      console.error("Error refreshing user:", error);
     }
   };
 
-  // رفرش خودکار اطلاعات کاربر و اتصال وب‌سوکت
+  // Role-based redirection logic
+  useEffect(() => {
+    if (!loading && user) {
+      if (user.role === 'ADMIN' && pathname === '/dashboard') {
+        router.push('/admin');
+      } else if (user.role !== 'ADMIN' && pathname.startsWith('/admin')) {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, loading, pathname, router]);
+
   useEffect(() => {
     if (!user) return;
 
-    // اتصال وب‌سوکت برای موجودی کیف پول
     const token = localStorage.getItem("accessToken");
-    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000'}/ws/wallet/?token=${token}`;
+    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000'}/ws/user/?token=${token}`;
     let socket;
 
     try {
       socket = new WebSocket(wsUrl);
 
-        socket.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          if (data.type === "wallet_update") {
-            setUser(prevUser => ({
-              ...prevUser,
-              wallet_balance: data.balance
-            }));
-            } else if (data.type === 'wallet_request_update') {
-              // رفرش کردن تمام لیست‌های مربوط به کیف پول در سراسر اپلیکیشن
-              mutate("/users/wallet-requests/");
-              
-              // ایجاد یک رویداد سفارشی برای اطلاع‌رسانی به داشبورد
-              const event = new CustomEvent('wallet_request_status_changed', { 
-                detail: { 
-                  request_id: data.request_id, 
-                  status: data.status,
-                  admin_note: data.admin_note
-                } 
-              });
-              window.dispatchEvent(event);
-            }
-        };
-
-      socket.onclose = () => {
-        console.log("اتصال وب‌سوکت کیف پول قطع شد");
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === "wallet_update") {
+          setUser(prev => ({ ...prev, wallet_balance: data.balance }));
+        } else if (data.type === 'wallet_request_update') {
+          mutate("/users/wallet-requests/");
+          window.dispatchEvent(new CustomEvent('wallet_request_status_changed', { detail: data }));
+        } else if (data.type === 'ticket_update') {
+          mutate("/users/tickets/");
+          mutate(data.ticket_id ? `/users/tickets/${data.ticket_id}/messages/` : null);
+          window.dispatchEvent(new CustomEvent('ticket_updated', { detail: data }));
+        }
       };
 
-      socket.onerror = (error) => {
-        console.error("خطای وب‌سوکت:", error);
-      };
+      socket.onclose = () => console.log("User WebSocket disconnected");
+      socket.onerror = (error) => console.error("User WebSocket error:", error);
     } catch (err) {
-      console.error("خطا در ایجاد اتصال وب‌سوکت:", err);
+      console.error("WebSocket connection error:", err);
     }
 
-    // رفرش هنگام برگشت به تب
-    const handleFocus = () => {
-      refreshUser();
-    };
+    const handleFocus = () => refreshUser();
     window.addEventListener('focus', handleFocus);
 
     return () => {

@@ -1,8 +1,9 @@
 // مسیر: src/app/product/[slug]/page.jsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useParams } from "next/navigation";
+import useSWR from "swr";
 import api from "@/lib/axios";
 import { formatPrice, calculateDiscount } from "@/lib/utils";
 import { 
@@ -12,29 +13,39 @@ import {
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import toast from "react-hot-toast";
+import FavoriteToggle from "@/components/FavoriteToggle";
+import CommentsSection from "@/components/CommentsSection";
+
+const fetcher = (url) => api.get(url).then((res) => res.data);
 
 export default function ProductPage() {
   const { slug } = useParams();
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data: product, error, isLoading, mutate } = useSWR(slug ? `/products/${slug}/` : null, fetcher);
   const { addToCart } = useCart();
 
   useEffect(() => {
     if (!slug) return;
-    const fetchProduct = async () => {
-      try {
-        const response = await api.get(`/products/${slug}/`);
-        setProduct(response.data);
-      } catch (error) {
-        console.error("Product not found", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProduct();
-  }, [slug]);
+    
+    // WebSocket connection for real-time comment updates
+    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000'}/ws/product/${product?.id || 0}/`;
+    let socket;
 
-  if (loading) return (
+    if (product?.id) {
+      socket = new WebSocket(wsUrl);
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'comment_update') {
+          mutate(); // Re-fetch product data to show new approved comments
+        }
+      };
+    }
+
+    return () => {
+      if (socket) socket.close();
+    };
+  }, [product?.id, slug, mutate]);
+
+  if (isLoading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-4">
             <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -43,7 +54,7 @@ export default function ProductPage() {
     </div>
   );
 
-  if (!product) return (
+  if (error || !product) return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <AlertCircle className="w-16 h-16 text-red-500" />
         <h1 className="text-2xl font-bold text-foreground">محصول یافت نشد!</h1>
@@ -64,7 +75,7 @@ export default function ProductPage() {
           <span className="text-foreground font-medium">{product.title}</span>
         </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 text-right" dir="rtl">
           
           {/* --- ستون راست: گالری تصویر --- */}
           <div className="lg:col-span-4">
@@ -88,11 +99,18 @@ export default function ProductPage() {
                 
                 {/* دکمه‌های اشتراک و علاقه */}
                 <div className="flex items-center gap-4 justify-center">
-                    <button className="flex items-center gap-2 text-foreground-muted hover:text-error transition-colors text-sm font-medium">
-                        <Heart className="w-5 h-5" />
-                        افزودن به علاقه‌مندی
-                    </button>
-                    <button className="flex items-center gap-2 text-foreground-muted hover:text-primary transition-colors text-sm font-medium">
+                    <FavoriteToggle 
+                      productId={product.id} 
+                      isFavoriteInitial={product.is_favorite} 
+                      className="flex items-center gap-2 text-foreground-muted hover:text-error transition-colors text-sm font-medium"
+                    />
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(window.location.href);
+                        toast.success("لینک محصول کپی شد");
+                      }}
+                      className="flex items-center gap-2 text-foreground-muted hover:text-primary transition-colors text-sm font-medium"
+                    >
                         <Share2 className="w-5 h-5" />
                         اشتراک گذاری
                     </button>
@@ -120,19 +138,19 @@ export default function ProductPage() {
                 </p>
             </div>
 
-            {/* ویژگی‌های کلیدی (Mockup) */}
+            {/* ویژگی‌های کلیدی */}
             <div className="border-t border-b border-border py-6 space-y-3">
-                <h3 className="font-bold text-foreground mb-2 text-sm">ویژگی‌های برجسته:</h3>
+                <h3 className="font-bold text-foreground mb-2 text-sm text-right">ویژگی‌های برجسته:</h3>
                 <ul className="space-y-2">
-                    <li className="flex items-center gap-2 text-sm text-foreground-muted">
+                    <li className="flex items-center gap-2 text-sm text-foreground-muted justify-start">
                         <CheckCircle2 className="w-4 h-4 text-success" />
-                        <span>تحویل آنی و اتوماتیک پس از پرداخت</span>
+                        <span>تحویل {product.delivery_time || 'آنی'} و اتوماتیک پس از پرداخت</span>
                     </li>
-                    <li className="flex items-center gap-2 text-sm text-foreground-muted">
+                    <li className="flex items-center gap-2 text-sm text-foreground-muted justify-start">
                         <CheckCircle2 className="w-4 h-4 text-success" />
                         <span>قابلیت تمدید قانونی روی ایمیل شخصی</span>
                     </li>
-                    <li className="flex items-center gap-2 text-sm text-foreground-muted">
+                    <li className="flex items-center gap-2 text-sm text-foreground-muted justify-start">
                         <CheckCircle2 className="w-4 h-4 text-success" />
                         <span>گارانتی کامل تا آخرین روز اشتراک</span>
                     </li>
@@ -141,14 +159,21 @@ export default function ProductPage() {
 
             {/* توضیحات کامل */}
             <div className="bg-secondary/50 rounded-2xl p-4 md:p-6">
-                 <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                 <h3 className="font-bold text-foreground mb-3 flex items-center gap-2 justify-start">
                     <Clock className="w-5 h-5 text-primary" />
                     توضیحات تکمیلی
                 </h3>
-                <div className="text-foreground-muted text-sm leading-8 whitespace-pre-line">
+                <div className="text-foreground-muted text-sm leading-8 whitespace-pre-line text-right">
                     {product.description}
                 </div>
             </div>
+
+            {/* بخش نظرات */}
+            <CommentsSection 
+              productId={product.id} 
+              comments={product.comments} 
+              onCommentSubmit={() => mutate()} 
+            />
           </div>
 
           {/* --- ستون چپ: باکس خرید (Sticky Buy Box) --- */}
@@ -213,4 +238,3 @@ export default function ProductPage() {
     </div>
   );
 }
-

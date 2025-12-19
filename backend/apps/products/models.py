@@ -1,11 +1,11 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.conf import settings
 
 class Category(models.Model):
     """Product category model with hierarchical structure."""
     name = models.CharField(_('نام دسته'), max_length=100)
     slug = models.SlugField(unique=True, allow_unicode=True, help_text=_('نام در آدرس سایت'))
-    # این فیلد کلید طلایی برای منوی آبشاری است:
     parent = models.ForeignKey(
         'self', on_delete=models.CASCADE, null=True, blank=True, related_name='children',
         verbose_name=_('دسته مادر')
@@ -18,7 +18,6 @@ class Category(models.Model):
         verbose_name_plural = _('دسته بندی ها')
 
     def __str__(self):
-        # نمایش به صورت: هوش مصنوعی > چت بات > ChatGPT
         full_path = [self.name]
         k = self.parent
         while k is not None:
@@ -33,19 +32,15 @@ class Product(models.Model):
     slug = models.SlugField(unique=True, allow_unicode=True)
     description = models.TextField(_('توضیحات'))
     
-    # قیمت‌ها
     price = models.PositiveIntegerField(_('قیمت اصلی (تومان)'))
     discount_price = models.PositiveIntegerField(_('قیمت با تخفیف'), null=True, blank=True)
     
-    # تصویر اصلی
     main_image = models.ImageField(_('تصویر اصلی'), upload_to='products/')
     
-    # ویژگی‌های محصول دیجیتال
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # تحویل آنی (بعداً فیلد اکانت را در جدول جدا می‌گذاریم یا همینجا رمزنگاری می‌کنیم)
     delivery_time = models.CharField(_('زمان تحویل'), max_length=50, default='آنی')
 
     class Meta:
@@ -54,3 +49,34 @@ class Product(models.Model):
 
     def __str__(self):
         return self.title
+
+class Comment(models.Model):
+    """Product reviews and comments."""
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='comments', verbose_name=_('محصول'))
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comments', verbose_name=_('کاربر'))
+    content = models.TextField(_('متن نظر'))
+    rating = models.PositiveSmallIntegerField(_('امتیاز'), default=5)
+    is_approved = models.BooleanField(_('تایید شده'), default=False)
+    created_at = models.DateTimeField(_('تاریخ ثبت'), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('نظر')
+        verbose_name_plural = _('نظرات')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user} - {self.product.title}"
+
+class Favorite(models.Model):
+    """User wishlist/favorites."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favorites', verbose_name=_('کاربر'))
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='favorited_by', verbose_name=_('محصول'))
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('علاقه‌مندی')
+        verbose_name_plural = _('علاقه‌مندی‌ها')
+        unique_together = ('user', 'product')
+
+    def __str__(self):
+        return f"{self.user} - {self.product.title}"

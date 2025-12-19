@@ -1,24 +1,33 @@
 // مسیر: src/components/ProductCard.jsx
+"use client";
+
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import toast from "react-hot-toast";
+import FavoriteToggle from "./FavoriteToggle";
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
   const imageUrl = product.main_image; 
 
- // ...
-return (
-    // تغییر: bg-card text-card-foreground border-border
+  return (
     <div className="group relative bg-card text-card-foreground rounded-2xl border border-border shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full overflow-hidden">
       
       <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
         <Link href={`/product/${product.slug}`}>
             <img src={imageUrl} alt={product.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
         </Link>
-        {/* ... بج‌ها ... */}
+        
+        {/* Favorite Toggle over image */}
+        <div className="absolute top-3 right-3 z-10">
+          <FavoriteToggle 
+            productId={product.id} 
+            isFavoriteInitial={product.is_favorite} 
+            className="bg-card/80 backdrop-blur-sm p-2 rounded-xl shadow-sm border border-border/50"
+          />
+        </div>
       </div>
 
         <div className="p-4 flex flex-col flex-1">
@@ -37,7 +46,7 @@ return (
         </Link>
 
         <div className="mt-auto pt-4 border-t border-border flex items-end justify-between">
-            <div className="flex flex-col">
+            <div className="flex flex-col text-right" dir="rtl">
                 {product.discount_price ? (
                     <>
                         <span className="text-xs text-foreground-muted line-through decoration-red-400">
@@ -54,14 +63,13 @@ return (
                 )}
             </div>
 
-            {/* تغییر: bg-primary text-primary-foreground */}
             <button 
                 onClick={(e) => {
                     e.preventDefault();
                     addToCart(product);
                     toast.success('به سبد اضافه شد');
                 }}
-                className="bg-primary text-primary-foreground hover:bg-primary-hover p-3 rounded-xl transition-all shadow-theme hover:scale-105 active:scale-95"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 p-3 rounded-xl transition-all shadow-theme hover:scale-105 active:scale-95"
             >
                 <ShoppingCart className="w-5 h-5" />
             </button>

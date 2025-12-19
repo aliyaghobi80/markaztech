@@ -2,12 +2,9 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
 def send_wallet_update(user):
-    """
-    Sends a wallet update message to the user's WebSocket group.
-    """
+    """Sends a wallet update message to the user's WebSocket group."""
     channel_layer = get_channel_layer()
     group_name = f"user_{user.id}_wallet"
-    
     async_to_sync(channel_layer.group_send)(
         group_name,
         {
@@ -17,12 +14,9 @@ def send_wallet_update(user):
     )
 
 def send_wallet_request_update(user, request_id, status, admin_note=None):
-    """
-    Sends a wallet request status update message to the user's WebSocket group.
-    """
+    """Sends a wallet request status update message."""
     channel_layer = get_channel_layer()
     group_name = f"user_{user.id}_wallet"
-    
     async_to_sync(channel_layer.group_send)(
         group_name,
         {
@@ -30,5 +24,43 @@ def send_wallet_request_update(user, request_id, status, admin_note=None):
             "request_id": request_id,
             "status": status,
             "admin_note": admin_note
+        }
+    )
+
+def send_comment_update(comment):
+    """Sends a comment update to the product group."""
+    channel_layer = get_channel_layer()
+    group_name = f"product_{comment.product.id}_comments"
+    async_to_sync(channel_layer.group_send)(
+        group_name,
+        {
+            "type": "comment_update",
+            "comment_id": comment.id,
+            "product_id": comment.product.id,
+            "status": "APPROVED" if comment.is_approved else "REJECTED"
+        }
+    )
+
+def send_ticket_update(ticket):
+    """Sends a ticket update to the user and admins."""
+    channel_layer = get_channel_layer()
+    # Send to user
+    user_group = f"user_{ticket.user.id}_tickets"
+    async_to_sync(channel_layer.group_send)(
+        user_group,
+        {
+            "type": "ticket_update",
+            "ticket_id": ticket.id,
+            "status": ticket.status
+        }
+    )
+    # Send to admins group
+    async_to_sync(channel_layer.group_send)(
+        "admin_notifications",
+        {
+            "type": "ticket_update",
+            "ticket_id": ticket.id,
+            "user_mobile": ticket.user.mobile,
+            "status": ticket.status
         }
     )

@@ -3,13 +3,15 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     UserViewSet, ProfileViewSet, CustomTokenObtainPairView, UserRegistrationView,
-    WalletTopUpRequestViewSet, AdminWalletAdjustmentView, AdminStatisticsView, LogoutView
+    WalletTopUpRequestViewSet, AdminWalletAdjustmentView, AdminStatisticsView, LogoutView,
+    TicketViewSet
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
 router = DefaultRouter()
 router.register(r'list', UserViewSet, basename='user-management')
 router.register(r'wallet-requests', WalletTopUpRequestViewSet, basename='wallet-requests')
+router.register(r'tickets', TicketViewSet, basename='tickets')
 
 urlpatterns = [
     # Authentication endpoints
@@ -25,6 +27,6 @@ urlpatterns = [
     path('wallet/adjust/', AdminWalletAdjustmentView.as_view(), name='admin-wallet-adjust'),
     path('admin/statistics/', AdminStatisticsView.as_view(), name='admin-statistics'),
     
-    # Admin user management and wallet requests
+    # Router URLs
     path('', include(router.urls)),
 ]
