@@ -59,91 +59,91 @@ export default function Header() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between gap-4">
           
-          {/* لوگو و منوی موبایل */}
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setIsMenuOpen(true)}
-              className="lg:hidden p-2 hover:bg-secondary rounded-xl transition-colors"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
-                <span className="text-white font-black text-lg">M</span>
-              </div>
-              <span className="text-xl font-black hidden sm:block tracking-tighter">
-                Markaz<span className="text-primary">Tech</span>
-              </span>
-            </Link>
-          </div>
-
-          {/* نویگیشن دسکتاپ */}
-          <nav className="hidden lg:flex items-center gap-1 bg-secondary/50 p-1 rounded-2xl border border-border">
-            <Link href="/" className="px-4 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-sm font-bold flex items-center gap-2">
-              <Home className="w-4 h-4 text-primary" />
-              خانه
-            </Link>
-              <Link href="/search" className="px-4 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-sm font-bold flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4 text-primary" />
-                محصولات
-              </Link>
-              <Link href="/articles" className="px-4 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-sm font-bold flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-primary" />
-                مقالات
-              </Link>
-            
-            <div className="group relative">
-              <button className="px-4 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-sm font-bold flex items-center gap-2">
-                <LayoutDashboard className="w-4 h-4 text-primary" />
-                دسته‌بندی‌ها
+            {/* لوگو و منوی موبایل */}
+            <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+              <button 
+                onClick={() => setIsMenuOpen(true)}
+                className="lg:hidden p-2 hover:bg-secondary rounded-xl transition-colors"
+              >
+                <Menu className="w-5 h-5 md:w-6 md:h-6" />
               </button>
-              <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 absolute top-full right-0 w-64 bg-card shadow-xl border border-border rounded-2xl transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50 mt-2 p-2">
-                {loading ? (
-                  <div className="p-4 text-center text-sm text-foreground-muted">درحال بارگذاری...</div>
-                ) : (
-                  categories.map((cat) => (
-                    <Link 
-                      key={cat.id} 
-                      href={`/category/${cat.slug}`}
-                      className="flex items-center justify-between px-3 py-2.5 hover:bg-secondary rounded-xl transition-colors text-sm font-medium"
-                    >
-                      {cat.name}
-                      <ChevronLeft className="w-4 h-4 text-foreground-muted" />
-                    </Link>
-                  ))
-                )}
-              </div>
+              <Link href="/" className="flex items-center gap-2">
+                <div className="w-9 h-9 md:w-10 md:h-10 bg-primary rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 flex-shrink-0">
+                  <span className="text-white font-black text-base md:text-lg">M</span>
+                </div>
+                <span className="text-lg md:text-xl font-black hidden sm:block tracking-tighter whitespace-nowrap">
+                  Markaz<span className="text-primary">Tech</span>
+                </span>
+              </Link>
             </div>
-          </nav>
 
-          {/* ابزارهای کاربر */}
-          <div className="flex items-center gap-1.5 md:gap-3">
-            <button
-              onClick={() => setSearchModalOpen(true)}
-              className="hidden md:flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary-hover border border-border rounded-xl transition-all text-foreground-muted hover:text-foreground group"
-            >
-              <Search className="w-4 h-4 group-hover:text-primary transition-colors" />
-              <span className="text-sm font-medium">جستجو...</span>
-              <kbd className="text-[10px] bg-card border border-border px-1.5 py-0.5 rounded-md mr-4 opacity-50">Ctrl K</kbd>
-            </button>
+            {/* نویگیشن دسکتاپ */}
+            <nav className="hidden lg:flex items-center gap-1 bg-secondary/50 p-1 rounded-2xl border border-border overflow-hidden">
+              <Link href="/" className="px-2 xl:px-3 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-xs xl:text-sm font-bold flex items-center gap-2 whitespace-nowrap">
+                <Home className="w-4 h-4 text-primary" />
+                خانه
+              </Link>
+                <Link href="/search" className="px-2 xl:px-3 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-xs xl:text-sm font-bold flex items-center gap-2 whitespace-nowrap">
+                  <ShoppingBag className="w-4 h-4 text-primary" />
+                  محصولات
+                </Link>
+                <Link href="/articles" className="px-2 xl:px-3 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-xs xl:text-sm font-bold flex items-center gap-2 whitespace-nowrap">
+                  <BookOpen className="w-4 h-4 text-primary" />
+                  مقالات
+                </Link>
+              
+              <div className="group relative">
+                <button className="px-2 xl:px-3 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-xs xl:text-sm font-bold flex items-center gap-2 whitespace-nowrap">
+                  <LayoutDashboard className="w-4 h-4 text-primary" />
+                  دسته‌بندی‌ها
+                </button>
+                <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 absolute top-full right-0 w-64 bg-card shadow-xl border border-border rounded-2xl transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50 mt-2 p-2">
+                  {loading ? (
+                    <div className="p-4 text-center text-sm text-foreground-muted">درحال بارگذاری...</div>
+                  ) : (
+                    categories.map((cat) => (
+                      <Link 
+                        key={cat.id} 
+                        href={`/category/${cat.slug}`}
+                        className="flex items-center justify-between px-3 py-2.5 hover:bg-secondary rounded-xl transition-colors text-sm font-medium"
+                      >
+                        {cat.name}
+                        <ChevronLeft className="w-4 h-4 text-foreground-muted" />
+                      </Link>
+                    ))
+                  )}
+                </div>
+              </div>
+            </nav>
 
-            <button
-              onClick={() => setSearchModalOpen(true)}
-              className="md:hidden p-2.5 hover:bg-secondary rounded-xl"
-            >
-              <Search className="w-5 h-5" />
-            </button>
+            {/* ابزارهای کاربر */}
+            <div className="flex items-center gap-1 md:gap-2 xl:gap-3 flex-shrink-0">
+              <button
+                onClick={() => setSearchModalOpen(true)}
+                className="hidden xl:flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary-hover border border-border rounded-xl transition-all text-foreground-muted hover:text-foreground group"
+              >
+                <Search className="w-4 h-4 group-hover:text-primary transition-colors" />
+                <span className="text-sm font-medium">جستجو...</span>
+                <kbd className="hidden xl:inline-block text-[10px] bg-card border border-border px-1.5 py-0.5 rounded-md mr-4 opacity-50">Ctrl K</kbd>
+              </button>
+
+              <button
+                onClick={() => setSearchModalOpen(true)}
+                className="xl:hidden p-2 md:p-2.5 hover:bg-secondary rounded-xl"
+              >
+                <Search className="w-5 h-5" />
+              </button>
 
             {mounted && (
               <button
                 onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-                className="p-2.5 hover:bg-secondary rounded-xl transition-colors text-foreground-muted"
+                className="p-2 md:p-2.5 hover:bg-secondary rounded-xl transition-colors text-foreground-muted"
               >
                 {resolvedTheme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
             )}
 
-            <Link href="/cart" className="p-2.5 hover:bg-secondary rounded-xl relative group">
+            <Link href="/cart" className="p-2 md:p-2.5 hover:bg-secondary rounded-xl relative group">
               <ShoppingCart className="w-5 h-5 text-foreground-muted group-hover:text-primary transition-colors" />
               {cartCount > 0 && (
                 <span className="absolute top-1 right-1 w-5 h-5 bg-primary text-primary-foreground text-[10px] font-black flex items-center justify-center rounded-full border-2 border-card shadow-sm animate-in zoom-in">
@@ -153,20 +153,21 @@ export default function Header() {
             </Link>
 
             {user ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 xl:gap-3">
                 {isAdmin && (
                   <Link 
                     href="/admin" 
-                    className="hidden xl:flex items-center gap-2 px-4 py-2 bg-error/10 text-error border border-error/20 rounded-xl hover:bg-error hover:text-white transition-all text-sm font-black"
+                    className="hidden lg:flex xl:flex items-center gap-2 px-3 xl:px-4 py-2 bg-error/10 text-error border border-error/20 rounded-xl hover:bg-error hover:text-white transition-all text-xs xl:text-sm font-black"
                   >
                     <ShieldCheck className="w-4 h-4" />
-                    پنل مدیریت
+                    <span className="hidden xl:inline">پنل مدیریت</span>
+                    <span className="xl:hidden">ادمین</span>
                   </Link>
                 )}
                 <UserDropdown />
               </div>
             ) : (
-              <Link href="/login" className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all text-sm font-black shadow-lg shadow-primary/20">
+              <Link href="/login" className="flex items-center gap-2 bg-primary text-primary-foreground px-3 md:px-5 py-2 md:py-2.5 rounded-xl hover:bg-primary/90 transition-all text-xs md:text-sm font-black shadow-lg shadow-primary/20 whitespace-nowrap">
                 <User className="w-4 h-4" />
                 ورود / ثبت‌نام
               </Link>

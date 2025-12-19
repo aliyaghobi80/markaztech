@@ -87,35 +87,48 @@ class AdminStatisticsView(APIView):
     def get(self, request):
         from apps.orders.models import Order
         from apps.products.models import Product
+        from apps.articles.models import Article
+        from django.utils import timezone
+        import datetime
         
         # Get visit stats
         stats, created = SiteStats.objects.get_or_create(id=1)
         
+        # Today's start
+        today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        
         total_users = User.objects.count()
         total_products = Product.objects.count()
-        active_products = Product.objects.filter(is_active=True).count()
+        total_articles = Article.objects.count()
         
+        # Orders stats
         total_orders = Order.objects.count()
         pending_orders = Order.objects.filter(status=Order.Status.PENDING).count()
-        paid_orders = Order.objects.filter(status=Order.Status.PAID).count()
+        new_orders_today = Order.objects.filter(created_at__gte=today).count()
         
+        # Sales stats
         total_sales = Order.objects.filter(
             status__in=[Order.Status.PAID, Order.Status.SENT]
         ).aggregate(total=Sum('total_price'))['total'] or 0
         
-        pending_wallet_requests = WalletTopUpRequest.objects.filter(
-            status=WalletTopUpRequest.Status.PENDING
-        ).count()
+        sales_today = Order.objects.filter(
+            status__in=[Order.Status.PAID, Order.Status.SENT],
+            created_at__gte=today
+        ).aggregate(total=Sum('total_price'))['total'] or 0
+        
+        # User stats
+        new_users_today = User.objects.filter(date_joined__gte=today).count()
         
         return Response({
             'total_users': total_users,
+            'new_users_today': new_users_today,
             'total_products': total_products,
-            'active_products': active_products,
+            'total_articles': total_articles,
             'total_orders': total_orders,
             'pending_orders': pending_orders,
-            'paid_orders': paid_orders,
+            'new_orders_today': new_orders_today,
             'total_sales': total_sales,
-            'pending_wallet_requests': pending_wallet_requests,
+            'sales_today': sales_today,
             'today_visits': stats.today_visits,
             'total_visits': stats.total_visits,
         })

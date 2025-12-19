@@ -4,22 +4,20 @@
 import useSWR from "swr";
 import api from "@/lib/axios";
 import { formatPrice } from "@/lib/utils";
-import { CheckCircle, XCircle, Eye, FileText, Download } from "lucide-react";
+import { CheckCircle, XCircle, Eye, FileText, Download, Zap, Package } from "lucide-react";
 import toast from "react-hot-toast";
 import { downloadOrderPDF } from "@/lib/pdfGenerator";
 
 const fetcher = (url) => api.get(url).then((res) => res.data);
 
 export default function AdminOrdersPage() {
-  // نکته: باید در بک‌اند یک ViewSet بسازیم که تمام سفارش‌ها را به ادمین بدهد
-  // فعلا از همان اندپوینت قبلی استفاده میکنیم (فرض بر اینکه بک‌اند را اصلاح خواهیم کرد)
   const { data: orders, mutate } = useSWR("/orders/", fetcher);
 
   const handleStatusChange = async (id, newStatus) => {
     try {
         await api.patch(`/orders/${id}/`, { status: newStatus });
         toast.success("وضعیت سفارش تغییر کرد");
-        mutate(); // آپلود لیست
+        mutate();
     } catch (error) {
         toast.error("خطا در تغییر وضعیت");
     }
@@ -73,7 +71,6 @@ export default function AdminOrdersPage() {
                <div key={order.id} className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden group hover:border-primary/30 transition-all">
                    <div className="p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                        
-                       {/* اطلاعات خریدار */}
                        <div className="flex items-center gap-4 min-w-[250px]">
                            <div className="w-14 h-14 bg-gradient-to-br from-secondary to-border rounded-2xl flex items-center justify-center font-black text-lg text-foreground shadow-inner">
                                #{order.id}
@@ -88,13 +85,11 @@ export default function AdminOrdersPage() {
                            </div>
                        </div>
   
-                       {/* جزئیات مالی */}
                        <div className="flex flex-col items-center lg:items-start gap-1">
                            <div className="text-xs text-foreground-muted uppercase tracking-wider">مبلغ قابل پرداخت</div>
                            <div className="text-xl font-black text-primary">{formatPrice(order.total_price)} تومان</div>
                        </div>
 
-                       {/* نمایش فیش و دانلود PDF */}
                        <div className="flex flex-wrap items-center justify-center gap-3">
                            {order.payment_receipt ? (
                                <a 
@@ -119,7 +114,7 @@ export default function AdminOrdersPage() {
                                        const originalContent = btn.innerHTML;
                                        try {
                                            btn.disabled = true;
-                                           btn.innerHTML = '<span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></span>';
+                                           btn.innerHTML = '<span class="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></span>';
                                            await downloadOrderPDF(order);
                                            toast.success("فاکتور آماده دانلود شد");
                                        } catch (err) {
@@ -137,7 +132,6 @@ export default function AdminOrdersPage() {
                            )}
                        </div>
   
-                       {/* دکمه‌های تایید/رد */}
                        <div className="flex items-center gap-2 border-t lg:border-t-0 pt-4 lg:pt-0">
                            {order.status === 'PENDING' ? (
                                <>
@@ -165,7 +159,6 @@ export default function AdminOrdersPage() {
                        </div>
                    </div>
 
-                   {/* نمایش محصولات سفارش (اختیاری) */}
                    <div className="px-6 pb-6 pt-0 border-t border-border/50 bg-secondary/10 flex flex-wrap gap-4 items-center">
                         <span className="text-xs text-foreground-muted flex items-center gap-1">
                             <Zap className="w-3 h-3" />
@@ -183,5 +176,4 @@ export default function AdminOrdersPage() {
          </div>
       </div>
     );
-
 }

@@ -11,12 +11,12 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await api.get('/users/admin-statistics/');
-        setData(res.data);
-      } catch (error) {
+    useEffect(() => {
+      const fetchStats = async () => {
+        try {
+          const res = await api.get('/users/admin/statistics/');
+          setData(res.data);
+        } catch (error) {
         console.error("Error fetching stats:", error);
       } finally {
         setLoading(false);
@@ -25,32 +25,32 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
-  const stats = [
-    { 
-      title: "فروش کل", 
-      value: data ? `${data.total_sales.toLocaleString()} تومان` : "۰ تومان", 
-      icon: DollarSign, 
-      color: "bg-success" 
-    },
-    { 
-      title: "سفارشات جدید", 
-      value: data ? `+${data.pending_orders}` : "۰", 
-      icon: ShoppingBag, 
-      color: "bg-primary" 
-    },
-    { 
-      title: "کاربران عضو", 
-      value: data ? data.total_users.toLocaleString() : "۰", 
-      icon: Users, 
-      color: "bg-warning" 
-    },
-    { 
-      title: "بازدید امروز", 
-      value: data ? `+${data.today_visits.toLocaleString()}` : "۰", 
-      icon: Activity, 
-      color: "bg-error" 
-    },
-  ];
+    const stats = [
+      { 
+        title: "فروش کل", 
+        value: data ? `${data.total_sales.toLocaleString()} تومان` : "۰ تومان", 
+        icon: DollarSign, 
+        color: "bg-success" 
+      },
+      { 
+        title: "سفارشات امروز", 
+        value: data ? `+${data.new_orders_today}` : "۰", 
+        icon: ShoppingBag, 
+        color: "bg-primary" 
+      },
+      { 
+        title: "کل کاربران", 
+        value: data ? data.total_users.toLocaleString() : "۰", 
+        icon: Users, 
+        color: "bg-warning" 
+      },
+      { 
+        title: "بازدید امروز", 
+        value: data ? `+${data.today_visits.toLocaleString()}` : "۰", 
+        icon: Activity, 
+        color: "bg-error" 
+      },
+    ];
 
   if (loading) {
     return (
