@@ -44,7 +44,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
 class UpdateProductSerializer(serializers.ModelSerializer):
     """Serializer for updating products - allows is_active and category to be writable."""
-    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=False)
     is_active = serializers.BooleanField(required=False)
     
     class Meta:
@@ -52,12 +52,27 @@ class UpdateProductSerializer(serializers.ModelSerializer):
         fields = ['title', 'slug', 'description', 'price', 'discount_price', 'main_image', 'delivery_time', 'category', 'is_active']
     
     def to_internal_value(self, data):
-        """Handle string boolean values from FormData."""
+        """Handle string boolean values from FormData and category conversion."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
+        
+        logger.info(f"UpdateProductSerializer - incoming data: {dict(mutable_data)}")
+        
         if 'is_active' in mutable_data:
             val = mutable_data['is_active']
             if isinstance(val, str):
                 mutable_data['is_active'] = val.lower() in ('true', '1', 'yes')
+        
+        if 'category' in mutable_data:
+            val = mutable_data['category']
+            logger.info(f"Category value: {val}, type: {type(val)}")
+            if isinstance(val, str) and val.isdigit():
+                mutable_data['category'] = int(val)
+        
+        logger.info(f"UpdateProductSerializer - processed data: {dict(mutable_data)}")
+        
         return super().to_internal_value(mutable_data)
     
     def to_representation(self, instance):
