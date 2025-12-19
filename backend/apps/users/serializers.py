@@ -89,6 +89,15 @@ class WalletTopUpRequestSerializer(serializers.ModelSerializer):
             'wallet_balance': obj.user.wallet_balance,
         }
 
+class WalletTopUpCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WalletTopUpRequest
+        fields = ['amount', 'receipt_image']
+
+class WalletAdjustmentSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+    amount = serializers.DecimalField(max_digits=12, decimal_places=0)
+
 class TicketMessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source='sender.full_name', read_only=True)
     sender_role = serializers.CharField(source='sender.role', read_only=True)
