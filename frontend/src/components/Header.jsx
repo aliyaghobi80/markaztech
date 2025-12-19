@@ -179,16 +179,16 @@ export default function Header() {
 
             {user ? (
               <div className="flex items-center gap-2 xl:gap-3">
-                {isAdmin && (
-                  <Link 
-                    href="/admin" 
-                    className="hidden lg:flex xl:flex items-center gap-2 px-3 xl:px-4 py-2 bg-error/10 text-error border border-error/20 rounded-xl hover:bg-error hover:text-white transition-all text-xs xl:text-sm font-black"
-                  >
-                    <ShieldCheck className="w-4 h-4" />
-                    <span className="hidden xl:inline">پنل مدیریت</span>
-                    <span className="xl:hidden">ادمین</span>
-                  </Link>
-                )}
+                  {isAdmin && (
+                    <Link 
+                      href="/admin" 
+                      className="hidden lg:flex xl:flex items-center gap-2 px-3 xl:px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-xl hover:bg-primary hover:text-white transition-all text-xs xl:text-sm font-black"
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      <span className="hidden xl:inline">پنل مدیریت</span>
+                      <span className="xl:hidden">ادمین</span>
+                    </Link>
+                  )}
                 <UserDropdown />
               </div>
             ) : (
@@ -242,12 +242,12 @@ export default function Header() {
                   داشبورد
                 </Link>
               )}
-              {isAdmin && (
-                <Link href="/admin" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 bg-error/10 text-error rounded-2xl font-black transition-all border border-error/20">
-                  <ShieldCheck className="w-5 h-5" />
-                  پنل مدیریت ادمین
-                </Link>
-              )}
+                {isAdmin && (
+                  <Link href="/admin" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 bg-primary/10 text-primary rounded-2xl font-black transition-all border border-primary/20">
+                    <ShieldCheck className="w-5 h-5" />
+                    مدیریت سیستم
+                  </Link>
+                )}
 
               <div className="pt-6">
                 <h3 className="px-4 text-xs font-black text-foreground-muted uppercase tracking-widest mb-4">دسته‌بندی‌ها</h3>

@@ -61,25 +61,25 @@ export default function UserDropdown() {
           </div>
 
           <div className="p-2">
-            <Link 
-              href="/dashboard" 
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 hover:bg-secondary rounded-xl text-sm font-bold transition-colors"
-            >
-              <BarChart3 className="w-4 h-4 text-primary" />
-              داشبورد کاربری
-            </Link>
-            
-            {isAdmin && (
               <Link 
-                href="/admin" 
+                href="/dashboard" 
                 onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 px-3 py-2.5 hover:bg-secondary rounded-xl text-sm font-bold text-error transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 hover:bg-secondary rounded-xl text-sm font-bold transition-colors"
               >
-                <Shield className="w-4 h-4" />
-                پنل مدیریت
+                <BarChart3 className="w-4 h-4 text-primary" />
+                پنل کاربری
               </Link>
-            )}
+              
+              {isAdmin && (
+                <Link 
+                  href="/admin" 
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2.5 hover:bg-secondary rounded-xl text-sm font-bold text-primary transition-colors"
+                >
+                  <Shield className="w-4 h-4" />
+                  مدیریت سیستم
+                </Link>
+              )}
 
             <Link 
               href="/dashboard?tab=orders" 
