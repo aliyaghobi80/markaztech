@@ -42,11 +42,17 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
         user = self.request.user
         parent = serializer.validated_data.get('parent')
         is_approved = user.is_staff or parent is not None
-        serializer.save(user=user, is_approved=is_approved)
+        comment = serializer.save(user=user, is_approved=is_approved)
+        
+        if is_approved:
+            from apps.users.utils import send_comment_update
+            send_comment_update(comment)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def approve(self, request, pk=None):
         comment = self.get_object()
         comment.is_approved = True
         comment.save()
+        from apps.users.utils import send_comment_update
+        send_comment_update(comment)
         return Response({'status': 'approved'})

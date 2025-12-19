@@ -118,11 +118,28 @@ class TicketMessage(models.Model):
 
 class SiteStats(models.Model):
     """General site statistics."""
-    total_visits = models.PositiveBigIntegerField(default=0)
+    total_visits = models.PositiveBigIntegerField(default=0, verbose_name='کل بازدیدها')
+    today_visits = models.PositiveIntegerField(default=0, verbose_name='بازدیدهای امروز')
+    last_visit_date = models.DateField(auto_now=True, verbose_name='تاریخ آخرین بازدید')
     
     class Meta:
         verbose_name = 'آمار سایت'
         verbose_name_plural = 'آمار سایت'
+
+    @classmethod
+    def increment_visit(cls):
+        from django.utils import timezone
+        stats, created = cls.objects.get_or_create(id=1)
+        today = timezone.now().date()
+        
+        if stats.last_visit_date != today:
+            stats.today_visits = 1
+        else:
+            stats.today_visits += 1
+            
+        stats.total_visits += 1
+        stats.save()
+        return stats
 
 class SatisfactionSurvey(models.Model):
     """Survey for customer satisfaction."""

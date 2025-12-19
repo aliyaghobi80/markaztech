@@ -21,6 +21,9 @@ class UserConsumer(AsyncWebsocketConsumer):
         
         await self.accept()
         
+        # Increment visit in DB
+        await self.increment_visit_count()
+        
         # Track online status
         online_id = None
         if self.user and self.user.is_authenticated:
@@ -35,40 +38,9 @@ class UserConsumer(AsyncWebsocketConsumer):
             
         await self.broadcast_stats()
 
-    async def disconnect(self, close_code):
-        # Remove from group
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
-        
-        # Track offline status
-        if hasattr(self, 'online_id') and self.online_id in online_users:
-            online_users.remove(self.online_id)
-                  
-        await self.broadcast_stats()
-
-    async def receive(self, text_data):
-        pass
-
-    async def broadcast_stats(self):
-        # Fetch stats from DB
-        stats_data = await self.get_stats()
-        
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                "type": "stats_update",
-                "stats": {
-                    **stats_data,
-                    "online_users": len(online_users)
-                }
-            }
-        )
-
-    async def stats_update(self, event):
-        # Send message to WebSocket
-        await self.send(text_data=json.dumps(event))
+    @database_sync_to_async
+    def increment_visit_count(self):
+        SiteStats.increment_visit()
 
     @database_sync_to_async
     def get_stats(self):
@@ -81,7 +53,9 @@ class UserConsumer(AsyncWebsocketConsumer):
         
         return {
             "total_visits": stats.total_visits,
+            "today_visits": stats.today_visits,
             "total_satisfied": satisfied_votes,
             "total_satisfied_customers": satisfied_votes,
             "satisfaction_rate": round(rate, 1)
         }
+

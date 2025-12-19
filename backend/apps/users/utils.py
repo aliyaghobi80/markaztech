@@ -58,13 +58,23 @@ def broadcast_site_stats():
     )
 
 def send_comment_update(comment):
-    """Sends a comment update to the product group."""
-    from apps.products.serializers import CommentSerializer
+    """Sends a comment update to the relevant group (product or article)."""
+    from apps.products.serializers import CommentSerializer as ProductCommentSerializer
+    from apps.articles.serializers import ArticleCommentSerializer
+    from apps.products.models import Comment as ProductComment
+    from apps.articles.models import ArticleComment
     
     channel_layer = get_channel_layer()
-    group_name = f"product_{comment.product.id}_comments"
     
-    serializer = CommentSerializer(comment)
+    if isinstance(comment, ProductComment):
+        group_name = f"product_{comment.product.id}_comments"
+        serializer = ProductCommentSerializer(comment)
+    elif isinstance(comment, ArticleComment):
+        group_name = f"article_{comment.article.id}_comments"
+        serializer = ArticleCommentSerializer(comment)
+    else:
+        return
+
     async_to_sync(channel_layer.group_send)(
         group_name,
         {

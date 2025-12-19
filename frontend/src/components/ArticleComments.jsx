@@ -1,16 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, MessageSquare, Send, CornerDownLeft, Loader2, ShieldCheck, CheckCircle2 } from "lucide-react";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 
-export default function ArticleComments({ articleId, initialComments = [], onRefresh }) {
+export default function ArticleComments({ articleId, initialComments: propComments = [], onRefresh }) {
   const { user } = useAuth();
+  const [comments, setComments] = useState(propComments);
   const [content, setContent] = useState("");
   const [replyTo, setReplyTo] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setComments(propComments);
+  }, [propComments]);
+
+  // WebSocket for real-time comments
+  useEffect(() => {
+    if (!articleId) return;
+
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.hostname}:8000/ws/articles/${articleId}/comments/`;
+    const socket = new WebSocket(wsUrl);
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "comment_update") {
+        const newComment = data.comment;
+        
+        setComments(prevComments => {
+          // If it's a top-level comment
+          if (!newComment.parent) {
+            const exists = prevComments.some(c => c.id === newComment.id);
+            if (exists) return prevComments.map(c => c.id === newComment.id ? newComment : c);
+            return [newComment, ...prevComments];
+          }
+          
+          // If it's a reply, find the parent
+          return prevComments.map(c => {
+            if (c.id === newComment.parent) {
+              const replies = c.replies || [];
+              const replyExists = replies.some(r => r.id === newComment.id);
+              if (replyExists) {
+                return { ...c, replies: replies.map(r => r.id === newComment.id ? newComment : r) };
+              }
+              return { ...c, replies: [...replies, newComment] };
+            }
+            return c;
+          });
+        });
+      }
+    };
+
+    return () => socket.close();
+  }, [articleId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -154,13 +199,13 @@ export default function ArticleComments({ articleId, initialComments = [], onRef
 
       {/* List */}
       <div className="space-y-4">
-        {initialComments.length === 0 ? (
+        {comments.length === 0 ? (
           <div className="text-center py-12 bg-secondary/30 rounded-3xl border border-dashed border-border">
             <MessageSquare className="w-12 h-12 text-foreground-muted/20 mx-auto mb-3" />
             <p className="text-foreground-muted text-sm">هنوز نظری ثبت نشده است. شما اولین نفر باشید!</p>
           </div>
         ) : (
-          initialComments.map(comment => (
+          comments.map(comment => (
             <CommentItem key={comment.id} comment={comment} />
           ))
         )}

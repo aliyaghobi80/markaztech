@@ -7,11 +7,14 @@ import api from "@/lib/axios";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function HeroSection() {
-  const [stats, setStats] = useState({
-    total_visits: 5000,
-    total_satisfied_customers: 1200,
-    satisfaction_rate: 98
-  });
+    const [stats, setStats] = useState({
+      total_visits: 0,
+      today_visits: 0,
+      online_users: 0,
+      total_satisfied_customers: 0,
+      satisfaction_rate: 100
+    });
+
   const [heroProducts, setHeroProducts] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
@@ -134,22 +137,39 @@ export default function HeroSection() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 max-w-md mx-auto lg:mx-0">
-              <div className="text-center">
-                <div className="text-2xl md:text-3xl font-black text-foreground">
-                  {stats.total_satisfied_customers > 0 ? stats.total_satisfied_customers.toLocaleString() : '۱,۲۰۰'}+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto lg:mx-0">
+                <div className="text-center p-4 bg-card/50 backdrop-blur rounded-2xl border border-border">
+                  <div className="text-xl md:text-2xl font-black text-foreground">
+                    {stats.total_visits?.toLocaleString() || '۰'}
+                  </div>
+                  <div className="text-[10px] text-foreground-muted uppercase tracking-wider">کل بازدیدها</div>
                 </div>
-                <div className="text-xs text-foreground-muted">مشتری راضی</div>
+                <div className="text-center p-4 bg-card/50 backdrop-blur rounded-2xl border border-border">
+                  <div className="text-xl md:text-2xl font-black text-primary">
+                    {stats.today_visits?.toLocaleString() || '۰'}
+                  </div>
+                  <div className="text-[10px] text-foreground-muted uppercase tracking-wider">بازدید امروز</div>
+                </div>
+                <div className="text-center p-4 bg-card/50 backdrop-blur rounded-2xl border border-border relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-1">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                  </div>
+                  <div className="text-xl md:text-2xl font-black text-green-500">
+                    {stats.online_users?.toLocaleString() || '۰'}
+                  </div>
+                  <div className="text-[10px] text-foreground-muted uppercase tracking-wider">کاربران آنلاین</div>
+                </div>
+                <div className="text-center p-4 bg-card/50 backdrop-blur rounded-2xl border border-border">
+                  <div className="text-xl md:text-2xl font-black text-foreground">
+                    {stats.satisfaction_rate}%
+                  </div>
+                  <div className="text-[10px] text-foreground-muted uppercase tracking-wider">رضایت کاربران</div>
+                </div>
               </div>
-              <div className="text-center border-x border-border">
-                <div className="text-2xl md:text-3xl font-black text-foreground">{stats.satisfaction_rate}%</div>
-                <div className="text-xs text-foreground-muted">رضایت کاربران</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl md:text-3xl font-black text-foreground">۱۰۰٪</div>
-                <div className="text-xs text-foreground-muted">ضمانت اصالت</div>
-              </div>
-            </div>
+
           </div>
 
           <div className="hidden lg:block relative w-[400px]">
