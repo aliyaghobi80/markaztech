@@ -4,13 +4,14 @@ from django.db.models import Q
 
 class ArticleCommentSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.full_name', read_only=True)
+    user_avatar = serializers.ImageField(source='user.avatar', read_only=True)
     user_is_staff = serializers.BooleanField(source='user.is_staff', read_only=True)
     replies = serializers.SerializerMethodField()
     created_at_human = serializers.SerializerMethodField()
 
     class Meta:
         model = ArticleComment
-        fields = ['id', 'article', 'user', 'user_name', 'user_is_staff', 'content', 'parent', 'replies', 'is_approved', 'created_at', 'created_at_human']
+        fields = ['id', 'article', 'user', 'user_name', 'user_avatar', 'user_is_staff', 'content', 'parent', 'replies', 'is_approved', 'created_at', 'created_at_human']
         read_only_fields = ['user', 'is_approved', 'created_at']
 
     def get_created_at_human(self, obj):
@@ -31,16 +32,29 @@ class ArticleCommentSerializer(serializers.ModelSerializer):
             
         return ArticleCommentSerializer(replies.order_by('created_at'), many=True, context=self.context).data
 
+class SimpleArticleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Article
+        fields = ['id', 'title', 'slug', 'image', 'created_at']
+
 class ArticleSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source='author.full_name', read_only=True)
+    author_bio = serializers.CharField(source='author.bio', read_only=True)
+    author_avatar = serializers.ImageField(source='author.avatar', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
     comments_count = serializers.IntegerField(source='comments.count', read_only=True)
     created_at_human = serializers.SerializerMethodField()
     image = serializers.ImageField(required=False, allow_null=True)
+    related_articles_detail = SimpleArticleSerializer(source='related_articles', many=True, read_only=True)
 
     class Meta:
         model = Article
-        fields = ['id', 'title', 'slug', 'category', 'category_name', 'content', 'image', 'author', 'author_name', 'is_active', 'comments_count', 'created_at', 'created_at_human']
+        fields = [
+            'id', 'title', 'slug', 'category', 'category_name', 'content', 'image', 
+            'author', 'author_name', 'author_bio', 'author_avatar', 'author_note',
+            'related_articles', 'related_articles_detail',
+            'is_active', 'comments_count', 'created_at', 'created_at_human'
+        ]
         read_only_fields = ['author', 'created_at']
 
     def to_internal_value(self, data):
@@ -57,11 +71,23 @@ class ArticleSerializer(serializers.ModelSerializer):
             if isinstance(data['is_active'], str):
                 data['is_active'] = data['is_active'].lower() == 'true'
         
+        # Handle related_articles from FormData (comma-separated IDs or multiple fields)
+        if 'related_articles' in data:
+            val = data['related_articles']
+            if isinstance(val, str):
+                if val == '' or val == 'null':
+                    data['related_articles'] = []
+                else:
+                    try:
+                        # Try parsing as JSON or comma-separated
+                        import json
+                        data['related_articles'] = json.loads(val)
+                    except:
+                        data['related_articles'] = [int(x) for x in val.split(',') if x.strip()]
+        
         # Handle image field - if it's a string (existing URL), ignore it for validation
         if 'image' in data:
             val = data['image']
-            # If it's a string (URL) or empty, remove it from the input data
-            # ImageField expects a file object during validation.
             if isinstance(val, str) or val is None or val == '' or val == 'null':
                 data.pop('image')
         

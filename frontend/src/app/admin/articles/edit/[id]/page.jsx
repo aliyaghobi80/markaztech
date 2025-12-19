@@ -1,7 +1,7 @@
-// مسیر: src/app/admin/articles/add/page.jsx
+// مسیر: src/app/admin/articles/edit/[id]/page.jsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/axios";
@@ -12,7 +12,8 @@ import {
   Plus, Eye, Sparkles, LayoutDashboard
 } from "lucide-react";
 
-export default function AddArticlePage() {
+export default function EditArticlePage({ params }) {
+  const { id } = use(params);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   
@@ -41,23 +42,37 @@ export default function AddArticlePage() {
     }
   }, [user, authLoading, router]);
 
-  // بارگذاری دسته‌بندی‌ها
+  // بارگذاری داده‌ها
   useEffect(() => {
     if (user) {
-      fetchCategories();
+      fetchData();
     }
-  }, [user]);
+  }, [user, id]);
 
-  const fetchCategories = async () => {
+  const fetchData = async () => {
     try {
-      const [catRes, artRes] = await Promise.all([
+      const [catRes, artRes, articleRes] = await Promise.all([
         api.get("/products/categories/?flat=true"),
-        api.get("/articles/")
+        api.get("/articles/"),
+        api.get(`/articles/${id}/`)
       ]);
       setCategories(catRes.data || []);
-      setArticles(artRes.data || []);
+      setArticles(artRes.data?.filter(a => a.id !== parseInt(id)) || []);
+      
+      const art = articleRes.data;
+      setFormData({
+        title: art.title || "",
+        slug: art.slug || "",
+        category: art.category || "",
+        content: art.content || "",
+        author_note: art.author_note || "",
+        related_articles: art.related_articles || [],
+        is_active: art.is_active ?? true
+      });
+      setImagePreview(art.image);
     } catch (error) {
       console.error("Error fetching data:", error);
+      toast.error("خطا در بارگذاری اطلاعات مقاله");
     } finally {
       setLoading(false);
     }
@@ -66,7 +81,7 @@ export default function AddArticlePage() {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
         toast.error("حجم فایل نباید بیشتر از 5 مگابایت باشد");
         return;
       }
@@ -97,20 +112,14 @@ export default function AddArticlePage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!imageFile) {
-      toast.error("لطفاً تصویر شاخص را انتخاب کنید");
-      return;
-    }
     setSaving(true);
 
     try {
       const submitData = new FormData();
       
-      // اضافه کردن فیلدهای متنی
       Object.keys(formData).forEach(key => {
-        if (formData[key] !== "" && formData[key] !== null) {
+        if (formData[key] !== null) {
           if (Array.isArray(formData[key])) {
-            // Handle arrays (like related_articles)
             submitData.append(key, JSON.stringify(formData[key]));
           } else {
             submitData.append(key, formData[key]);
@@ -118,17 +127,16 @@ export default function AddArticlePage() {
         }
       });
 
-      // اضافه کردن فایل تصویر
       if (imageFile) {
         submitData.append('image', imageFile);
       }
 
-      await api.post("/articles/", submitData);
+      await api.patch(`/articles/${id}/`, submitData);
 
-      toast.success("مقاله جدید با موفقیت منتشر شد");
+      toast.success("مقاله با موفقیت بروزرسانی شد");
       router.push("/admin/articles");
     } catch (error) {
-      console.error("Error creating article:", error);
+      console.error("Error updating article:", error);
       if (error.response?.data) {
         const data = error.response.data;
         if (typeof data === 'object') {
@@ -137,7 +145,7 @@ export default function AddArticlePage() {
             messages.forEach(msg => toast.error(`${key}: ${msg}`));
           });
         } else {
-          toast.error(data.detail || "خطا در ایجاد مقاله");
+          toast.error(data.detail || "خطا در بروزرسانی مقاله");
         }
       } else {
         toast.error("خطا در ارتباط با سرور");
@@ -169,29 +177,26 @@ export default function AddArticlePage() {
               <ArrowRight className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-2xl font-black text-foreground">افزودن مقاله جدید</h1>
-              <p className="text-foreground-muted text-sm mt-1">محتوای جدید برای وبلاگ بنویسید</p>
+              <h1 className="text-2xl font-black text-foreground">ویرایش مقاله</h1>
+              <p className="text-foreground-muted text-sm mt-1">تغییر محتوای مقاله موجود</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
              <button
                 type="button"
                 onClick={() => window.open(`/articles/${formData.slug}`, '_blank')}
-                disabled={!formData.slug}
                 className="btn-secondary px-5 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold"
               >
                 <Eye className="w-4 h-4" />
-                پیش‌نمایش
+                مشاهده مقاله
               </button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* ستون اصلی */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
               <form onSubmit={handleSubmit} id="article-form" className="space-y-6">
-                {/* عنوان */}
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-foreground pr-2">عنوان مقاله</label>
                   <input
@@ -200,12 +205,10 @@ export default function AddArticlePage() {
                     className="w-full bg-secondary/50 border border-border rounded-2xl py-4 px-5 outline-none focus:ring-2 focus:ring-primary/20 text-lg font-bold"
                     value={formData.title}
                     onChange={handleTitleChange}
-                    placeholder="یک عنوان جذاب بنویسید..."
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* اسلاگ */}
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-foreground pr-2">اسلاگ (URL)</label>
                     <div className="relative">
@@ -216,13 +219,11 @@ export default function AddArticlePage() {
                         className="w-full bg-secondary/50 border border-border rounded-2xl py-3 pr-12 pl-4 outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
                         value={formData.slug}
                         onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                        placeholder="article-slug-here"
                         dir="ltr"
                       />
                     </div>
                   </div>
 
-                  {/* دسته‌بندی */}
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-foreground pr-2">دسته‌بندی</label>
                     <div className="relative">
@@ -243,67 +244,60 @@ export default function AddArticlePage() {
                   </div>
                 </div>
 
-                  {/* محتوا */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground pr-2">متن مقاله</label>
-                    <textarea
-                      rows={15}
-                      required
-                      className="w-full bg-secondary/50 border border-border rounded-2xl py-4 px-5 outline-none focus:ring-2 focus:ring-primary/20 text-foreground resize-none leading-relaxed"
-                      value={formData.content}
-                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                      placeholder="داستان خود را اینجا شروع کنید..."
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-foreground pr-2">متن مقاله</label>
+                  <textarea
+                    rows={15}
+                    required
+                    className="w-full bg-secondary/50 border border-border rounded-2xl py-4 px-5 outline-none focus:ring-2 focus:ring-primary/20 text-foreground resize-none leading-relaxed"
+                    value={formData.content}
+                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  />
+                </div>
 
-                  {/* توضیح نویسنده */}
-                  <div className="space-y-2 pt-4 border-t border-border">
-                    <label className="text-sm font-bold text-foreground pr-2">توضیح نویسنده (برای این مقاله)</label>
-                    <textarea
-                      rows={4}
-                      className="w-full bg-secondary/50 border border-border rounded-2xl py-4 px-5 outline-none focus:ring-2 focus:ring-primary/20 text-foreground resize-none leading-relaxed"
-                      value={formData.author_note}
-                      onChange={(e) => setFormData({ ...formData, author_note: e.target.value })}
-                      placeholder="مثلاً: این مقاله در مورد آخرین تکنولوژی‌های روز نوشته شده است..."
-                    />
-                  </div>
-                </form>
+                <div className="space-y-2 pt-4 border-t border-border">
+                  <label className="text-sm font-bold text-foreground pr-2">توضیح نویسنده (برای این مقاله)</label>
+                  <textarea
+                    rows={4}
+                    className="w-full bg-secondary/50 border border-border rounded-2xl py-4 px-5 outline-none focus:ring-2 focus:ring-primary/20 text-foreground resize-none leading-relaxed"
+                    value={formData.author_note}
+                    onChange={(e) => setFormData({ ...formData, author_note: e.target.value })}
+                  />
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
+              <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                مقالات مرتبط
+              </h3>
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                {articles.length > 0 ? (
+                  articles.map((art) => (
+                    <label key={art.id} className="flex items-center gap-3 p-3 bg-secondary/30 rounded-xl cursor-pointer hover:bg-secondary/50 transition-all border border-transparent has-[:checked]:border-primary/30">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 accent-primary"
+                        checked={formData.related_articles.includes(art.id)}
+                        onChange={(e) => {
+                          const newRelated = e.target.checked
+                            ? [...formData.related_articles, art.id]
+                            : formData.related_articles.filter(id => id !== art.id);
+                          setFormData({ ...formData, related_articles: newRelated });
+                        }}
+                      />
+                      <span className="text-xs font-medium text-foreground truncate">{art.title}</span>
+                    </label>
+                  ))
+                ) : (
+                  <p className="text-[10px] text-foreground-muted text-center py-4">مقاله‌ای یافت نشد</p>
+                )}
               </div>
             </div>
 
-            {/* ستون کناری */}
-            <div className="space-y-6">
-              {/* مقالات مرتبط */}
-              <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
-                <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-primary" />
-                  مقالات مرتبط
-                </h3>
-                <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                  {articles.length > 0 ? (
-                    articles.map((art) => (
-                      <label key={art.id} className="flex items-center gap-3 p-3 bg-secondary/30 rounded-xl cursor-pointer hover:bg-secondary/50 transition-all border border-transparent has-[:checked]:border-primary/30">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 accent-primary"
-                          checked={formData.related_articles.includes(art.id)}
-                          onChange={(e) => {
-                            const newRelated = e.target.checked
-                              ? [...formData.related_articles, art.id]
-                              : formData.related_articles.filter(id => id !== art.id);
-                            setFormData({ ...formData, related_articles: newRelated });
-                          }}
-                        />
-                        <span className="text-xs font-medium text-foreground truncate">{art.title}</span>
-                      </label>
-                    ))
-                  ) : (
-                    <p className="text-[10px] text-foreground-muted text-center py-4">مقاله‌ای یافت نشد</p>
-                  )}
-                </div>
-              </div>
-
-              {/* تصویر شاخص */}
             <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
               <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
                 <ImageIcon className="w-5 h-5 text-primary" />
@@ -334,12 +328,8 @@ export default function AddArticlePage() {
                   className="hidden"
                 />
               </div>
-              <p className="text-[10px] text-foreground-muted mt-3 leading-relaxed">
-                فرمت‌های مجاز: JPG, PNG, WebP (حداکثر 5MB). کیفیت تصویر باید بالا باشد.
-              </p>
             </div>
 
-            {/* تنظیمات انتشار */}
             <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
               <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-primary" />
@@ -367,8 +357,8 @@ export default function AddArticlePage() {
                     <Loader2 className="w-6 h-6 animate-spin" />
                   ) : (
                     <>
-                      <Plus className="w-6 h-6" />
-                      انتشار مقاله
+                      <Save className="w-6 h-6" />
+                      ذخیره تغییرات
                     </>
                   )}
                 </button>

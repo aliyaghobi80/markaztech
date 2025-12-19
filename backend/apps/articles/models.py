@@ -9,6 +9,8 @@ class Article(models.Model):
     content = models.TextField(_('محتوا'))
     image = models.ImageField(_('تصویر'), upload_to='articles/')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='articles', verbose_name=_('نویسنده'))
+    author_note = models.TextField(_('توضیح نویسنده (برای این مقاله)'), blank=True, null=True)
+    related_articles = models.ManyToManyField('self', blank=True, symmetrical=False, verbose_name=_('مقالات مرتبط'))
     is_active = models.BooleanField(_('فعال'), default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

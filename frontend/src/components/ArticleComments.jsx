@@ -91,11 +91,15 @@ export default function ArticleComments({ articleId, initialComments: propCommen
       )}
       <div className="bg-card border border-border rounded-2xl p-4 md:p-6 shadow-sm hover:border-primary/30 transition-colors">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-secondary rounded-xl flex items-center justify-center text-primary overflow-hidden">
-              <User className="w-6 h-6" />
-            </div>
-            <div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-secondary rounded-xl flex items-center justify-center text-primary overflow-hidden border border-border">
+                {comment.user_avatar ? (
+                  <img src={comment.user_avatar} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-6 h-6" />
+                )}
+              </div>
+              <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-foreground">{comment.user_name}</span>
                 {comment.user_is_staff && (

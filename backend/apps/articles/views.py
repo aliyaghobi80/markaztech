@@ -56,3 +56,12 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
         from apps.users.utils import send_comment_update
         send_comment_update(comment)
         return Response({'status': 'approved'})
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def reject(self, request, pk=None):
+        comment = self.get_object()
+        comment.is_approved = False
+        comment.save()
+        from apps.users.utils import send_comment_update
+        send_comment_update(comment)
+        return Response({'status': 'rejected'})

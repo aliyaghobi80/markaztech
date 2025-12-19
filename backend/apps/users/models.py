@@ -43,6 +43,7 @@ class User(AbstractUser):
     national_code = models.CharField('کد ملی', max_length=10, blank=True, null=True)
     
     birth_date = models.DateField('تاریخ تولد', blank=True, null=True)
+    bio = models.TextField('بیوگرافی', blank=True, null=True)
     avatar = models.ImageField('تصویر پروفایل', upload_to='avatars/', blank=True, null=True)
     wallet_balance = models.DecimalField('موجودی کیف پول', max_digits=12, decimal_places=0, default=0)
 
