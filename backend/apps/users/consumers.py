@@ -26,8 +26,11 @@ class UserConsumer(AsyncWebsocketConsumer):
         
         await self.accept()
         
-        # Increment visit in DB
-        await self.increment_visit_count()
+        # Increment visit in DB if not already visited in this session
+        if self.session and not self.session.get('has_visited'):
+            await self.increment_visit_count()
+            self.session['has_visited'] = True
+            await database_sync_to_async(self.session.save)()
         
         # Track online status
         online_id = None
