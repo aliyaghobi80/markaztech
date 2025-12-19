@@ -68,9 +68,9 @@ export function AuthProvider({ children }) {
   // Role-based redirection logic
   useEffect(() => {
     if (!loading && user) {
-      if (user.role === 'ADMIN' && pathname === '/dashboard') {
-        router.push('/admin');
-      } else if (user.role !== 'ADMIN' && pathname.startsWith('/admin')) {
+      // Allow admins to access /dashboard if they want (don't force redirect)
+      const isAdmin = user.role === 'ADMIN' || user.is_staff || user.is_superuser;
+      if (!isAdmin && pathname.startsWith('/admin')) {
         router.push('/dashboard');
       }
     }

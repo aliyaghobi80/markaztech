@@ -19,13 +19,15 @@ export default function AdminLayout({ children }) {
   // محافظت از روت (فقط ادمین راه دارد)
   useEffect(() => {
     if (!loading) {
-      if (!user || user.role !== 'ADMIN') {
+      const isAdmin = user?.role === 'ADMIN' || user?.is_staff || user?.is_superuser;
+      if (!user || !isAdmin) {
         router.push("/dashboard"); 
       }
     }
   }, [user, loading, router]);
 
-  if (loading || !user || user.role !== 'ADMIN') return null;
+  const isAdmin = user?.role === 'ADMIN' || user?.is_staff || user?.is_superuser;
+  if (loading || !user || !isAdmin) return null;
 
     const menuItems = [
       { name: "پیشخوان", icon: LayoutDashboard, href: "/admin" },
