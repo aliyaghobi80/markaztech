@@ -38,14 +38,14 @@ def broadcast_site_stats():
     satisfied_votes = SatisfactionSurvey.objects.filter(is_satisfied=True).count()
     rate = (satisfied_votes / total_votes * 100) if total_votes > 0 else 100
     
-    from .consumers import online_users
+    from .consumers import online_user_connections
     
     stats_data = {
         "total_visits": stats.total_visits,
         "total_satisfied": satisfied_votes,
         "total_satisfied_customers": satisfied_votes,  # Added for HeroSection consistency
         "satisfaction_rate": round(rate, 1),
-        "online_users": len(online_users)
+        "online_users": len(online_user_connections)
     }
     
     channel_layer = get_channel_layer()

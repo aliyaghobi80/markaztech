@@ -3,9 +3,9 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import SiteStats
 
-# Global variable to track online users (simple approach)
+# Global variable to track online users (connection counts)
 # In production, use Redis for this
-online_users = set()
+online_user_connections = {}
 
 class UserConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -47,7 +47,11 @@ class UserConsumer(AsyncWebsocketConsumer):
             online_id = f"c_{self.channel_name}"
             
         self.online_id = online_id
-        online_users.add(online_id)
+        
+        # Update connection count for this ID
+        if online_id not in online_user_connections:
+            online_user_connections[online_id] = 0
+        online_user_connections[online_id] += 1
             
         await self.broadcast_stats()
 
@@ -58,13 +62,15 @@ class UserConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_discard("admin_notifications", self.channel_name)
             await self.channel_layer.group_discard("admin_comments", self.channel_name)
             
-        if hasattr(self, 'online_id') and self.online_id in online_users:
-            online_users.remove(self.online_id)
+        if hasattr(self, 'online_id') and self.online_id in online_user_connections:
+            online_user_connections[self.online_id] -= 1
+            if online_user_connections[self.online_id] <= 0:
+                del online_user_connections[self.online_id]
             await self.broadcast_stats()
 
     async def broadcast_stats(self):
         stats = await self.get_stats()
-        stats['online_users'] = len(online_users)
+        stats['online_users'] = len(online_user_connections)
         
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -96,7 +102,8 @@ class UserConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def increment_visit_count(self):
-        SiteStats.increment_visit()
+        client_ip = self.scope.get('client', [None])[0]
+        SiteStats.increment_visit(ip_address=client_ip)
 
     @database_sync_to_async
     def get_stats(self):

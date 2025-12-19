@@ -117,6 +117,15 @@ class TicketMessage(models.Model):
     def __str__(self):
         return f"Message from {self.sender} on {self.ticket.subject}"
 
+class Visitor(models.Model):
+    ip_address = models.GenericIPAddressField(verbose_name='آدرس IP')
+    date = models.DateField(auto_now_add=True, verbose_name='تاریخ')
+
+    class Meta:
+        verbose_name = 'بازدیدکننده'
+        verbose_name_plural = 'بازدیدکنندگان'
+        unique_together = ('ip_address', 'date')
+
 class SiteStats(models.Model):
     """General site statistics."""
     total_visits = models.PositiveBigIntegerField(default=0, verbose_name='کل بازدیدها')
@@ -128,10 +137,17 @@ class SiteStats(models.Model):
         verbose_name_plural = 'آمار سایت'
 
     @classmethod
-    def increment_visit(cls):
+    def increment_visit(cls, ip_address=None):
         from django.utils import timezone
         stats, created = cls.objects.get_or_create(id=1)
         today = timezone.now().date()
+        
+        # If IP is provided, check if this IP already visited today
+        if ip_address:
+            visitor, created = Visitor.objects.get_or_create(ip_address=ip_address, date=today)
+            if not created:
+                # Already visited today
+                return stats
         
         if stats.last_visit_date != today:
             stats.today_visits = 1
