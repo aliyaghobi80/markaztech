@@ -33,6 +33,10 @@ class ProductViewSet(viewsets.ModelViewSet):
             from django.http import Http404
             raise Http404("Product not found")
     
+    def partial_update(self, request, *args, **kwargs):
+        print(f"DEBUG: Partial update request data: {request.data}")
+        return super().partial_update(request, *args, **kwargs)
+
     def get_serializer_class(self):
         """Use different serializers for different actions."""
         if self.action == 'create':

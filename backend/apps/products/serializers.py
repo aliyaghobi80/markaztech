@@ -45,11 +45,34 @@ class ProductSerializer(serializers.ModelSerializer):
 class UpdateProductSerializer(serializers.ModelSerializer):
     """Serializer for updating products - allows is_active and category to be writable."""
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=False)
-    
+
     class Meta:
         model = Product
         fields = ['title', 'slug', 'description', 'price', 'discount_price', 'main_image', 'delivery_time', 'category', 'is_active']
-    
+
+    def to_internal_value(self, data):
+        """Handle string 'true'/'false' for is_active and ensure category is processed correctly."""
+        # Create a mutable copy of the data if it's a QueryDict (from multipart/form-data)
+        if hasattr(data, 'dict'):
+            data = data.dict()
+        else:
+            data = data.copy() if hasattr(data, 'copy') else dict(data)
+
+        # Convert string booleans for is_active
+        if 'is_active' in data:
+            if isinstance(data['is_active'], str):
+                data['is_active'] = data['is_active'].lower() == 'true'
+        
+        # Ensure category is not an empty string if it's optional but provided
+        if 'category' in data and data['category'] == '':
+            data.pop('category')
+            
+        # Handle empty discount_price
+        if 'discount_price' in data and data['discount_price'] == '':
+            data['discount_price'] = None
+
+        return super().to_internal_value(data)
+
     def to_representation(self, instance):
         """Return full category info after update."""
         ret = super().to_representation(instance)
@@ -74,6 +97,15 @@ class CreateProductSerializer(serializers.ModelSerializer):
             'main_image', 'delivery_time', 'category'
         ]
     
+    def to_internal_value(self, data):
+        """Handle multipart/form-data strings."""
+        if hasattr(data, 'dict'):
+            data = data.dict()
+        else:
+            data = data.copy() if hasattr(data, 'copy') else dict(data)
+            
+        return super().to_internal_value(data)
+
     def create(self, validated_data):
         """Create product with automatic slug generation."""
         # ساخت slug خودکار از title
