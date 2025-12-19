@@ -176,55 +176,72 @@ function AdminTicketListItem({ ticket, onRefresh }) {
               ref={scrollContainerRef}
               className="space-y-4 max-h-[400px] overflow-y-auto px-2 custom-scrollbar scroll-smooth"
             >
-              {messages?.map((msg) => (
-
-              <div key={msg.id} className={`flex ${msg.is_me ? "justify-end" : "justify-start"}`}>
-                <div className={`group relative max-w-[85%] rounded-2xl p-4 text-sm ${
-                  msg.is_me 
-                  ? "bg-primary text-primary-foreground rounded-tr-none shadow-lg shadow-primary/10" 
-                  : "bg-card border border-border text-foreground rounded-tl-none"
-                }`}>
-                  <div className="flex items-center justify-between gap-4 mb-1">
-                    <span className="text-[10px] font-bold opacity-70">{msg.sender_name}</span>
-                    <button 
-                      onClick={() => handleDeleteMessage(msg.id)}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-black/10 rounded transition-all text-white/70 hover:text-white"
-                    >
-                      <Trash2 className="w-3 h-3 text-red-400" />
-                    </button>
-                  </div>
-                  <p className="leading-7">{msg.message}</p>
-                  
-                  {msg.attachment && (
-                    <div className="mt-3 p-2 bg-black/5 dark:bg-white/5 rounded-xl border border-white/10">
-                      {msg.attachment.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                        <a href={msg.attachment} target="_blank" rel="noreferrer">
-                          <img 
-                            src={msg.attachment} 
-                            alt="Attachment" 
-                            className="max-w-full h-auto rounded-lg shadow-sm hover:opacity-90 transition-opacity"
-                          />
-                        </a>
-                      ) : (
-                        <a 
-                          href={msg.attachment} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="flex items-center gap-2 text-[10px] font-bold py-1 px-2"
-                        >
-                          <FileText className="w-4 h-4" />
-                          مشاهده فایل پیوست
-                        </a>
-                      )}
+                {messages?.map((msg) => (
+                  <div key={msg.id} className={`flex flex-col ${msg.is_me ? "items-end" : "items-start"} mb-6`}>
+                    <div className="flex items-center gap-2 mb-1.5 px-1">
+                      {!msg.is_me && <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary"><User className="w-3 h-3" /></div>}
+                      <span className="text-[10px] font-black text-foreground/50">{msg.sender_name}</span>
+                      {msg.is_me && <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground italic">A</div>}
                     </div>
-                  )}
 
-                  <div className={`mt-2 text-[9px] ${msg.is_me ? "text-primary-foreground/70" : "text-foreground-muted"}`}>
-                    {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                    <div className={`group relative max-w-[85%] transition-all duration-300 ${
+                      msg.is_me 
+                      ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-2xl rounded-tr-sm shadow-[0_8px_30px_rgb(59,130,246,0.15)]" 
+                      : "bg-card border border-border text-foreground rounded-2xl rounded-tl-sm shadow-sm"
+                    }`}>
+                      <div className="p-4">
+                        <p className="leading-relaxed text-[13px] whitespace-pre-wrap">{msg.message}</p>
+                        
+                        {msg.attachment && (
+                          <div className={`mt-3 overflow-hidden rounded-xl border ${msg.is_me ? "border-white/10 bg-black/10" : "border-border bg-secondary/50"}`}>
+                            {msg.attachment.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                              <div className="relative group/img">
+                                <a href={msg.attachment} target="_blank" rel="noreferrer">
+                                  <img 
+                                    src={msg.attachment} 
+                                    alt="Attachment" 
+                                    className="max-w-full h-auto object-cover max-h-[300px] w-full transition-transform duration-500 group-hover/img:scale-105"
+                                  />
+                                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                    <Paperclip className="text-white w-6 h-6" />
+                                  </div>
+                                </a>
+                              </div>
+                            ) : (
+                              <a 
+                                href={msg.attachment} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="flex items-center gap-3 p-3 text-[11px] font-bold hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                              >
+                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                  <FileText className="w-4 h-4" />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span>مشاهده فایل پیوست</span>
+                                  <span className="text-[9px] opacity-50">کلیک برای دانلود</span>
+                                </div>
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className={`absolute -top-2 ${msg.is_me ? "-left-2" : "-right-2"} opacity-0 group-hover:opacity-100 transition-all duration-300`}>
+                        <button 
+                          onClick={() => handleDeleteMessage(msg.id)}
+                          className="p-1.5 bg-error text-error-foreground rounded-full shadow-lg hover:scale-110 active:scale-90"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className={`mt-1.5 px-1 text-[9px] font-medium text-foreground/40`}>
+                      {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                ))}
             <div ref={messagesEndRef} className="h-2" />
           </div>
 
