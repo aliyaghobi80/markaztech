@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import useSWR, { mutate as globalMutate } from "swr";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/axios";
 import { useRouter } from "next/navigation";
@@ -422,55 +423,34 @@ function WalletChargeSection({ user }) {
   const [receiptFile, setReceiptFile] = useState(null);
   const [receiptPreview, setReceiptPreview] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [myRequests, setMyRequests] = useState([]);
-  const [loadingRequests, setLoadingRequests] = useState(true);
+
+  const fetcher = (url) => api.get(url).then((res) => res.data.results || res.data);
+  const { data: myRequests = [], error: requestsError, mutate } = useSWR("/users/wallet-requests/", fetcher);
 
   const bankCardNumber = "6037997310266797";
   const bankCardOwner = "علی یعقوبی - بانک ملی";
 
   const predefinedAmounts = [50000, 100000, 200000, 500000, 1000000];
 
-    useEffect(() => {
-      fetchMyRequests();
-  
-      // گوش دادن به تغییرات وضعیت درخواست شارژ (از AuthContext و وب‌سوکت)
-      const handleStatusChange = (event) => {
-        const { request_id, status, admin_note } = event.detail;
-        console.log("Wallet request status change received:", { request_id, status });
-
-        // آپدیت آنی وضعیت در لیست محلی برای تجربه کاربری بهتر
-        setMyRequests(prevRequests => 
-          prevRequests.map(req => 
-            Number(req.id) === Number(request_id) ? { ...req, status, admin_note } : req
-          )
-        );
-
-        // همچنین رفرش کلی از سرور با تاخیرهای متفاوت برای اطمینان از دریافت دیتای نهایی
-        setTimeout(() => fetchMyRequests(), 500);
-        setTimeout(() => fetchMyRequests(), 2000);
-        
-        // نمایش نوتیفیکیشن متناسب با وضعیت
-        if (status === 'APPROVED') {
-          toast.success("درخواست شارژ کیف پول شما تایید شد!", { id: `wallet-${request_id}` });
-        } else if (status === 'REJECTED') {
-          toast.error("درخواست شارژ کیف پول شما رد شد.", { id: `wallet-${request_id}` });
-        }
-      };
+  useEffect(() => {
+    // گوش دادن به تغییرات وضعیت درخواست شارژ (از AuthContext و وب‌سوکت)
+    const handleStatusChange = (event) => {
+      const { request_id, status } = event.detail;
+      
+      // رفرش لیست از سرور
+      mutate();
+      
+      // نمایش نوتیفیکیشن متناسب با وضعیت
+      if (status === 'APPROVED') {
+        toast.success("درخواست شارژ کیف پول شما تایید شد!", { id: `wallet-${request_id}` });
+      } else if (status === 'REJECTED') {
+        toast.error("درخواست شارژ کیف پول شما رد شد.", { id: `wallet-${request_id}` });
+      }
+    };
 
     window.addEventListener('wallet_request_status_changed', handleStatusChange);
     return () => window.removeEventListener('wallet_request_status_changed', handleStatusChange);
-  }, []);
-
-  const fetchMyRequests = async () => {
-    try {
-      const response = await api.get("/users/wallet-requests/");
-      setMyRequests(response.data.results || response.data || []);
-    } catch (error) {
-      console.error("Error fetching requests:", error);
-    } finally {
-      setLoadingRequests(false);
-    }
-  };
+  }, [mutate]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -519,7 +499,7 @@ function WalletChargeSection({ user }) {
       setAmount("");
       setReceiptFile(null);
       setReceiptPreview(null);
-      fetchMyRequests();
+      mutate();
     } catch (error) {
       const errorMsg = error.response?.data?.amount?.[0] || 
                        error.response?.data?.receipt_image?.[0] || 
@@ -655,7 +635,7 @@ function WalletChargeSection({ user }) {
         <div className="bg-card border border-border rounded-2xl p-6">
           <h3 className="text-lg font-bold text-foreground mb-4">درخواست‌های قبلی من</h3>
           
-          {loadingRequests ? (
+          {!myRequests && !requestsError ? (
             <div className="text-center py-8">
               <Loader2 className="w-6 h-6 animate-spin mx-auto text-foreground-muted" />
             </div>

@@ -4,6 +4,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "@/lib/axios";
 import { useRouter } from "next/navigation";
+import { mutate } from "swr";
 
 const AuthContext = createContext();
 
@@ -90,17 +91,20 @@ export function AuthProvider({ children }) {
               ...prevUser,
               wallet_balance: data.balance
             }));
-          } else if (data.type === 'wallet_request_update') {
-            // ایجاد یک رویداد سفارشی برای اطلاع‌رسانی به داشبورد
-            const event = new CustomEvent('wallet_request_status_changed', { 
-              detail: { 
-                request_id: data.request_id, 
-                status: data.status,
-                admin_note: data.admin_note
-              } 
-            });
-            window.dispatchEvent(event);
-          }
+            } else if (data.type === 'wallet_request_update') {
+              // رفرش کردن تمام لیست‌های مربوط به کیف پول در سراسر اپلیکیشن
+              mutate("/users/wallet-requests/");
+              
+              // ایجاد یک رویداد سفارشی برای اطلاع‌رسانی به داشبورد
+              const event = new CustomEvent('wallet_request_status_changed', { 
+                detail: { 
+                  request_id: data.request_id, 
+                  status: data.status,
+                  admin_note: data.admin_note
+                } 
+              });
+              window.dispatchEvent(event);
+            }
         };
 
       socket.onclose = () => {
