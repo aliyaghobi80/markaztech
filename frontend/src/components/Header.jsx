@@ -1,13 +1,17 @@
+// مسیر: src/components/Header.jsx
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, ShoppingCart, User, Menu, ChevronLeft, Sun, Moon, Home, Grid3X3, LayoutDashboard, Wallet } from "lucide-react";
+import { 
+  Search, ShoppingCart, User, Menu, ChevronLeft, 
+  Sun, Moon, LayoutDashboard, ShieldCheck, X,
+  ShoppingBag, Home
+} from "lucide-react";
 import api from "@/lib/axios";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "next-themes";
-import { formatPrice } from "@/lib/utils";
 import UserDropdown from "./UserDropdown";
 import SearchModal from "./SearchModal";
 
@@ -20,31 +24,16 @@ export default function Header() {
   const { user } = useAuth();
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
+  const isAdmin = user?.role === 'ADMIN' || user?.is_staff;
 
   useEffect(() => {
     setMounted(true);
-
-    const handleKeyboard = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        setSearchModalOpen(true);
-      }
-    };
-
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-
-    document.addEventListener("keydown", handleKeyboard);
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
-    return () => {
-      document.removeEventListener("keydown", handleKeyboard);
-      window.removeEventListener("scroll", handleScroll);
-    };
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
@@ -54,160 +43,129 @@ export default function Header() {
         setCategories(response.data);
       } catch (error) {
         console.error("خطا در دریافت دسته‌بندی‌ها:", error);
-        setCategories([]);
       } finally {
         setLoading(false);
       }
     };
-    
     fetchCategories();
   }, []);
 
   return (
-    <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-card/95 backdrop-blur-xl shadow-lg border-b border-border' : 'bg-card border-b border-border'}`}>
+    <header className={`sticky top-0 z-50 transition-all duration-300 ${
+      scrolled 
+        ? 'bg-card/80 backdrop-blur-xl shadow-lg border-b border-border py-2' 
+        : 'bg-card border-b border-border py-3'
+    }`}>
       <div className="container mx-auto px-4">
-        <div className="h-16 md:h-18 flex items-center justify-between gap-4">
-
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-4">
+          
+          {/* لوگو و منوی موبایل */}
+          <div className="flex items-center gap-3">
             <button 
               onClick={() => setIsMenuOpen(true)}
-              className="lg:hidden p-2.5 hover:bg-secondary rounded-xl transition-colors text-foreground-muted hover:text-foreground"
+              className="lg:hidden p-2 hover:bg-secondary rounded-xl transition-colors"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-6 h-6" />
             </button>
-            <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-              <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <span className="text-white font-black text-sm">M</span>
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
+                <span className="text-white font-black text-lg">M</span>
               </div>
-              <span className="text-xl font-black hidden sm:block">
-                <span className="text-primary">Markaz</span>
-                <span className="text-foreground">Tech</span>
+              <span className="text-xl font-black hidden sm:block tracking-tighter">
+                Markaz<span className="text-primary">Tech</span>
               </span>
             </Link>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-1">
-            <Link href="/" className="flex items-center gap-2 px-4 py-2 text-foreground-muted hover:text-foreground hover:bg-secondary rounded-xl transition-all text-sm font-medium">
-              <Home className="w-4 h-4" />
+          {/* نویگیشن دسکتاپ */}
+          <nav className="hidden lg:flex items-center gap-1 bg-secondary/50 p-1 rounded-2xl border border-border">
+            <Link href="/" className="px-4 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-sm font-bold flex items-center gap-2">
+              <Home className="w-4 h-4 text-primary" />
               خانه
             </Link>
-            <Link href="/search" className="flex items-center gap-2 px-4 py-2 text-foreground-muted hover:text-foreground hover:bg-secondary rounded-xl transition-all text-sm font-medium">
-              <Grid3X3 className="w-4 h-4" />
+            <Link href="/search" className="px-4 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-sm font-bold flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4 text-primary" />
               محصولات
             </Link>
-            {user && (
-              <Link href="/dashboard" className="flex items-center gap-2 px-4 py-2 text-foreground-muted hover:text-foreground hover:bg-secondary rounded-xl transition-all text-sm font-medium">
-                <LayoutDashboard className="w-4 h-4" />
-                داشبورد
-              </Link>
-            )}
             
             <div className="group relative">
-              <button className="flex items-center gap-2 px-4 py-2 text-foreground-muted hover:text-foreground hover:bg-secondary rounded-xl transition-all text-sm font-medium">
-                <Menu className="w-4 h-4" />
+              <button className="px-4 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-sm font-bold flex items-center gap-2">
+                <LayoutDashboard className="w-4 h-4 text-primary" />
                 دسته‌بندی‌ها
               </button>
-
-              <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 absolute top-full right-0 w-64 bg-card shadow-xl border border-border rounded-2xl transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50 mt-1">
-                <ul className="py-2">
-                  {loading ? (
-                    <li className="px-4 py-2 text-sm text-foreground-muted">در حال بارگذاری...</li>
-                  ) : categories.length > 0 ? (
-                    categories.map((cat) => (
-                      <li key={cat.id} className="group/sub relative">
-                        <Link href={`/category/${cat.slug}`} className="flex items-center justify-between px-4 py-3 hover:bg-secondary text-foreground hover:text-primary text-sm font-medium transition-colors rounded-lg mx-2">
-                          <span>{cat.name}</span>
-                          {cat.children && cat.children.length > 0 && <ChevronLeft className="w-4 h-4 text-foreground-muted" />}
-                        </Link>
-                        {cat.children && cat.children.length > 0 && (
-                          <div className="invisible opacity-0 group-hover/sub:visible group-hover/sub:opacity-100 absolute top-0 right-full w-56 bg-card shadow-xl border border-border rounded-2xl mr-2 transition-all">
-                            <ul className="py-2">
-                              {cat.children.map((child) => (
-                                <li key={child.id}>
-                                  <Link href={`/category/${child.slug}`} className="block px-4 py-2.5 hover:bg-secondary text-foreground-secondary hover:text-primary text-sm transition-colors rounded-lg mx-2">
-                                    {child.name}
-                                  </Link>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </li>
-                    ))
-                  ) : (
-                    <li className="px-4 py-2 text-sm text-foreground-muted">دسته‌ای یافت نشد</li>
-                  )}
-                </ul>
+              <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 absolute top-full right-0 w-64 bg-card shadow-xl border border-border rounded-2xl transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50 mt-2 p-2">
+                {loading ? (
+                  <div className="p-4 text-center text-sm text-foreground-muted">درحال بارگذاری...</div>
+                ) : (
+                  categories.map((cat) => (
+                    <Link 
+                      key={cat.id} 
+                      href={`/category/${cat.slug}`}
+                      className="flex items-center justify-between px-3 py-2.5 hover:bg-secondary rounded-xl transition-colors text-sm font-medium"
+                    >
+                      {cat.name}
+                      <ChevronLeft className="w-4 h-4 text-foreground-muted" />
+                    </Link>
+                  ))
+                )}
               </div>
             </div>
           </nav>
 
-          <div className="hidden md:flex flex-1 max-w-md relative">
+          {/* ابزارهای کاربر */}
+          <div className="flex items-center gap-1.5 md:gap-3">
             <button
               onClick={() => setSearchModalOpen(true)}
-              className="w-full bg-secondary/70 border border-border text-foreground-muted rounded-xl py-2.5 px-4 text-right hover:border-primary/50 hover:bg-secondary transition-all flex items-center justify-between text-sm"
+              className="hidden md:flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary-hover border border-border rounded-xl transition-all text-foreground-muted hover:text-foreground group"
             >
-              <div className="flex items-center gap-2">
-                <Search className="w-4 h-4" />
-                <span>جستجو...</span>
-              </div>
-              <div className="flex items-center gap-1 text-xs bg-background px-2 py-1 rounded-md border border-border">
-                <span>Ctrl</span>
-                <span>+</span>
-                <span>K</span>
-              </div>
+              <Search className="w-4 h-4 group-hover:text-primary transition-colors" />
+              <span className="text-sm font-medium">جستجو...</span>
+              <kbd className="text-[10px] bg-card border border-border px-1.5 py-0.5 rounded-md mr-4 opacity-50">Ctrl K</kbd>
             </button>
-          </div>
 
-          <div className="flex items-center gap-2">
             <button
               onClick={() => setSearchModalOpen(true)}
-              className="md:hidden p-2.5 hover:bg-secondary rounded-xl transition-colors"
+              className="md:hidden p-2.5 hover:bg-secondary rounded-xl"
             >
-              <Search className="w-5 h-5 text-foreground-muted" />
+              <Search className="w-5 h-5" />
             </button>
 
             {mounted && (
               <button
                 onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-                className="p-2.5 hover:bg-secondary rounded-xl transition-colors text-foreground-muted hover:text-foreground relative w-10 h-10 flex items-center justify-center"
+                className="p-2.5 hover:bg-secondary rounded-xl transition-colors text-foreground-muted"
               >
-                <Sun className="h-5 w-5 absolute transition-all duration-300 rotate-0 scale-100 dark:-rotate-90 dark:scale-0" />
-                <Moon className="h-5 w-5 absolute transition-all duration-300 rotate-90 scale-0 dark:rotate-0 dark:scale-100" />
+                {resolvedTheme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
             )}
 
-            <Link href="/cart" className="p-2.5 hover:bg-secondary rounded-xl transition-colors relative">
-              <ShoppingCart className="w-5 h-5 text-foreground-muted hover:text-foreground transition-colors" />
+            <Link href="/cart" className="p-2.5 hover:bg-secondary rounded-xl relative group">
+              <ShoppingCart className="w-5 h-5 text-foreground-muted group-hover:text-primary transition-colors" />
               {cartCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center rounded-full border-2 border-card">
+                <span className="absolute top-1 right-1 w-5 h-5 bg-primary text-primary-foreground text-[10px] font-black flex items-center justify-center rounded-full border-2 border-card shadow-sm animate-in zoom-in">
                   {cartCount}
                 </span>
               )}
             </Link>
 
             {user ? (
-              <>
-                <Link 
-                  href="/dashboard" 
-                  className="hidden md:flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-xl hover:from-primary/20 hover:to-primary/10 transition-all group"
-                >
-                  <Wallet className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-bold text-primary">{formatPrice(user.wallet_balance || 0)}</span>
-                  <span className="text-xs text-primary/70">تومان</span>
-                </Link>
+              <div className="flex items-center gap-3">
+                {isAdmin && (
+                  <Link 
+                    href="/admin" 
+                    className="hidden xl:flex items-center gap-2 px-4 py-2 bg-error/10 text-error border border-error/20 rounded-xl hover:bg-error hover:text-white transition-all text-sm font-black"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    پنل مدیریت
+                  </Link>
+                )}
                 <UserDropdown />
-              </>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link href="/login" className="hidden sm:flex items-center gap-2 px-4 py-2.5 border border-border rounded-xl hover:border-primary hover:text-primary text-foreground-muted transition-all text-sm font-medium">
-                  ورود
-                </Link>
-                <Link href="/register" className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl hover:bg-primary/90 transition-all text-sm font-medium shadow-md shadow-primary/20">
-                  <User className="w-4 h-4" />
-                  <span className="hidden sm:block">ثبت‌نام</span>
-                </Link>
               </div>
+            ) : (
+              <Link href="/login" className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all text-sm font-black shadow-lg shadow-primary/20">
+                <User className="w-4 h-4" />
+                ورود / ثبت‌نام
+              </Link>
             )}
           </div>
         </div>
@@ -218,96 +176,68 @@ export default function Header() {
         onClose={() => setSearchModalOpen(false)} 
       />
 
-      {/* موبایل منو */}
+      {/* موبایل منو (ریسپانسیو) */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-[60] lg:hidden">
-          {/* بک‌دراپ */}
-          <div 
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setIsMenuOpen(false)}
-          />
-          
-          {/* محتوای منو */}
-          <div className="absolute top-0 right-0 bottom-0 w-[280px] bg-card border-l border-border shadow-2xl flex flex-col transform transition-transform duration-300">
-            <div className="p-4 border-b border-border flex items-center justify-between">
-              <span className="font-black text-primary">Markaz Tech</span>
-              <button 
-                onClick={() => setIsMenuOpen(false)}
-                className="p-2 hover:bg-secondary rounded-lg transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5 rotate-180" />
+        <div className="fixed inset-0 z-[100] lg:hidden animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsMenuOpen(false)} />
+          <div className="absolute top-0 right-0 bottom-0 w-[300px] bg-card border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-500">
+            <div className="p-6 border-b border-border flex items-center justify-between bg-secondary/20">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center">
+                  <span className="text-white font-black text-sm">M</span>
+                </div>
+                <span className="font-black text-lg">Markaz Tech</span>
+              </div>
+              <button onClick={() => setIsMenuOpen(false)} className="p-2 hover:bg-secondary rounded-xl">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-              <Link 
-                href="/" 
-                onClick={() => setIsMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 text-foreground hover:bg-secondary rounded-xl font-medium transition-all"
-              >
-                <Home className="w-5 h-5 text-foreground-muted" />
+              <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 hover:bg-secondary rounded-2xl font-bold transition-all border border-transparent hover:border-border">
+                <Home className="w-5 h-5 text-primary" />
                 خانه
               </Link>
-              <Link 
-                href="/search" 
-                onClick={() => setIsMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 text-foreground hover:bg-secondary rounded-xl font-medium transition-all"
-              >
-                <Grid3X3 className="w-5 h-5 text-foreground-muted" />
+              <Link href="/search" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 hover:bg-secondary rounded-2xl font-bold transition-all border border-transparent hover:border-border">
+                <ShoppingBag className="w-5 h-5 text-primary" />
                 محصولات
               </Link>
               {user && (
-                <Link 
-                  href="/dashboard" 
-                  onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 text-foreground hover:bg-secondary rounded-xl font-medium transition-all"
-                >
-                  <LayoutDashboard className="w-5 h-5 text-foreground-muted" />
+                <Link href="/dashboard" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 hover:bg-secondary rounded-2xl font-bold transition-all border border-transparent hover:border-border">
+                  <LayoutDashboard className="w-5 h-5 text-primary" />
                   داشبورد
                 </Link>
               )}
+              {isAdmin && (
+                <Link href="/admin" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 bg-error/10 text-error rounded-2xl font-black transition-all border border-error/20">
+                  <ShieldCheck className="w-5 h-5" />
+                  پنل مدیریت ادمین
+                </Link>
+              )}
 
-              <div className="pt-4 mt-4 border-t border-border">
-                <h3 className="px-4 text-xs font-bold text-foreground-muted uppercase tracking-wider mb-2">دسته‌بندی‌ها</h3>
-                {categories.map((cat) => (
-                  <div key={cat.id} className="space-y-1">
+              <div className="pt-6">
+                <h3 className="px-4 text-xs font-black text-foreground-muted uppercase tracking-widest mb-4">دسته‌بندی‌ها</h3>
+                <div className="grid grid-cols-1 gap-1">
+                  {categories.map((cat) => (
                     <Link 
+                      key={cat.id} 
                       href={`/category/${cat.slug}`}
                       onClick={() => setIsMenuOpen(false)}
-                      className="flex items-center justify-between px-4 py-2.5 text-foreground hover:text-primary transition-colors font-medium text-sm"
+                      className="px-4 py-3 hover:bg-secondary rounded-xl text-sm font-bold transition-colors flex items-center justify-between"
                     >
                       {cat.name}
+                      <ChevronLeft className="w-4 h-4 opacity-30" />
                     </Link>
-                    {cat.children && cat.children.length > 0 && (
-                      <div className="mr-4 space-y-1 border-r border-border pr-2">
-                        {cat.children.map((child) => (
-                          <Link 
-                            key={child.id}
-                            href={`/category/${child.slug}`}
-                            onClick={() => setIsMenuOpen(false)}
-                            className="block px-4 py-2 text-sm text-foreground-secondary hover:text-primary transition-colors"
-                          >
-                            {child.name}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </nav>
 
-            {user && (
-              <div className="p-4 border-t border-border bg-secondary/30">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-                    {user.first_name?.[0] || user.username?.[0] || 'U'}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-foreground">{user.first_name || user.username}</p>
-                    <p className="text-xs text-foreground-muted">{formatPrice(user.wallet_balance || 0)} تومان</p>
-                  </div>
-                </div>
+            {!user && (
+              <div className="p-6 border-t border-border">
+                <Link href="/login" onClick={() => setIsMenuOpen(false)} className="w-full bg-primary text-primary-foreground py-4 rounded-2xl font-black text-center block shadow-lg shadow-primary/20">
+                  ورود یا ثبت‌نام
+                </Link>
               </div>
             )}
           </div>
