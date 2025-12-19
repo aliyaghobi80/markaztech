@@ -42,21 +42,30 @@ class ArticleSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'slug', 'category', 'category_name', 'content', 'image', 'author', 'author_name', 'is_active', 'comments_count', 'created_at', 'created_at_human']
         read_only_fields = ['author', 'created_at']
 
-    def to_internal_value(self, data):
-        # Convert QueryDict to a mutable dict if necessary
-        if hasattr(data, 'copy'):
-            data = data.copy()
+def to_internal_value(self, data):
+# Convert QueryDict to a mutable dict to handle multipart/form-data better
+if hasattr(data, 'dict'):
+data = data.dict()
+elif hasattr(data, 'copy'):
+data = data.copy()
 
-        # Handle empty strings for nullable fields
-        if 'category' in data and data['category'] == '':
-            data['category'] = None
+# Handle empty strings for nullable fields
+if 'category' in data and data['category'] == '':
+data['category'] = None
 
-        # Handle Boolean strings from FormData
-        if 'is_active' in data:
-            if isinstance(data['is_active'], str):
-                data['is_active'] = data['is_active'].lower() == 'true'
+# Handle Boolean strings from FormData
+if 'is_active' in data:
+if isinstance(data['is_active'], str):
+data['is_active'] = data['is_active'].lower() == 'true'
 
-        return super().to_internal_value(data)
+# Handle image field - if it's a string, remove it (not a file upload)
+if 'image' in data:
+val = data['image']
+if val == '' or val == 'null' or isinstance(val, str):
+data.pop('image')
+
+return super().to_internal_value(data)
+
 
     def get_created_at_human(self, obj):
         from apps.users.utils import jalali_relative_time

@@ -92,29 +92,53 @@ export default function Header() {
                   مقالات
                 </Link>
               
-                <div className="group relative py-2">
-                  <button className="px-2 xl:px-3 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-xs xl:text-sm font-bold flex items-center gap-2 whitespace-nowrap">
-                    <LayoutDashboard className="w-4 h-4 text-primary" />
-                    دسته‌بندی‌ها
-                  </button>
-                  <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 absolute top-[calc(100%-5px)] right-0 w-64 bg-card shadow-xl border border-border rounded-2xl transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50 p-2">
+                  <div className="group relative py-2">
+                    <button className="px-2 xl:px-3 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-xs xl:text-sm font-bold flex items-center gap-2 whitespace-nowrap">
+                      <LayoutDashboard className="w-4 h-4 text-primary" />
+                      دسته‌بندی‌ها
+                    </button>
+                    <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 absolute top-[calc(100%-5px)] right-0 w-64 bg-card shadow-2xl border border-border rounded-2xl transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50 p-2">
 
-                  {loading ? (
-                    <div className="p-4 text-center text-sm text-foreground-muted">درحال بارگذاری...</div>
-                  ) : (
-                    categories.map((cat) => (
-                      <Link 
-                        key={cat.id} 
-                        href={`/category/${cat.slug}`}
-                        className="flex items-center justify-between px-3 py-2.5 hover:bg-secondary rounded-xl transition-colors text-sm font-medium"
-                      >
-                        {cat.name}
-                        <ChevronLeft className="w-4 h-4 text-foreground-muted" />
-                      </Link>
-                    ))
-                  )}
+                    {loading ? (
+                      <div className="p-4 text-center text-sm text-foreground-muted">درحال بارگذاری...</div>
+                    ) : (
+                      categories.map((cat) => (
+                        <div key={cat.id} className="group/item relative">
+                          <Link 
+                            href={`/category/${cat.slug}`}
+                            className="flex items-center justify-between px-3 py-2.5 hover:bg-primary/10 hover:text-primary rounded-xl transition-all text-sm font-medium"
+                          >
+                            <span className="flex items-center gap-2">
+                              {cat.icon && <img src={cat.icon} alt="" className="w-4 h-4 object-contain opacity-70" />}
+                              {cat.name}
+                            </span>
+                            {cat.children?.length > 0 && <ChevronLeft className="w-4 h-4 opacity-50 group-hover/item:translate-x-[-2px] transition-transform" />}
+                          </Link>
+                          
+                          {/* زیردسته‌ها */}
+                          {cat.children?.length > 0 && (
+                            <div className="invisible opacity-0 group-hover/item:visible group-hover/item:opacity-100 absolute right-[calc(100%+5px)] top-0 w-64 bg-card shadow-2xl border border-border rounded-2xl transition-all duration-200 transform translate-x-2 group-hover/item:translate-x-0 p-2 z-[60]">
+                              <div className="px-3 py-2 mb-1 border-b border-border/50">
+                                <span className="text-[10px] font-black text-foreground-muted uppercase tracking-widest">زیرمجموعه {cat.name}</span>
+                              </div>
+                              {cat.children.map(sub => (
+                                <Link 
+                                  key={sub.id} 
+                                  href={`/category/${sub.slug}`}
+                                  className="flex items-center justify-between px-3 py-2.5 hover:bg-secondary rounded-xl transition-colors text-sm font-medium"
+                                >
+                                  {sub.name}
+                                  <ChevronLeft className="w-3 h-3 opacity-30" />
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
+
             </nav>
 
             {/* ابزارهای کاربر */}
