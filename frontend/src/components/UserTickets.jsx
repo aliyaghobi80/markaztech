@@ -303,11 +303,11 @@ function TicketListItem({ ticket, onRefresh }) {
                       {msg.is_me && <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary"><User className="w-3 h-3" /></div>}
                     </div>
 
-                    <div className={`group relative max-w-[85%] transition-all duration-300 ${
-                      msg.is_me 
-                      ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-2xl rounded-tr-sm shadow-[0_8px_30px_rgb(59,130,246,0.15)]" 
-                      : "bg-card border border-border text-foreground rounded-2xl rounded-tl-sm shadow-sm"
-                    }`}>
+                      <div className={`group relative max-w-[85%] transition-all duration-300 ${
+                        msg.is_me 
+                        ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-2xl rounded-tl-sm shadow-[0_8px_30px_rgb(59,130,246,0.15)]" 
+                        : "bg-card border border-border text-foreground rounded-2xl rounded-tr-sm shadow-sm"
+                      }`}>
                       <div className="p-4">
                         <p className="leading-relaxed text-[13px] whitespace-pre-wrap">{msg.message}</p>
                         

@@ -177,12 +177,12 @@ function AdminTicketListItem({ ticket, onRefresh }) {
               className="space-y-4 max-h-[400px] overflow-y-auto px-2 custom-scrollbar scroll-smooth"
             >
                 {messages?.map((msg) => (
-                  <div key={msg.id} className={`flex flex-col ${msg.is_me ? "items-end" : "items-start"} mb-6`}>
-                    <div className="flex items-center gap-2 mb-1.5 px-1">
-                      {!msg.is_me && <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary"><User className="w-3 h-3" /></div>}
-                      <span className="text-[10px] font-black text-foreground/50">{msg.sender_name}</span>
-                      {msg.is_me && <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground italic">A</div>}
-                    </div>
+                      <div key={msg.id} className={`flex flex-col ${msg.is_me ? "items-start" : "items-end"} mb-6`}>
+                        <div className="flex items-center gap-2 mb-1.5 px-1">
+                          {msg.is_me && <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground italic shadow-sm">A</div>}
+                          <span className="text-[10px] font-black text-foreground/50 tracking-tight">{msg.sender_name}</span>
+                          {!msg.is_me && <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shadow-sm"><User className="w-3 h-3" /></div>}
+                        </div>
 
                     <div className={`group relative max-w-[85%] transition-all duration-300 ${
                       msg.is_me 
