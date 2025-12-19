@@ -117,8 +117,19 @@ export default function AddArticlePage() {
       router.push("/admin/articles");
     } catch (error) {
       console.error("Error creating article:", error);
-      const errorMsg = error.response?.data?.detail || "خطا در ایجاد مقاله";
-      toast.error(errorMsg);
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (typeof data === 'object') {
+          Object.keys(data).forEach(key => {
+            const messages = Array.isArray(data[key]) ? data[key] : [data[key]];
+            messages.forEach(msg => toast.error(`${key}: ${msg}`));
+          });
+        } else {
+          toast.error(data.detail || "خطا در ایجاد مقاله");
+        }
+      } else {
+        toast.error("خطا در ارتباط با سرور");
+      }
     } finally {
       setSaving(false);
     }

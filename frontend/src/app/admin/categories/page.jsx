@@ -107,10 +107,22 @@ export default function AdminCategoriesPage() {
       
       mutate();
       resetForm();
-    } catch (error) {
-      const msg = error.response?.data?.detail || "خطا در ذخیره دسته‌بندی";
-      toast.error(msg);
-    } finally {
+      } catch (error) {
+        console.error("Error saving category:", error);
+        if (error.response?.data) {
+          const data = error.response.data;
+          if (typeof data === 'object') {
+            Object.keys(data).forEach(key => {
+              const messages = Array.isArray(data[key]) ? data[key] : [data[key]];
+              messages.forEach(msg => toast.error(`${key}: ${msg}`));
+            });
+          } else {
+            toast.error(data.detail || "خطا در ذخیره دسته‌بندی");
+          }
+        } else {
+          toast.error("خطا در ارتباط با سرور");
+        }
+      } finally {
       setSaving(false);
     }
   };
@@ -190,19 +202,23 @@ export default function AdminCategoriesPage() {
     );
   };
 
-  // گرفتن لیست مسطح برای انتخاب والد
-  const getFlatCategories = (items, level = 0) => {
-    let flat = [];
-    items?.forEach(item => {
-      flat.push({ ...item, level });
-      if (item.children) {
-        flat = [...flat, ...getFlatCategories(item.children, level + 1)];
-      }
-    });
-    return flat;
-  };
+    // گرفتن لیست مسطح برای انتخاب والد با نام کامل مسیر
+    const getFlatCategories = (items, level = 0, path = "") => {
+      let flat = [];
+      items?.forEach(item => {
+        const fullPath = path ? `${path} > ${item.name}` : item.name;
+        flat.push({ ...item, level, fullPath });
+        if (item.children) {
+          flat = [...flat, ...getFlatCategories(item.children, level + 1, fullPath)];
+        }
+      });
+      return flat;
+    };
 
-  const allFlatCategories = getFlatCategories(categories);
+    const allFlatCategories = getFlatCategories(categories);
+
+    // پیدا کردن نام والد فعلی برای نمایش در مودال
+    const currentParent = allFlatCategories.find(c => c.id === formData.parent);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -293,13 +309,19 @@ export default function AdminCategoriesPage() {
           <div className="absolute inset-0 bg-background/80 backdrop-blur-md animate-in fade-in duration-300" onClick={resetForm} />
           <div className="relative bg-card border border-border w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
             <div className="p-8 border-b border-border flex items-center justify-between bg-secondary/10">
-              <div>
-                <h2 className="text-2xl font-black text-foreground flex items-center gap-3">
-                  {editingCategory ? <Edit className="text-primary" /> : <Plus className="text-primary" />}
-                  {editingCategory ? "ویرایش دسته‌بندی" : "ایجاد دسته‌بندی جدید"}
-                </h2>
-                <p className="text-foreground-muted text-xs mt-1">مشخصات دسته را وارد کنید</p>
-              </div>
+                <div>
+                  <h2 className="text-2xl font-black text-foreground flex items-center gap-3">
+                    {editingCategory ? <Edit className="text-primary" /> : <Plus className="text-primary" />}
+                    {editingCategory ? "ویرایش دسته‌بندی" : "ایجاد دسته‌بندی جدید"}
+                  </h2>
+                  {currentParent && !editingCategory && (
+                    <p className="text-primary text-[10px] font-black mt-1 flex items-center gap-1">
+                      <FolderPlus className="w-3 h-3" />
+                      در حال افزودن به: {currentParent.fullPath}
+                    </p>
+                  )}
+                  <p className="text-foreground-muted text-[10px] mt-1">مشخصات دسته را وارد کنید</p>
+                </div>
               <button onClick={resetForm} className="p-3 hover:bg-secondary rounded-2xl transition-all text-foreground-muted hover:rotate-90">
                 <X className="w-6 h-6" />
               </button>
@@ -376,14 +398,14 @@ export default function AdminCategoriesPage() {
                     onChange={(e) => setFormData({...formData, parent: e.target.value})}
                   >
                     <option value="">دسته اصلی (ریشه)</option>
-                    {allFlatCategories
-                      ?.filter(c => c.id !== editingCategory?.id)
-                      .map(c => (
-                        <option key={c.id} value={c.id}>
-                          {"— ".repeat(c.level)}{c.name}
-                        </option>
-                      ))
-                    }
+                      {allFlatCategories
+                        ?.filter(c => c.id !== editingCategory?.id)
+                        .map(c => (
+                          <option key={c.id} value={c.id}>
+                            {c.fullPath}
+                          </option>
+                        ))
+                      }
                   </select>
                 </div>
               </div>

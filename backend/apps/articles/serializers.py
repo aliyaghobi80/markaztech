@@ -43,17 +43,13 @@ class ArticleSerializer(serializers.ModelSerializer):
         read_only_fields = ['author', 'created_at']
 
     def to_internal_value(self, data):
-        if hasattr(data, 'dict'):
-            data = data.dict()
-        else:
-            data = data.copy() if hasattr(data, 'copy') else dict(data)
+        # Convert QueryDict to a mutable dict if necessary
+        if hasattr(data, 'copy'):
+            data = data.copy()
 
-        if 'is_active' in data:
-            if isinstance(data['is_active'], str):
-                data['is_active'] = data['is_active'].lower() == 'true'
-        
+        # Handle empty strings for nullable fields
         if 'category' in data and data['category'] == '':
-            data.pop('category')
+            data['category'] = None
 
         return super().to_internal_value(data)
 
