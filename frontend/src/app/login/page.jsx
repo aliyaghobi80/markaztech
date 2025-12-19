@@ -29,13 +29,10 @@ export default function LoginPage() {
           
           toast.success("ورود موفقیت‌آمیز بود");
         
-        setTimeout(() => {
-            if (res.data.is_admin) {
-                window.location.href = '/admin';
-            } else {
-                window.location.href = '/dashboard';
-            }
-        }, 1000);
+          setTimeout(() => {
+              window.location.href = '/dashboard';
+          }, 1000);
+
 
     } catch (error) {
       console.error("Login Error Details:", error.response?.data);

@@ -94,8 +94,16 @@ class ProductViewSet(viewsets.ModelViewSet):
             )
 
 class CategoryViewSet(viewsets.ModelViewSet):
-    queryset = Category.objects.filter(parent=None)
     serializer_class = CategorySerializer
+    
+    def get_queryset(self):
+        if self.request.user.is_authenticated and self.request.user.is_staff:
+            # For admin panel, we might want all categories flattened or hierarchical
+            # Let's return all, and handle nesting in frontend or via params
+            if self.request.query_params.get('flat') == 'true':
+                return Category.objects.all()
+            return Category.objects.filter(parent=None)
+        return Category.objects.filter(parent=None, is_active=True)
     
     def get_permissions(self):
         if self.request.method in permissions.SAFE_METHODS:

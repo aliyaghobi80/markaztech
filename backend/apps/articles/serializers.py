@@ -33,12 +33,13 @@ class ArticleCommentSerializer(serializers.ModelSerializer):
 
 class ArticleSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source='author.full_name', read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True)
     comments_count = serializers.IntegerField(source='comments.count', read_only=True)
     created_at_human = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
-        fields = ['id', 'title', 'slug', 'content', 'image', 'author', 'author_name', 'is_active', 'comments_count', 'created_at', 'created_at_human']
+        fields = ['id', 'title', 'slug', 'category', 'category_name', 'content', 'image', 'author', 'author_name', 'is_active', 'comments_count', 'created_at', 'created_at_human']
         read_only_fields = ['author', 'created_at']
 
     def get_created_at_human(self, obj):

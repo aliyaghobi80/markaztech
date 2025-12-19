@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 class Article(models.Model):
     title = models.CharField(_('عنوان'), max_length=255)
     slug = models.SlugField(_('اسلاگ'), unique=True, allow_unicode=True)
+    category = models.ForeignKey('products.Category', on_delete=models.SET_NULL, null=True, blank=True, related_name='articles', verbose_name=_('دسته‌بندی'))
     content = models.TextField(_('محتوا'))
     image = models.ImageField(_('تصویر'), upload_to='articles/')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='articles', verbose_name=_('نویسنده'))

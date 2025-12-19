@@ -92,12 +92,13 @@ export default function Header() {
                   مقالات
                 </Link>
               
-              <div className="group relative">
-                <button className="px-2 xl:px-3 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-xs xl:text-sm font-bold flex items-center gap-2 whitespace-nowrap">
-                  <LayoutDashboard className="w-4 h-4 text-primary" />
-                  دسته‌بندی‌ها
-                </button>
-                <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 absolute top-full right-0 w-64 bg-card shadow-xl border border-border rounded-2xl transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50 mt-2 p-2">
+                <div className="group relative py-2">
+                  <button className="px-2 xl:px-3 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-xs xl:text-sm font-bold flex items-center gap-2 whitespace-nowrap">
+                    <LayoutDashboard className="w-4 h-4 text-primary" />
+                    دسته‌بندی‌ها
+                  </button>
+                  <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 absolute top-[calc(100%-5px)] right-0 w-64 bg-card shadow-xl border border-border rounded-2xl transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50 p-2">
+
                   {loading ? (
                     <div className="p-4 text-center text-sm text-foreground-muted">درحال بارگذاری...</div>
                   ) : (

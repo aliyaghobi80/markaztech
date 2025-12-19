@@ -6,7 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { 
   LayoutDashboard, Users, ShoppingBag, MessageSquare, 
-  Ticket, CreditCard, LogOut, Package, BookOpen, Menu, X
+  Ticket, CreditCard, LogOut, Package, BookOpen, Menu, X, Tag
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -27,15 +27,17 @@ export default function AdminLayout({ children }) {
 
   if (loading || !user || user.role !== 'ADMIN') return null;
 
-  const menuItems = [
-    { name: "پیشخوان", icon: LayoutDashboard, href: "/admin" },
-    { name: "مدیریت محصولات", icon: Package, href: "/admin/products" },
-    { name: "مدیریت مقالات", icon: BookOpen, href: "/admin/articles" },
-    { name: "مدیریت کاربران", icon: Users, href: "/admin/users" },
-    { name: "سفارشات و پرداخت", icon: CreditCard, href: "/admin/orders" },
-    { name: "نظرات", icon: MessageSquare, href: "/admin/comments" },
-    { name: "تیکت‌ها", icon: Ticket, href: "/admin/tickets" },
-  ];
+    const menuItems = [
+      { name: "پیشخوان", icon: LayoutDashboard, href: "/admin" },
+      { name: "مدیریت دسته‌بندی‌ها", icon: Tag, href: "/admin/categories" },
+      { name: "مدیریت محصولات", icon: Package, href: "/admin/products" },
+      { name: "مدیریت مقالات", icon: BookOpen, href: "/admin/articles" },
+      { name: "مدیریت کاربران", icon: Users, href: "/admin/users" },
+      { name: "سفارشات و پرداخت", icon: CreditCard, href: "/admin/orders" },
+      { name: "نظرات", icon: MessageSquare, href: "/admin/comments" },
+      { name: "تیکت‌ها", icon: Ticket, href: "/admin/tickets" },
+    ];
+
 
   return (
     <div className="min-h-screen bg-background-secondary flex transition-colors duration-300">
