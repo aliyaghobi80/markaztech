@@ -20,10 +20,8 @@ class CategorySerializer(serializers.ModelSerializer):
         return CategorySerializer(children, many=True, context=self.context).data
 
     def to_internal_value(self, data):
-        # Convert QueryDict to a mutable dict to handle multipart/form-data better
-        if hasattr(data, 'dict'):
-            data = data.dict()
-        elif hasattr(data, 'copy'):
+        # Convert to mutable if it's a QueryDict
+        if hasattr(data, 'copy'):
             data = data.copy()
         
         # Handle empty strings for nullable fields
@@ -35,13 +33,11 @@ class CategorySerializer(serializers.ModelSerializer):
             if isinstance(data['is_active'], str):
                 data['is_active'] = data['is_active'].lower() == 'true'
         
-        # Handle icon field - if it's an empty string or not a file object, remove it
+        # Handle icon field - if it's a string (existing URL), ignore it for validation
+        # ImageField expects a file object during validation.
         if 'icon' in data:
             val = data['icon']
-            if val == '' or val == 'null' or isinstance(val, str):
-                # If it's a string, it's not a new file upload. 
-                # For PATCH/PUT, we don't want to overwrite with a string.
-                # For POST, we just ignore it.
+            if isinstance(val, str) or val is None or val == '' or val == 'null':
                 data.pop('icon')
         
         return super().to_internal_value(data)
@@ -173,19 +169,29 @@ class UpdateProductSerializer(serializers.ModelSerializer):
         fields = ['title', 'slug', 'description', 'price', 'discount_price', 'main_image', 'delivery_time', 'stock', 'category', 'is_active', 'show_in_hero']
 
     def to_internal_value(self, data):
-        if hasattr(data, 'dict'):
-            data = data.dict()
-        else:
-            data = data.copy() if hasattr(data, 'copy') else dict(data)
-
+        # Convert to mutable if it's a QueryDict
+        if hasattr(data, 'copy'):
+            data = data.copy()
+        
+        # Handle Boolean strings from FormData
         if 'is_active' in data:
             if isinstance(data['is_active'], str):
                 data['is_active'] = data['is_active'].lower() == 'true'
         
-        if 'category' in data and data['category'] == '':
+        if 'show_in_hero' in data:
+            if isinstance(data['show_in_hero'], str):
+                data['show_in_hero'] = data['show_in_hero'].lower() == 'true'
+        
+        # Handle main_image field - if it's a string (existing URL), ignore it for validation
+        if 'main_image' in data:
+            val = data['main_image']
+            if isinstance(val, str) or val is None or val == '' or val == 'null':
+                data.pop('main_image')
+        
+        if 'category' in data and (data['category'] == '' or data['category'] == 'null'):
             data.pop('category')
             
-        if 'discount_price' in data and data['discount_price'] == '':
+        if 'discount_price' in data and (data['discount_price'] == '' or data['discount_price'] == 'null'):
             data['discount_price'] = None
 
         return super().to_internal_value(data)

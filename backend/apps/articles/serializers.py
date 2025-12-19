@@ -43,14 +43,12 @@ class ArticleSerializer(serializers.ModelSerializer):
         read_only_fields = ['author', 'created_at']
 
     def to_internal_value(self, data):
-        # Convert QueryDict to a mutable dict to handle multipart/form-data better
-        if hasattr(data, 'dict'):
-            data = data.dict()
-        elif hasattr(data, 'copy'):
+        # Convert to mutable if it's a QueryDict
+        if hasattr(data, 'copy'):
             data = data.copy()
         
         # Handle empty strings for nullable fields
-        if 'category' in data and data['category'] == '':
+        if 'category' in data and (data['category'] == '' or data['category'] == 'null'):
             data['category'] = None
         
         # Handle Boolean strings from FormData
@@ -58,10 +56,10 @@ class ArticleSerializer(serializers.ModelSerializer):
             if isinstance(data['is_active'], str):
                 data['is_active'] = data['is_active'].lower() == 'true'
         
-        # Handle image field - if it's a string, remove it (not a file upload)
+        # Handle image field - if it's a string (existing URL), ignore it for validation
         if 'image' in data:
             val = data['image']
-            if val == '' or val == 'null' or isinstance(val, str):
+            if isinstance(val, str) or val is None or val == '' or val == 'null':
                 data.pop('image')
         
         return super().to_internal_value(data)

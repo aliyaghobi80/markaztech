@@ -43,17 +43,8 @@ class SiteStatsMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Update visit count for any page request (non-API, non-media, non-static)
-        # Using session to prevent double-counting on refresh
-        if request.method == 'GET' and not any(request.path.startswith(prefix) for prefix in ['/api/', '/admin/', '/media/', '/static/', '/_next/']):
-            # Only count if user hasn't visited in this session
-            if not request.session.get('has_visited'):
-                from .utils import broadcast_site_stats
-                from .models import SiteStats
-                SiteStats.increment_visit()
-                request.session['has_visited'] = True
-                broadcast_site_stats()
-            
+        # We handle visit increments in UserConsumer (WebSocket) now
+        # to ensure it works better with the SPA architecture and single sessions.
         response = self.get_response(request)
         return response
 

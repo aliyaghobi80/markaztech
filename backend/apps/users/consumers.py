@@ -26,11 +26,16 @@ class UserConsumer(AsyncWebsocketConsumer):
         
         await self.accept()
         
-        # Increment visit in DB if not already visited in this session
-        if self.session and not self.session.get('has_visited'):
-            await self.increment_visit_count()
-            self.session['has_visited'] = True
-            await database_sync_to_async(self.session.save)()
+        # Increment visit in DB if not already visited in this session today
+        if self.session:
+            from django.utils import timezone
+            today_str = timezone.now().date().isoformat()
+            last_visit = self.session.get('last_visit_date')
+            
+            if last_visit != today_str:
+                await self.increment_visit_count()
+                self.session['last_visit_date'] = today_str
+                await database_sync_to_async(self.session.save)()
         
         # Track online status
         online_id = None
