@@ -5,9 +5,9 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { 
-  User, Settings, LogOut, BarChart3, 
-  ChevronDown, Shield, Wallet, ShoppingBag
-} from "lucide-react";
+    User, Settings, LogOut, BarChart3, 
+    ChevronDown, LayoutDashboard, Wallet, ShoppingBag
+  } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { getAvatarUrl } from "@/lib/avatar";
 
@@ -70,16 +70,16 @@ export default function UserDropdown() {
                 پنل کاربری
               </Link>
               
-              {isAdmin && (
-                <Link 
-                  href="/admin" 
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 hover:bg-secondary rounded-xl text-sm font-bold text-primary transition-colors"
-                >
-                  <Shield className="w-4 h-4" />
-                  مدیریت سیستم
-                </Link>
-              )}
+                {isAdmin && (
+                  <Link 
+                    href="/admin" 
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 hover:bg-secondary rounded-xl text-sm font-bold text-primary transition-colors"
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    مدیریت سیستم
+                  </Link>
+                )}
 
             <Link 
               href="/dashboard?tab=orders" 

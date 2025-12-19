@@ -6,7 +6,7 @@ import Link from "next/link";
 import { 
   Search, ShoppingCart, User, Menu, ChevronLeft, 
   Sun, Moon, LayoutDashboard, ShieldCheck, X,
-  ShoppingBag, Home, BookOpen
+  ShoppingBag, Home, BookOpen, Sparkles
 } from "lucide-react";
 import api from "@/lib/axios";
 import { useCart } from "@/context/CartContext";
@@ -159,14 +159,14 @@ export default function Header() {
                 <Search className="w-5 h-5" />
               </button>
 
-            {mounted && (
-              <button
-                onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-                className="p-2 md:p-2.5 hover:bg-secondary rounded-xl transition-colors text-foreground-muted"
-              >
-                {resolvedTheme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button>
-            )}
+              {mounted && (
+                <button
+                  onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+                  className="p-2 md:p-2.5 hover:bg-secondary rounded-xl transition-colors text-foreground-muted"
+                >
+                  {resolvedTheme === "dark" ? <Sparkles className="w-5 h-5 text-yellow-400" /> : <Sun className="w-5 h-5" />}
+                </button>
+              )}
 
             <Link href="/cart" className="p-2 md:p-2.5 hover:bg-secondary rounded-xl relative group">
               <ShoppingCart className="w-5 h-5 text-foreground-muted group-hover:text-primary transition-colors" />
@@ -179,16 +179,14 @@ export default function Header() {
 
             {user ? (
               <div className="flex items-center gap-2 xl:gap-3">
-                  {isAdmin && (
-                    <Link 
-                      href="/admin" 
-                      className="hidden lg:flex xl:flex items-center gap-2 px-3 xl:px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-xl hover:bg-primary hover:text-white transition-all text-xs xl:text-sm font-black"
-                    >
-                      <ShieldCheck className="w-4 h-4" />
-                      <span className="hidden xl:inline">پنل مدیریت</span>
-                      <span className="xl:hidden">ادمین</span>
-                    </Link>
-                  )}
+                      <Link 
+                        href="/admin" 
+                        className="hidden lg:flex xl:flex items-center gap-2 px-3 xl:px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-xl hover:bg-primary hover:text-white transition-all text-xs xl:text-sm font-black"
+                      >
+                        <LayoutDashboard className="w-4 h-4" />
+                        <span className="hidden xl:inline">مدیریت سیستم</span>
+                        <span className="xl:hidden">ادمین</span>
+                      </Link>
                 <UserDropdown />
               </div>
             ) : (
