@@ -1,14 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR from "swr";
 import api from "@/lib/axios";
 import { formatPrice } from "@/lib/utils";
-import { 
-  Wallet, CheckCircle, XCircle, Clock, Eye, X, 
-  User, Calendar, CreditCard, Image as ImageIcon 
-} from "lucide-react";
-import toast from "react-hot-toast";
+// ... (rest of imports)
 
 const fetcher = (url) => api.get(url).then((res) => res.data.results || res.data);
 
@@ -17,6 +13,16 @@ export default function AdminWalletRequests() {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [adminNote, setAdminNote] = useState("");
   const [processing, setProcessing] = useState(false);
+
+  // گوش دادن به تغییرات ریل‌تایم برای آپدیت لیست ادمین
+  useEffect(() => {
+    const handleStatusChange = () => {
+      mutate(); // رفرش لیست از سرور
+    };
+
+    window.addEventListener('wallet_request_status_changed', handleStatusChange);
+    return () => window.removeEventListener('wallet_request_status_changed', handleStatusChange);
+  }, [mutate]);
 
   const handleApprove = async (id) => {
     if (!confirm("آیا از تایید این درخواست اطمینان دارید؟")) return;
