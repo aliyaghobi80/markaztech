@@ -430,22 +430,33 @@ function WalletChargeSection({ user }) {
 
   const predefinedAmounts = [50000, 100000, 200000, 500000, 1000000];
 
-  useEffect(() => {
-    fetchMyRequests();
-
-    // گوش دادن به تغییرات وضعیت درخواست شارژ (از AuthContext و وب‌سوکت)
-    const handleStatusChange = (event) => {
-      console.log("Wallet request status changed:", event.detail);
+    useEffect(() => {
       fetchMyRequests();
-      
-      // نمایش نوتیفیکیشن متناسب با وضعیت
-      const { status } = event.detail;
-      if (status === 'APPROVED') {
-        toast.success("درخواست شارژ کیف پول شما تایید شد!");
-      } else if (status === 'REJECTED') {
-        toast.error("درخواست شارژ کیف پول شما رد شد.");
-      }
-    };
+  
+      // گوش دادن به تغییرات وضعیت درخواست شارژ (از AuthContext و وب‌سوکت)
+      const handleStatusChange = (event) => {
+        console.log("Wallet request status changed:", event.detail);
+        const { request_id, status, admin_note } = event.detail;
+
+        // آپدیت آنی وضعیت در لیست محلی برای تجربه کاربری بهتر
+        setMyRequests(prevRequests => 
+          prevRequests.map(req => 
+            req.id === request_id ? { ...req, status, admin_note } : req
+          )
+        );
+
+        // همچنین رفرش کلی از سرور (با کمی تاخیر برای اطمینان از کامیت شدن تراکنش در بک‌اِند)
+        setTimeout(() => {
+          fetchMyRequests();
+        }, 500);
+        
+        // نمایش نوتیفیکیشن متناسب با وضعیت
+        if (status === 'APPROVED') {
+          toast.success("درخواست شارژ کیف پول شما تایید شد!");
+        } else if (status === 'REJECTED') {
+          toast.error("درخواست شارژ کیف پول شما رد شد.");
+        }
+      };
 
     window.addEventListener('wallet_request_status_changed', handleStatusChange);
     return () => window.removeEventListener('wallet_request_status_changed', handleStatusChange);
