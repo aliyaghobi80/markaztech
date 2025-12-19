@@ -21,11 +21,17 @@ class CommentSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.full_name', read_only=True)
     user_mobile = serializers.CharField(source='user.mobile', read_only=True)
     product_title = serializers.CharField(source='product.title', read_only=True)
+    replies = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ['id', 'product', 'product_title', 'user', 'user_name', 'user_mobile', 'content', 'rating', 'is_approved', 'created_at']
+        fields = ['id', 'product', 'product_title', 'user', 'user_name', 'user_mobile', 'content', 'rating', 'parent', 'replies', 'is_approved', 'created_at']
         read_only_fields = ['id', 'user', 'is_approved', 'created_at']
+
+    def get_replies(self, obj):
+        # Only return approved replies
+        approved_replies = obj.replies.filter(is_approved=True)
+        return CommentSerializer(approved_replies, many=True).data
 
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
@@ -80,8 +86,8 @@ class ProductSerializer(serializers.ModelSerializer):
         return None
 
     def get_comments(self, obj):
-        approved_comments = obj.comments.filter(is_approved=True)
-        return CommentSerializer(approved_comments, many=True).data
+        approved_comments = obj.comments.filter(is_approved=True, parent__isnull=True)
+        return CommentSerializer(approved_comments, many=True, context=self.context).data
 
     def get_is_favorite(self, obj):
         user = self.context.get('request').user if 'request' in self.context else None

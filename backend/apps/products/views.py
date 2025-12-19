@@ -46,10 +46,11 @@ class ProductViewSet(viewsets.ModelViewSet):
         return [permissions.IsAdminUser()]
 
     def get_queryset(self):
-        if self.request.user.is_staff:
-            return Product.objects.all().order_by('-created_at')
+        if self.request.user.is_authenticated and self.request.user.is_staff:
+            queryset = Product.objects.all()
+        else:
+            queryset = Product.objects.filter(is_active=True)
 
-        queryset = Product.objects.filter(is_active=True)
         category_slug = self.request.query_params.get('category')
         if category_slug:
             try:

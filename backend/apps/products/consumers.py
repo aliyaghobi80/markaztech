@@ -1,5 +1,9 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
+from django.db.models import Q
+from .models import Product
+from .serializers import ProductSerializer
 
 class ProductConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -33,3 +37,42 @@ class ProductConsumer(AsyncWebsocketConsumer):
             'type': 'product_delete',
             'product_id': event['product_id']
         }))
+
+class SearchConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        pass
+
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        query = data.get('query', '')
+        
+        if len(query) < 2:
+            await self.send(text_data=json.dumps({
+                'type': 'search_results',
+                'results': []
+            }))
+            return
+
+        results = await self.perform_search(query)
+        await self.send(text_data=json.dumps({
+            'type': 'search_results',
+            'results': results,
+            'query': query
+        }))
+
+    @database_sync_to_async
+    def perform_search(self, query):
+        products = Product.objects.filter(
+            Q(title__icontains=query) |
+            Q(description__icontains=query) |
+            Q(category__name__icontains=query),
+            is_active=True
+        ).order_by('-created_at')[:10]
+        
+        # We need a serializer context for absolute image URLs if possible, 
+        # but in consumer it's harder. We'll send relative URLs or handle it in frontend.
+        serializer = ProductSerializer(products, many=True)
+        return serializer.data

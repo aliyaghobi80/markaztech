@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, X, Clock, TrendingUp, ArrowLeft, Sparkles, Package } from "lucide-react";
+import { Search, X, Clock, TrendingUp, ArrowLeft, Sparkles, Package, Zap } from "lucide-react";
 import api from "@/lib/axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,9 +18,39 @@ export default function SearchModal({ isOpen, onClose }) {
   ]);
   
   const inputRef = useRef(null);
-  const searchTimeout = useRef(null);
+  const socketRef = useRef(null);
   const router = useRouter();
   const resultsRef = useRef(null);
+
+  // WebSocket connection management
+  useEffect(() => {
+    if (isOpen) {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.hostname;
+      const port = '8000'; // Django port
+      const wsUrl = `${protocol}//${host}:${port}/ws/search/`;
+      
+      socketRef.current = new WebSocket(wsUrl);
+
+      socketRef.current.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'search_results') {
+          // Verify if result is for the current query
+          setResults(data.results);
+          setLoading(false);
+          setSelectedIndex(-1);
+        }
+      };
+
+      socketRef.current.onclose = () => {
+        console.log('Search WebSocket closed');
+      };
+
+      return () => {
+        socketRef.current?.close();
+      };
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -40,48 +70,35 @@ export default function SearchModal({ isOpen, onClose }) {
     }
   }, []);
 
+  // Send search query via WebSocket
   useEffect(() => {
     if (query.trim().length < 2) {
       setResults([]);
       setSelectedIndex(-1);
+      setLoading(false);
       return;
     }
 
-    if (searchTimeout.current) {
-      clearTimeout(searchTimeout.current);
-    }
-
-    searchTimeout.current = setTimeout(async () => {
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
       setLoading(true);
-      setResults([]);
-      
-      try {
-        const response = await api.get(`/products/?search=${encodeURIComponent(query)}`);
-        let searchResults = [];
-        if (response.data) {
-          if (Array.isArray(response.data)) {
-            searchResults = response.data;
-          } else if (response.data.results && Array.isArray(response.data.results)) {
-            searchResults = response.data.results;
-          } else if (response.data.value && Array.isArray(response.data.value)) {
-            searchResults = response.data.value;
-          }
+      socketRef.current.send(JSON.stringify({ query }));
+    } else {
+      // Fallback to API if socket is not ready
+      const fetchResults = async () => {
+        setLoading(true);
+        try {
+          const response = await api.get(`/products/?search=${encodeURIComponent(query)}`);
+          setResults(response.data.results || response.data || []);
+        } catch (error) {
+          console.error("Search API Error:", error);
+        } finally {
+          setLoading(false);
         }
-        setResults(searchResults);
-        setSelectedIndex(-1);
-      } catch (error) {
-        console.error("Search error:", error);
-        setResults([]);
-      } finally {
-        setLoading(false);
-      }
-    }, 250);
-
-    return () => {
-      if (searchTimeout.current) {
-        clearTimeout(searchTimeout.current);
-      }
-    };
+      };
+      
+      const timeout = setTimeout(fetchResults, 300);
+      return () => clearTimeout(timeout);
+    }
   }, [query]);
 
   const saveSearch = useCallback((searchTerm) => {
@@ -171,20 +188,18 @@ export default function SearchModal({ isOpen, onClose }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="جستجو در بین محصولات..."
+              placeholder="جستجو به صورت لحظه‌ای..."
               className="w-full bg-background border border-border text-foreground rounded-2xl py-4 pr-12 pl-24 outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-base"
               autoComplete="off"
             />
             <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              <div className="flex items-center gap-1.5 bg-primary/10 text-primary text-[10px] px-2 py-1 rounded-lg font-black animate-pulse">
+                <Zap className="w-3 h-3 fill-primary" />
+                Real-time
+              </div>
               <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs bg-secondary border border-border rounded-lg text-foreground-muted">
                 ESC
               </kbd>
-              <button
-                onClick={onClose}
-                className="p-1.5 hover:bg-secondary rounded-lg transition-colors sm:hidden"
-              >
-                <X className="w-5 h-5 text-foreground-muted" />
-              </button>
             </div>
           </div>
         </div>
@@ -288,7 +303,7 @@ export default function SearchModal({ isOpen, onClose }) {
                     >
                       <div className="w-14 h-14 rounded-xl overflow-hidden bg-secondary flex-shrink-0 border border-border">
                         <img 
-                          src={product.main_image} 
+                          src={product.main_image.startsWith('http') ? product.main_image : `http://localhost:8000${product.main_image}`} 
                           alt={product.title}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
@@ -298,7 +313,7 @@ export default function SearchModal({ isOpen, onClose }) {
                           {product.title}
                         </h4>
                           <p className="text-xs text-foreground-muted truncate mt-0.5">
-                            {product.category?.name || product.category}
+                            {product.category_name || (product.category?.name)}
                           </p>
                       </div>
                       <div className="text-left flex-shrink-0">

@@ -106,7 +106,7 @@ class TicketMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = TicketMessage
         fields = ['id', 'ticket', 'sender', 'sender_name', 'sender_role', 'message', 'attachment', 'created_at', 'is_me']
-        read_only_fields = ['id', 'sender', 'created_at']
+        read_only_fields = ['id', 'ticket', 'sender', 'created_at']
 
     def get_is_me(self, obj):
         user = self.context['request'].user

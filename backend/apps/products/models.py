@@ -55,6 +55,7 @@ class Comment(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='comments', verbose_name=_('محصول'))
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comments', verbose_name=_('کاربر'))
     content = models.TextField(_('متن نظر'))
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies', verbose_name=_('پاسخ به'))
     rating = models.PositiveSmallIntegerField(_('امتیاز'), default=5)
     is_approved = models.BooleanField(_('تایید شده'), default=False)
     created_at = models.DateTimeField(_('تاریخ ثبت'), auto_now_add=True)
