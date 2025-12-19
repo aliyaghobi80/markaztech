@@ -98,11 +98,14 @@ class CategoryViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         if self.request.user.is_authenticated and self.request.user.is_staff:
-            # For admin panel, we might want all categories flattened or hierarchical
-            # Let's return all, and handle nesting in frontend or via params
-            if self.request.query_params.get('flat') == 'true':
+            # For admin panel, return all categories if it's not a list action or if flat=true
+            if self.action != 'list' or self.request.query_params.get('flat') == 'true':
                 return Category.objects.all()
             return Category.objects.filter(parent=None)
+        
+        # For public, return only root categories unless specific detail is requested
+        if self.action != 'list':
+            return Category.objects.filter(is_active=True)
         return Category.objects.filter(parent=None, is_active=True)
     
     def get_permissions(self):

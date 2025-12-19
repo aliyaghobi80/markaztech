@@ -51,6 +51,11 @@ class ArticleSerializer(serializers.ModelSerializer):
         if 'category' in data and data['category'] == '':
             data['category'] = None
 
+        # Handle Boolean strings from FormData
+        if 'is_active' in data:
+            if isinstance(data['is_active'], str):
+                data['is_active'] = data['is_active'].lower() == 'true'
+
         return super().to_internal_value(data)
 
     def get_created_at_human(self, obj):

@@ -16,7 +16,7 @@ class CategorySerializer(serializers.ModelSerializer):
     def get_children(self, obj):
         # Return children only if requested or limit depth
         children = obj.children.all()
-        return CategorySerializer(children, many=True).data
+        return CategorySerializer(children, many=True, context=self.context).data
 
     def to_internal_value(self, data):
         # Convert QueryDict to a mutable dict if necessary
@@ -27,6 +27,11 @@ class CategorySerializer(serializers.ModelSerializer):
         if 'parent' in data and (data['parent'] == '' or data['parent'] == 'null'):
             data['parent'] = None
             
+        # Handle Boolean strings from FormData
+        if 'is_active' in data:
+            if isinstance(data['is_active'], str):
+                data['is_active'] = data['is_active'].lower() == 'true'
+                
         return super().to_internal_value(data)
 
 class CommentSerializer(serializers.ModelSerializer):
