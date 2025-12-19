@@ -123,11 +123,7 @@ export default function AddProductPage() {
         submitData.append('main_image', imageFile);
       }
 
-      await api.post("/products/", submitData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      await api.post("/products/", submitData);
 
         toast.success("محصول جدید با موفقیت اضافه شد");
         router.push("/admin/products");

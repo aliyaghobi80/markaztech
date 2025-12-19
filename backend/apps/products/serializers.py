@@ -45,35 +45,10 @@ class ProductSerializer(serializers.ModelSerializer):
 class UpdateProductSerializer(serializers.ModelSerializer):
     """Serializer for updating products - allows is_active and category to be writable."""
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=False)
-    is_active = serializers.BooleanField(required=False)
     
     class Meta:
         model = Product
         fields = ['title', 'slug', 'description', 'price', 'discount_price', 'main_image', 'delivery_time', 'category', 'is_active']
-    
-    def to_internal_value(self, data):
-        """Handle string boolean values from FormData and category conversion."""
-        import logging
-        logger = logging.getLogger(__name__)
-        
-        mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
-        
-        logger.info(f"UpdateProductSerializer - incoming data: {dict(mutable_data)}")
-        
-        if 'is_active' in mutable_data:
-            val = mutable_data['is_active']
-            if isinstance(val, str):
-                mutable_data['is_active'] = val.lower() in ('true', '1', 'yes')
-        
-        if 'category' in mutable_data:
-            val = mutable_data['category']
-            logger.info(f"Category value: {val}, type: {type(val)}")
-            if isinstance(val, str) and val.isdigit():
-                mutable_data['category'] = int(val)
-        
-        logger.info(f"UpdateProductSerializer - processed data: {dict(mutable_data)}")
-        
-        return super().to_internal_value(mutable_data)
     
     def to_representation(self, instance):
         """Return full category info after update."""
@@ -89,37 +64,19 @@ class UpdateProductSerializer(serializers.ModelSerializer):
 
 class CreateProductSerializer(serializers.ModelSerializer):
     """Serializer for creating new products."""
-    category_slug = serializers.CharField(write_only=True, required=False)
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=True)
     
     class Meta:
         """Meta configuration for CreateProductSerializer."""
         model = Product
         fields = [
             'title', 'description', 'price', 'discount_price', 
-            'main_image', 'delivery_time', 'category_slug'
+            'main_image', 'delivery_time', 'category'
         ]
     
     def create(self, validated_data):
-        """Create product with category lookup by slug."""
-        category_slug = validated_data.pop('category_slug', None)
-        
-        # اگر category_slug داده شده، دسته رو پیدا کن
-        if category_slug:
-            try:
-                category = Category.objects.get(slug=category_slug)
-                validated_data['category'] = category
-            except Category.DoesNotExist:
-                raise serializers.ValidationError({'category_slug': 'دسته‌بندی با این اسلاگ یافت نشد'})
-        else:
-            # اگر دسته‌بندی نداده شده، یک دسته پیش‌فرض انتخاب کن
-            default_category = Category.objects.first()
-            if default_category:
-                validated_data['category'] = default_category
-            else:
-                raise serializers.ValidationError({'category': 'حداقل یک دسته‌بندی باید وجود داشته باشد'})
-        
+        """Create product with automatic slug generation."""
         # ساخت slug خودکار از title
-        import re
         from django.utils.text import slugify
         
         title = validated_data['title']

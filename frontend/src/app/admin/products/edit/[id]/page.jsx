@@ -176,11 +176,7 @@ export default function EditProductPage() {
               console.log(`  ${key}: ${value} (type: ${typeof value})`);
             }
             
-            const response = await api.patch(`/products/${productId}/`, submitData, {
-              headers: {
-                'Content-Type': 'multipart/form-data',
-              },
-            });
+            const response = await api.patch(`/products/${productId}/`, submitData);
             
             console.log('Update response:', response.data);
 
