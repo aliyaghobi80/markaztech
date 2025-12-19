@@ -7,6 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { LoadingProvider } from "@/context/LoadingContext";
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import LayoutContent from "@/components/LayoutContent";
 // تنظیم فونت وزیر
 const vazir = Vazirmatn({
   subsets: ["arabic"],
@@ -27,23 +28,21 @@ export default function RootLayout({ children }) {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <LoadingProvider>
             <AuthProvider>
-              <CartProvider>
+                <CartProvider>
+                  <Toaster 
+                    position="top-left" 
+                    toastOptions={{
+                      style: {
+                        fontFamily: 'var(--font-vazir)', // هماهنگی با فونت سایت
+                        background: '#333',
+                        color: '#fff',
+                      },
+                    }}
+                  />
 
-                {/* 2. اضافه کردن کامپوننت Toaster در اینجا */}
-                <Toaster 
-                  position="top-left" 
-                  toastOptions={{
-                    style: {
-                      fontFamily: 'var(--font-vazir)', // هماهنگی با فونت سایت
-                      background: '#333',
-                      color: '#fff',
-                    },
-                  }}
-                />
-
-                <Header />
-                  <main className="min-h-screen">{children}</main>
-                  <Footer />
+                  <LayoutContent>
+                    {children}
+                  </LayoutContent>
                 </CartProvider>
             </AuthProvider>
           </LoadingProvider>

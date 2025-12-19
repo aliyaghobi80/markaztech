@@ -78,7 +78,7 @@ export default function Header() {
             </div>
 
             {/* نویگیشن دسکتاپ */}
-            <nav className="hidden lg:flex items-center gap-1 bg-secondary/50 p-1 rounded-2xl border border-border overflow-hidden">
+            <nav className="hidden lg:flex items-center gap-1 bg-secondary/50 p-1 rounded-2xl border border-border">
               <Link href="/" className="px-2 xl:px-3 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-xs xl:text-sm font-bold flex items-center gap-2 whitespace-nowrap">
                 <Home className="w-4 h-4 text-primary" />
                 خانه
