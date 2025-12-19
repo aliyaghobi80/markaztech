@@ -27,3 +27,11 @@ class WalletConsumer(AsyncWebsocketConsumer):
             "type": "wallet_update",
             "balance": str(balance)
         }))
+
+    async def wallet_request_update(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "wallet_request_update",
+            "request_id": event["request_id"],
+            "status": event["status"],
+            "admin_note": event.get("admin_note")
+        }))
