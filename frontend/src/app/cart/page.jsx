@@ -103,7 +103,7 @@ export default function CartPage() {
                                 {/* اطلاعات */}
                                 <div className="flex-1">
                                     <h3 className="font-bold text-foreground mb-1">{item.title}</h3>
-                                    <p className="text-sm text-foreground-muted mb-2">{item.category}</p>
+                                    <p className="text-sm text-foreground-muted mb-2">{item.category?.name || item.category}</p>
                                     <div className="text-primary font-bold">
                                         {formatPrice(item.discount_price || item.price)} تومان
                                     </div>

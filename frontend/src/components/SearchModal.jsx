@@ -297,9 +297,9 @@ export default function SearchModal({ isOpen, onClose }) {
                         <h4 className="font-bold text-foreground group-hover:text-primary transition-colors truncate">
                           {product.title}
                         </h4>
-                        <p className="text-xs text-foreground-muted truncate mt-0.5">
-                          {product.category}
-                        </p>
+                          <p className="text-xs text-foreground-muted truncate mt-0.5">
+                            {product.category?.name || product.category}
+                          </p>
                       </div>
                       <div className="text-left flex-shrink-0">
                         <p className="font-black text-primary text-lg">
