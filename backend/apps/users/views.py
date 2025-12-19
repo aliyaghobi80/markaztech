@@ -214,6 +214,7 @@ class AdminWalletAdjustmentView(APIView):
 class TicketViewSet(viewsets.ModelViewSet):
     serializer_class = TicketSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
         if self.request.user.is_staff:
@@ -247,6 +248,16 @@ class TicketViewSet(viewsets.ModelViewSet):
         messages = ticket.messages.all()
         serializer = TicketMessageSerializer(messages, many=True, context={'request': request})
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path=r'delete_message/(?P<message_id>\d+)', permission_classes=[permissions.IsAdminUser])
+    def delete_message(self, request, pk=None, message_id=None):
+        ticket = self.get_object()
+        try:
+            message = ticket.messages.get(id=message_id)
+            message.delete()
+            return Response({'status': 'message deleted'})
+        except TicketMessage.DoesNotExist:
+            return Response({'error': 'Message not found'}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def close(self, request, pk=None):

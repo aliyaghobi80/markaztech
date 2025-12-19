@@ -101,7 +101,15 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Comment.objects.filter(Q(is_approved=True) | Q(user=self.request.user) if self.request.user.is_authenticated else Q(is_approved=True))
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        user = self.request.user
+        # Auto-approve staff comments
+        is_approved = user.is_staff
+        comment = serializer.save(user=user, is_approved=is_approved)
+        
+        # Trigger WebSocket update if approved
+        if is_approved:
+            from apps.users.utils import send_comment_update
+            send_comment_update(comment)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def approve(self, request, pk=None):

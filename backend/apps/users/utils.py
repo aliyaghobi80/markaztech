@@ -29,13 +29,20 @@ def send_wallet_request_update(user, request_id, status, admin_note=None):
 
 def send_comment_update(comment):
     """Sends a comment update to the product group."""
+    from apps.products.serializers import CommentSerializer
+    
     channel_layer = get_channel_layer()
     group_name = f"product_{comment.product.id}_comments"
+    
+    # Serialize the comment
+    serializer = CommentSerializer(comment)
+    comment_data = serializer.data
+    
     async_to_sync(channel_layer.group_send)(
         group_name,
         {
             "type": "comment_update",
-            "comment_id": comment.id,
+            "comment": comment_data,
             "product_id": comment.product.id,
             "status": "APPROVED" if comment.is_approved else "REJECTED"
         }

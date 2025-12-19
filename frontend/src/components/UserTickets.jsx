@@ -1,10 +1,10 @@
 // مسیر: src/components/UserTickets.jsx
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import useSWR from "swr";
 import api from "@/lib/axios";
-import { Headphones, Plus, Send, Clock, CheckCircle, MessageCircle, Loader2, Paperclip } from "lucide-react";
+import { Headphones, Plus, Send, Clock, MessageCircle, Loader2, Paperclip, X, Image as ImageIcon, FileText } from "lucide-react";
 import { formatDistanceToNow } from "date-fns-jalali";
 import toast from "react-hot-toast";
 
@@ -12,11 +12,23 @@ const fetcher = (url) => api.get(url).then((res) => res.data.results || res.data
 
 export default function UserTickets() {
   const { data: tickets, error, mutate, isLoading } = useSWR("/users/tickets/", fetcher);
-  const [selectedTicket, setSelectedOrderId] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [attachment, setAttachment] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("اندازه فایل نباید بیشتر از 10 مگابایت باشد");
+        return;
+      }
+      setAttachment(file);
+    }
+  };
 
   const handleCreateTicket = async (e) => {
     e.preventDefault();
@@ -29,15 +41,25 @@ export default function UserTickets() {
     try {
       const response = await api.post("/users/tickets/", { subject });
       const ticketId = response.data.id;
-      await api.post(`/users/tickets/${ticketId}/add_message/`, { message });
+      
+      const formData = new FormData();
+      formData.append("message", message);
+      if (attachment) {
+        formData.append("attachment", attachment);
+      }
+
+      await api.post(`/users/tickets/${ticketId}/add_message/`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
       
       toast.success("تیکت با موفقیت ایجاد شد");
       setSubject("");
       setMessage("");
+      setAttachment(null);
       setShowCreateModal(false);
       mutate();
     } catch (error) {
-      toast.error("خطا در ایجاد تیکت");
+      toast.error(error.response?.data?.attachment?.[0] || "خطا در ایجاد تیکت");
     } finally {
       setSubmitting(false);
     }
@@ -100,7 +122,33 @@ export default function UserTickets() {
                   className="w-full bg-secondary border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 min-h-[150px]"
                 />
               </div>
-              <div className="flex gap-3">
+              
+              {/* بخش فایل پیوست */}
+              <div className="flex items-center gap-4">
+                <input 
+                  type="file" 
+                  hidden 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange}
+                  accept="image/*,.pdf,.zip"
+                />
+                <button 
+                  type="button"
+                  onClick={() => fileInputRef.current.click()}
+                  className="flex items-center gap-2 text-xs font-bold text-primary hover:bg-primary/10 px-3 py-2 rounded-lg transition-all"
+                >
+                  <Paperclip className="w-4 h-4" />
+                  پیوست فایل (حداکثر 10MB)
+                </button>
+                {attachment && (
+                  <div className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-bold">
+                    <span className="truncate max-w-[150px]">{attachment.name}</span>
+                    <button onClick={() => setAttachment(null)}><X className="w-3 h-3" /></button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 mt-6">
                 <button 
                   type="submit" 
                   disabled={submitting}
@@ -128,20 +176,43 @@ function TicketListItem({ ticket, onRefresh }) {
   const [showMessages, setShowMessages] = useState(false);
   const { data: messages, mutate } = useSWR(showMessages ? `/users/tickets/${ticket.id}/messages/` : null, fetcher);
   const [newMessage, setNewMessage] = useState("");
+  const [attachment, setAttachment] = useState(null);
   const [sending, setSubmitting] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("اندازه فایل نباید بیشتر از 10 مگابایت باشد");
+        return;
+      }
+      setAttachment(file);
+    }
+  };
 
   const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (e) e.preventDefault();
+    if (!newMessage.trim() && !attachment) return;
 
     setSubmitting(true);
     try {
-      await api.post(`/users/tickets/${ticket.id}/add_message/`, { message: newMessage });
+      const formData = new FormData();
+      formData.append("message", newMessage);
+      if (attachment) {
+        formData.append("attachment", attachment);
+      }
+
+      await api.post(`/users/tickets/${ticket.id}/add_message/`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      
       setNewMessage("");
+      setAttachment(null);
       mutate();
       onRefresh();
     } catch (error) {
-      toast.error("خطا در ارسال پیام");
+      toast.error(error.response?.data?.attachment?.[0] || "خطا در ارسال پیام");
     } finally {
       setSubmitting(false);
     }
@@ -188,7 +259,7 @@ function TicketListItem({ ticket, onRefresh }) {
 
       {showMessages && (
         <div className="border-t border-border bg-secondary/20 p-6 space-y-6">
-          <div className="space-y-4 max-h-[400px] overflow-y-auto px-2">
+          <div className="space-y-4 max-h-[400px] overflow-y-auto px-2 custom-scrollbar">
             {messages?.map((msg) => (
               <div key={msg.id} className={`flex ${msg.is_me ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[85%] rounded-2xl p-4 text-sm ${
@@ -197,6 +268,31 @@ function TicketListItem({ ticket, onRefresh }) {
                   : "bg-card border border-border text-foreground rounded-tl-none"
                 }`}>
                   <p className="leading-7">{msg.message}</p>
+                  
+                  {msg.attachment && (
+                    <div className="mt-3 p-2 bg-black/5 dark:bg-white/5 rounded-xl border border-white/10">
+                      {msg.attachment.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                        <a href={msg.attachment} target="_blank" rel="noreferrer">
+                          <img 
+                            src={msg.attachment} 
+                            alt="Attachment" 
+                            className="max-w-full h-auto rounded-lg shadow-sm hover:opacity-90 transition-opacity"
+                          />
+                        </a>
+                      ) : (
+                        <a 
+                          href={msg.attachment} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="flex items-center gap-2 text-[10px] font-bold py-1 px-2"
+                        >
+                          <FileText className="w-4 h-4" />
+                          مشاهده فایل پیوست
+                        </a>
+                      )}
+                    </div>
+                  )}
+
                   <div className={`mt-2 text-[9px] ${msg.is_me ? "text-primary-foreground/70" : "text-foreground-muted"}`}>
                     {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
                   </div>
@@ -206,20 +302,46 @@ function TicketListItem({ ticket, onRefresh }) {
           </div>
 
           {ticket.status !== 'CLOSED' && (
-            <form onSubmit={handleSendMessage} className="relative">
-              <textarea
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="پاسخ خود را اینجا بنویسید..."
-                className="w-full bg-card border border-border rounded-2xl p-4 pr-4 pl-14 text-sm focus:ring-2 focus:ring-primary/20 min-h-[100px] outline-none"
-              />
-              <button 
-                disabled={sending || !newMessage.trim()}
-                className="absolute left-3 bottom-3 p-3 bg-primary text-primary-foreground rounded-xl shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
-              >
-                {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-              </button>
-            </form>
+            <div className="space-y-3">
+              {attachment && (
+                <div className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-2 rounded-xl text-xs font-bold w-fit">
+                  <ImageIcon className="w-4 h-4" />
+                  <span className="truncate max-w-[200px]">{attachment.name}</span>
+                  <button onClick={() => setAttachment(null)} className="hover:text-red-500"><X className="w-4 h-4" /></button>
+                </div>
+              )}
+              
+              <form onSubmit={handleSendMessage} className="relative">
+                <input 
+                  type="file" 
+                  hidden 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange}
+                  accept="image/*,.pdf,.zip"
+                />
+                <textarea
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="پاسخ خود را اینجا بنویسید..."
+                  className="w-full bg-card border border-border rounded-2xl p-4 pr-4 pl-24 text-sm focus:ring-2 focus:ring-primary/20 min-h-[100px] outline-none"
+                />
+                <div className="absolute left-3 bottom-3 flex gap-2">
+                  <button 
+                    type="button"
+                    onClick={() => fileInputRef.current.click()}
+                    className="p-3 bg-secondary text-foreground-muted rounded-xl hover:bg-secondary/80 transition-all"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+                  <button 
+                    disabled={sending || (!newMessage.trim() && !attachment)}
+                    className="p-3 bg-primary text-primary-foreground rounded-xl shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                  >
+                    {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                  </button>
+                </div>
+              </form>
+            </div>
           )}
         </div>
       )}

@@ -1,22 +1,68 @@
 // مسیر: src/components/CommentsSection.jsx
 "use client";
 
-import { useState } from "react";
-import { MessageSquare, Star, Send, User, Clock, CheckCircle, Reply, CornerDownLeft, ShieldCheck } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { MessageSquare, Star, Send, User, Clock, CheckCircle, Reply, CornerDownLeft, ShieldCheck, Calendar } from "lucide-react";
 import api from "@/lib/axios";
 import { useAuth } from "@/context/AuthContext";
 import toast from "react-hot-toast";
-import { formatDistanceToNow } from "date-fns-jalali";
+import { formatDistanceToNow, format } from "date-fns-jalali";
 
-export default function CommentsSection({ productId, comments = [], onCommentSubmit }) {
+export default function CommentsSection({ productId, comments: initialComments = [], onCommentSubmit }) {
   const { user } = useAuth();
+  const [comments, setComments] = useState(initialComments);
   const [content, setContent] = useState("");
   const [rating, setRating] = useState(5);
   const [submitting, setSubmitting] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
 
+  useEffect(() => {
+    setComments(initialComments);
+  }, [initialComments]);
+
+  // WebSocket for real-time comments
+  useEffect(() => {
+    if (!productId) return;
+
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.hostname}:8000/ws/products/${productId}/comments/`;
+    const socket = new WebSocket(wsUrl);
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "comment_update") {
+        const newComment = data.comment;
+        
+        setComments(prevComments => {
+          // If it's a top-level comment
+          if (!newComment.parent) {
+            const exists = prevComments.some(c => c.id === newComment.id);
+            if (exists) return prevComments.map(c => c.id === newComment.id ? newComment : c);
+            return [newComment, ...prevComments];
+          }
+          
+          // If it's a reply, we need to find the parent and add it there
+          // Note: This only handles 1-level deep for simplicity in WS update, 
+          // but recursive rendering handles deeper if data is refreshed.
+          return prevComments.map(c => {
+            if (c.id === newComment.parent) {
+              const replyExists = c.replies.some(r => r.id === newComment.id);
+              if (replyExists) {
+                return { ...c, replies: c.replies.map(r => r.id === newComment.id ? newComment : r) };
+              }
+              return { ...c, replies: [...c.replies, newComment] };
+            }
+            return c;
+          });
+        });
+      }
+    };
+
+    return () => socket.close();
+  }, [productId]);
+
   const handleSubmit = async (e, parentId = null) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     const text = parentId ? replyTo.content : content;
     
     if (!user) {
@@ -30,14 +76,31 @@ export default function CommentsSection({ productId, comments = [], onCommentSub
 
     setSubmitting(true);
     try {
-      await api.post("/products/comments/", {
+      const response = await api.post("/products/comments/", {
         product: productId,
         content: text,
         rating: parentId ? 5 : rating,
         parent: parentId
       });
-      toast.success(parentId ? "پاسخ شما ثبت شد" : "نظر شما ثبت شد و پس از تایید مدیر نمایش داده خواهد شد");
       
+      const newComment = response.data;
+      const isAutoApproved = user.is_staff;
+
+      toast.success(isAutoApproved ? "نظر شما ثبت و منتشر شد" : "نظر شما ثبت شد و پس از تایید مدیر نمایش داده خواهد شد");
+      
+      // Update local state immediately for the user
+      if (!isAutoApproved) {
+        setComments(prev => {
+          if (!parentId) return [newComment, ...prev];
+          return prev.map(c => {
+            if (c.id === parentId) {
+              return { ...c, replies: [...(c.replies || []), newComment] };
+            }
+            return c;
+          });
+        });
+      }
+
       if (parentId) {
         setReplyTo(null);
       } else {
@@ -95,13 +158,16 @@ export default function CommentsSection({ productId, comments = [], onCommentSub
               className="w-full bg-secondary border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary/20 min-h-[120px] transition-all"
             />
           </div>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="bg-primary text-primary-foreground px-8 py-3 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center gap-2 mr-auto"
-          >
-            {submitting ? "در حال ارسال..." : "ثبت نظر"}
-          </button>
+          <div className="flex justify-between items-center">
+            <p className="text-[10px] text-foreground-muted">نظرات پس از تایید توسط ادمین نمایش داده می‌شوند (بجز مدیران).</p>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="bg-primary text-primary-foreground px-8 py-3 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center gap-2"
+            >
+              {submitting ? "در حال ارسال..." : "ثبت نظر"}
+            </button>
+          </div>
         </form>
       </div>
 
@@ -132,11 +198,12 @@ export default function CommentsSection({ productId, comments = [], onCommentSub
 }
 
 function CommentItem({ comment, user, onReply, replyTo, setReplyTo, handleSubmit, submitting, isReply = false }) {
-  const isAdminComment = comment.user_mobile === '09123456789' || comment.is_approved; // Example check or add role to serializer
+  const isAdminComment = comment.user_is_staff;
+  const isPending = !comment.is_approved;
 
   return (
-    <div className={`space-y-4 ${isReply ? "mr-8 border-r-2 border-primary/10 pr-4" : ""}`}>
-      <div className={`bg-card border border-border rounded-3xl p-6 transition-all hover:shadow-md ${isAdminComment ? "ring-1 ring-primary/20 bg-primary/5" : ""}`}>
+    <div className={`space-y-4 ${isReply ? "mr-4 sm:mr-8 border-r-2 border-primary/10 pr-4" : ""}`}>
+      <div className={`bg-card border border-border rounded-3xl p-4 sm:p-6 transition-all hover:shadow-md ${isAdminComment ? "ring-1 ring-primary/30 bg-primary/5" : ""} ${isPending ? "opacity-70 grayscale-[0.5]" : ""}`}>
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isAdminComment ? "bg-primary text-white" : "bg-primary/10 text-primary"}`}>
@@ -145,11 +212,18 @@ function CommentItem({ comment, user, onReply, replyTo, setReplyTo, handleSubmit
             <div>
               <div className="flex items-center gap-2">
                 <h4 className="font-bold text-foreground text-sm">{comment.user_name || "کاربر مرکز تک"}</h4>
-                {isAdminComment && <span className="bg-primary text-white text-[8px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter">مدیر</span>}
+                {isAdminComment && <span className="bg-primary text-white text-[8px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter shadow-sm">مدیر</span>}
+                {isPending && <span className="bg-yellow-500/10 text-yellow-600 text-[8px] px-1.5 py-0.5 rounded-md font-bold">در انتظار تایید</span>}
               </div>
-              <div className="flex items-center gap-2 text-[10px] text-foreground-muted mt-1">
-                <Clock className="w-3 h-3" />
-                <span>{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</span>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                <div className="flex items-center gap-1 text-[10px] text-foreground-muted" title={format(new Date(comment.created_at), "yyyy/MM/dd HH:mm")}>
+                  <Clock className="w-3 h-3" />
+                  <span>{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</span>
+                </div>
+                <div className="hidden sm:flex items-center gap-1 text-[10px] text-foreground-muted/60">
+                  <Calendar className="w-3 h-3" />
+                  <span>{format(new Date(comment.created_at), "dd MMMM yyyy")}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -159,7 +233,7 @@ function CommentItem({ comment, user, onReply, replyTo, setReplyTo, handleSubmit
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    className={`w-3.5 h-3.5 ${star <= comment.rating ? "fill-yellow-400 text-yellow-400" : "text-border"}`}
+                    className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${star <= comment.rating ? "fill-yellow-400 text-yellow-400" : "text-border"}`}
                   />
                 ))}
               </div>
@@ -180,7 +254,7 @@ function CommentItem({ comment, user, onReply, replyTo, setReplyTo, handleSubmit
 
       {/* فرم پاسخ */}
       {replyTo?.id === comment.id && (
-        <div className="mr-8 bg-secondary/30 rounded-2xl p-4 animate-in slide-in-from-top-2 duration-200">
+        <div className="mr-4 sm:mr-8 bg-secondary/30 rounded-2xl p-4 animate-in slide-in-from-top-2 duration-200">
           <div className="flex items-center gap-2 mb-3 text-xs font-bold text-foreground-muted">
             <CornerDownLeft className="w-3 h-3" />
             در حال پاسخ به {comment.user_name}
@@ -230,4 +304,3 @@ function CommentItem({ comment, user, onReply, replyTo, setReplyTo, handleSubmit
     </div>
   );
 }
-

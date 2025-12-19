@@ -72,7 +72,33 @@ class SearchConsumer(AsyncWebsocketConsumer):
             is_active=True
         ).order_by('-created_at')[:10]
         
-        # We need a serializer context for absolute image URLs if possible, 
-        # but in consumer it's harder. We'll send relative URLs or handle it in frontend.
         serializer = ProductSerializer(products, many=True)
         return serializer.data
+
+class ProductCommentsConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.product_id = self.scope['url_route']['kwargs']['product_id']
+        self.room_group_name = f"product_{self.product_id}_comments"
+        
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name
+        )
+        
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name
+        )
+
+    async def receive(self, text_data):
+        pass
+
+    async def comment_update(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'comment_update',
+            'comment': event['comment'],
+            'status': event['status']
+        }))

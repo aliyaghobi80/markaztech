@@ -20,18 +20,29 @@ class CommentSerializer(serializers.ModelSerializer):
     """Serializer for product comments."""
     user_name = serializers.CharField(source='user.full_name', read_only=True)
     user_mobile = serializers.CharField(source='user.mobile', read_only=True)
+    user_is_staff = serializers.BooleanField(source='user.is_staff', read_only=True)
     product_title = serializers.CharField(source='product.title', read_only=True)
     replies = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ['id', 'product', 'product_title', 'user', 'user_name', 'user_mobile', 'content', 'rating', 'parent', 'replies', 'is_approved', 'created_at']
+        fields = ['id', 'product', 'product_title', 'user', 'user_name', 'user_mobile', 'user_is_staff', 'content', 'rating', 'parent', 'replies', 'is_approved', 'created_at']
         read_only_fields = ['id', 'user', 'is_approved', 'created_at']
 
     def get_replies(self, obj):
-        # Only return approved replies
-        approved_replies = obj.replies.filter(is_approved=True)
-        return CommentSerializer(approved_replies, many=True).data
+        request = self.context.get('request')
+        user = request.user if request else None
+        
+        # Determine which replies to show
+        if user and user.is_authenticated:
+            if user.is_staff:
+                replies = obj.replies.all()
+            else:
+                replies = obj.replies.filter(models.Q(is_approved=True) | models.Q(user=user))
+        else:
+            replies = obj.replies.filter(is_approved=True)
+            
+        return CommentSerializer(replies.order_by('created_at'), many=True, context=self.context).data
 
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
@@ -86,8 +97,19 @@ class ProductSerializer(serializers.ModelSerializer):
         return None
 
     def get_comments(self, obj):
-        approved_comments = obj.comments.filter(is_approved=True, parent__isnull=True)
-        return CommentSerializer(approved_comments, many=True, context=self.context).data
+        request = self.context.get('request')
+        user = request.user if request else None
+        
+        # Determine which comments to show
+        if user and user.is_authenticated:
+            if user.is_staff:
+                comments = obj.comments.filter(parent__isnull=True)
+            else:
+                comments = obj.comments.filter(models.Q(is_approved=True) | models.Q(user=user), parent__isnull=True)
+        else:
+            comments = obj.comments.filter(is_approved=True, parent__isnull=True)
+            
+        return CommentSerializer(comments, many=True, context=self.context).data
 
     def get_is_favorite(self, obj):
         user = self.context.get('request').user if 'request' in self.context else None

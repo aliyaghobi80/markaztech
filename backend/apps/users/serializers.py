@@ -112,6 +112,21 @@ class TicketMessageSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         return obj.sender == user
 
+    def validate_attachment(self, value):
+        if value:
+            # 10MB = 10 * 1024 * 1024 bytes
+            if value.size > 10 * 1024 * 1024:
+                raise serializers.ValidationError("اندازه فایل نباید بیشتر از 10 مگابایت باشد.")
+            
+            # Allow only images for now if that's what user implied, 
+            # but they said "عکس هم ارسال کرد" so let's stick to images or common formats.
+            import os
+            ext = os.path.splitext(value.name)[1].lower()
+            valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.zip']
+            if ext not in valid_extensions:
+                raise serializers.ValidationError("فرمت فایل مجاز نیست.")
+        return value
+
 class TicketSerializer(serializers.ModelSerializer):
     user_mobile = serializers.CharField(source='user.mobile', read_only=True)
     user_name = serializers.CharField(source='user.full_name', read_only=True)
