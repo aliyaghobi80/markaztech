@@ -51,6 +51,8 @@ class SatisfactionSurveyViewSet(viewsets.ModelViewSet):
             raise ValidationError("فقط کاربرانی که خرید انجام داده‌اند می‌توانند در نظرسنجی شرکت کنند.")
             
         serializer.save(user=self.request.user)
+        from .utils import broadcast_site_stats
+        broadcast_site_stats()
 
     @action(detail=False, methods=['get'])
     def my_vote(self, request):

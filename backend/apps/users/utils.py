@@ -29,6 +29,33 @@ def jalali_full_date(dt):
         return ""
     return jdatetime.datetime.fromgregorian(datetime=dt).strftime('%Y/%m/%d ساعت %H:%M')
 
+def broadcast_site_stats():
+    """Broadcasts current site statistics via WebSocket."""
+    from .models import SiteStats, SatisfactionSurvey
+    stats, created = SiteStats.objects.get_or_create(id=1)
+    
+    total_votes = SatisfactionSurvey.objects.count()
+    satisfied_votes = SatisfactionSurvey.objects.filter(is_satisfied=True).count()
+    rate = (satisfied_votes / total_votes * 100) if total_votes > 0 else 100
+    
+    from .consumers import online_users
+    
+    stats_data = {
+        "total_visits": stats.total_visits,
+        "total_satisfied": satisfied_votes,
+        "satisfaction_rate": round(rate, 1),
+        "online_users": len(online_users)
+    }
+    
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        "site_stats",
+        {
+            "type": "stats_update",
+            "stats": stats_data
+        }
+    )
+
 def send_comment_update(comment):
     """Sends a comment update to the product group."""
     from apps.products.serializers import CommentSerializer
@@ -58,17 +85,6 @@ def send_product_update(product, action="update"):
             "type": "product_update",
             "action": action,
             "product": serializer.data
-        }
-    )
-
-def send_site_stats(stats):
-    """Sends site statistics to the site_stats group."""
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        "site_stats",
-        {
-            "type": "stats_update",
-            "stats": stats
         }
     )
 

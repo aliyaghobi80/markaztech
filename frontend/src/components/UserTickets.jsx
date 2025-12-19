@@ -1,7 +1,7 @@
 // مسیر: src/components/UserTickets.jsx
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import useSWR from "swr";
 import api from "@/lib/axios";
 import { Headphones, Plus, Send, Clock, MessageCircle, Loader2, Paperclip, X, Image as ImageIcon, FileText } from "lucide-react";
@@ -179,6 +179,17 @@ function TicketListItem({ ticket, onRefresh }) {
   const [attachment, setAttachment] = useState(null);
   const [sending, setSubmitting] = useState(false);
   const fileInputRef = useRef(null);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    if (showMessages && messages) {
+      scrollToBottom();
+    }
+  }, [messages, showMessages]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -215,6 +226,13 @@ function TicketListItem({ ticket, onRefresh }) {
       toast.error(error.response?.data?.attachment?.[0] || "خطا در ارسال پیام");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
 
@@ -299,6 +317,7 @@ function TicketListItem({ ticket, onRefresh }) {
                 </div>
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
 
           {ticket.status !== 'CLOSED' && (
@@ -322,7 +341,8 @@ function TicketListItem({ ticket, onRefresh }) {
                 <textarea
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="پاسخ خود را اینجا بنویسید..."
+                  onKeyDown={handleKeyDown}
+                  placeholder="پاسخ خود را اینجا بنویسید... (Enter برای ارسال)"
                   className="w-full bg-card border border-border rounded-2xl p-4 pr-4 pl-24 text-sm focus:ring-2 focus:ring-primary/20 min-h-[100px] outline-none"
                 />
                 <div className="absolute left-3 bottom-3 flex gap-2">
