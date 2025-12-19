@@ -187,10 +187,12 @@ function TicketListItem({ ticket, onRefresh }) {
   const [attachment, setAttachment] = useState(null);
   const [sending, setSubmitting] = useState(false);
   const fileInputRef = useRef(null);
-  const messagesEndRef = useRef(null);
+  const scrollContainerRef = useRef(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
   };
 
   useEffect(() => {
@@ -287,10 +289,13 @@ function TicketListItem({ ticket, onRefresh }) {
         </div>
       </div>
 
-      {showMessages && (
-        <div className="border-t border-border bg-secondary/20 p-6 space-y-6">
-          <div className="space-y-4 max-h-[400px] overflow-y-auto px-2 custom-scrollbar scroll-smooth">
-            {messages?.map((msg) => (
+        {showMessages && (
+          <div className="border-t border-border bg-secondary/20 p-6 space-y-6">
+            <div 
+              ref={scrollContainerRef}
+              className="space-y-4 max-h-[400px] overflow-y-auto px-2 custom-scrollbar scroll-smooth"
+            >
+              {messages?.map((msg) => (
               <div key={msg.id} className={`flex ${msg.is_me ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[85%] rounded-2xl p-4 text-sm ${
                   msg.is_me 
@@ -325,12 +330,11 @@ function TicketListItem({ ticket, onRefresh }) {
 
                   <div className={`mt-2 text-[9px] ${msg.is_me ? "text-primary-foreground/70" : "text-foreground-muted"}`}>
                     {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            <div ref={messagesEndRef} className="h-2" />
-          </div>
+              ))}
+            </div>
 
           {ticket.status !== 'CLOSED' && (
             <div className="space-y-3">
