@@ -432,6 +432,23 @@ function WalletChargeSection({ user }) {
 
   useEffect(() => {
     fetchMyRequests();
+
+    // گوش دادن به تغییرات وضعیت درخواست شارژ (از AuthContext و وب‌سوکت)
+    const handleStatusChange = (event) => {
+      console.log("Wallet request status changed:", event.detail);
+      fetchMyRequests();
+      
+      // نمایش نوتیفیکیشن متناسب با وضعیت
+      const { status } = event.detail;
+      if (status === 'APPROVED') {
+        toast.success("درخواست شارژ کیف پول شما تایید شد!");
+      } else if (status === 'REJECTED') {
+        toast.error("درخواست شارژ کیف پول شما رد شد.");
+      }
+    };
+
+    window.addEventListener('wallet_request_status_changed', handleStatusChange);
+    return () => window.removeEventListener('wallet_request_status_changed', handleStatusChange);
   }, []);
 
   const fetchMyRequests = async () => {

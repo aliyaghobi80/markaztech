@@ -14,7 +14,7 @@ from .serializers import (
     WalletTopUpRequestSerializer, WalletTopUpCreateSerializer, WalletAdjustmentSerializer
 )
 from .models import WalletTopUpRequest
-from .utils import send_wallet_update
+from .utils import send_wallet_update, send_wallet_request_update
 
 
 User = get_user_model()
@@ -175,6 +175,7 @@ class WalletTopUpRequestViewSet(viewsets.ModelViewSet):
             
             # ارسال نوتیفیکیشن ریل‌تایم
             send_wallet_update(user)
+            send_wallet_request_update(user, wallet_request.id, 'APPROVED', wallet_request.admin_note)
         
         return Response({
             'message': 'درخواست تایید شد و موجودی کیف پول کاربر افزایش یافت.',
@@ -194,6 +195,9 @@ class WalletTopUpRequestViewSet(viewsets.ModelViewSet):
         wallet_request.status = WalletTopUpRequest.Status.REJECTED
         wallet_request.admin_note = request.data.get('admin_note', 'درخواست توسط ادمین رد شد.')
         wallet_request.save()
+        
+        # ارسال نوتیفیکیشن ریل‌تایم
+        send_wallet_request_update(wallet_request.user, wallet_request.id, 'REJECTED', wallet_request.admin_note)
         
         return Response({'message': 'درخواست رد شد.'})
 

@@ -83,15 +83,25 @@ export function AuthProvider({ children }) {
     try {
       socket = new WebSocket(wsUrl);
 
-      socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === "wallet_update") {
-          setUser(prevUser => ({
-            ...prevUser,
-            wallet_balance: data.balance
-          }));
-        }
-      };
+        socket.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          if (data.type === "wallet_update") {
+            setUser(prevUser => ({
+              ...prevUser,
+              wallet_balance: data.balance
+            }));
+          } else if (data.type === 'wallet_request_update') {
+            // ایجاد یک رویداد سفارشی برای اطلاع‌رسانی به داشبورد
+            const event = new CustomEvent('wallet_request_status_changed', { 
+              detail: { 
+                request_id: data.request_id, 
+                status: data.status,
+                admin_note: data.admin_note
+              } 
+            });
+            window.dispatchEvent(event);
+          }
+        };
 
       socket.onclose = () => {
         console.log("اتصال وب‌سوکت کیف پول قطع شد");
