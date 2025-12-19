@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { 
   Calendar, User, Clock, ChevronRight, 
   Share2, Bookmark, MessageSquare, Loader2,
-  ArrowRight
+  ArrowRight, BookOpen
 } from "lucide-react";
 import Link from "next/link";
 import api from "@/lib/axios";
