@@ -9,6 +9,10 @@ const getBaseUrl = () => {
     const { hostname, protocol } = window.location;
     // اگر روی لوکال هاست نیستیم (مثلا در محیط Orchids یا با آی‌پی وصل شدیم)
     if (hostname !== "localhost" && hostname !== "127.0.0.1") {
+      // برای محیط Orchids که پورت‌ها در ساب‌دومین هستند
+      if (hostname.includes("-3000")) {
+        return `${protocol}//${hostname.replace("-3000", "-8000")}/api`;
+      }
       return `${protocol}//${hostname}:8000/api`;
     }
   }
