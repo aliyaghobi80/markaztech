@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Product, Category, Comment, Favorite
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 
 User = get_user_model()
 
@@ -18,32 +19,32 @@ class CategorySerializer(serializers.ModelSerializer):
         children = obj.children.all()
         return CategorySerializer(children, many=True, context=self.context).data
 
-def to_internal_value(self, data):
-# Convert QueryDict to a mutable dict to handle multipart/form-data better
-if hasattr(data, 'dict'):
-data = data.dict()
-elif hasattr(data, 'copy'):
-data = data.copy()
-
-# Handle empty strings for nullable fields
-if 'parent' in data and (data['parent'] == '' or data['parent'] == 'null'):
-data['parent'] = None
-
-# Handle Boolean strings from FormData
-if 'is_active' in data:
-if isinstance(data['is_active'], str):
-data['is_active'] = data['is_active'].lower() == 'true'
-
-# Handle icon field - if it's an empty string or not a file object, remove it
-if 'icon' in data:
-val = data['icon']
-if val == '' or val == 'null' or isinstance(val, str):
-# If it's a string, it's not a new file upload. 
-# For PATCH/PUT, we don't want to overwrite with a string.
-# For POST, we just ignore it.
-data.pop('icon')
-
-return super().to_internal_value(data)
+    def to_internal_value(self, data):
+        # Convert QueryDict to a mutable dict to handle multipart/form-data better
+        if hasattr(data, 'dict'):
+            data = data.dict()
+        elif hasattr(data, 'copy'):
+            data = data.copy()
+        
+        # Handle empty strings for nullable fields
+        if 'parent' in data and (data['parent'] == '' or data['parent'] == 'null'):
+            data['parent'] = None
+        
+        # Handle Boolean strings from FormData
+        if 'is_active' in data:
+            if isinstance(data['is_active'], str):
+                data['is_active'] = data['is_active'].lower() == 'true'
+        
+        # Handle icon field - if it's an empty string or not a file object, remove it
+        if 'icon' in data:
+            val = data['icon']
+            if val == '' or val == 'null' or isinstance(val, str):
+                # If it's a string, it's not a new file upload. 
+                # For PATCH/PUT, we don't want to overwrite with a string.
+                # For POST, we just ignore it.
+                data.pop('icon')
+        
+        return super().to_internal_value(data)
 
 
 class CommentSerializer(serializers.ModelSerializer):
