@@ -20,13 +20,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.http import HttpResponse
-
-def home_view(request):
-    return HttpResponse("<h1>Backend API is running</h1><p>Access admin at <a href='/admin/'>/admin/</a></p>")
 
 urlpatterns = [
-    path('', home_view),
     path('admin/', admin.site.urls),
     # اضافه کردن مسیر API محصولات
     path('api/products/', include('apps.products.urls')),
