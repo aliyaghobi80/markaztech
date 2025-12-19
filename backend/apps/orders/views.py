@@ -82,6 +82,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             serializer.save()
             # Update status to pending after receipt upload
             order.status = Order.Status.PENDING 
+            order.payment_method = Order.PaymentMethod.CARD
             order.save()
             print("DEBUG: Upload successful")
             return Response({
@@ -133,6 +134,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             user.save()
             
             order.status = Order.Status.PAID
+            order.payment_method = Order.PaymentMethod.WALLET
             order.save()
             
             # Decrease stock

@@ -13,8 +13,16 @@ class Order(models.Model):
         CANCELED = 'CANCELED', 'لغو شده'
         SENT = 'SENT', 'تحویل داده شده'
 
+    class PaymentMethod(models.TextChoices):
+        """Payment method choices."""
+        WALLET = 'WALLET', 'کیف پول'
+        CARD = 'CARD', 'کارت به کارت'
+        ONLINE = 'ONLINE', 'درگاه مستقیم'
+        NONE = 'NONE', 'نامشخص'
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
     status = models.CharField('وضعیت', max_length=20, choices=Status.choices, default=Status.PENDING)
+    payment_method = models.CharField('روش پرداخت', max_length=20, choices=PaymentMethod.choices, default=PaymentMethod.NONE)
     total_price = models.PositiveBigIntegerField('مبلغ کل (تومان)', default=0)
     created_at = models.DateTimeField('تاریخ ثبت', auto_now_add=True)
     

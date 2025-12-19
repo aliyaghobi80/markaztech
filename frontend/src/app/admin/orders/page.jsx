@@ -19,7 +19,10 @@ import {
     Save,
     MoreVertical,
     Clock,
-    AlertCircle
+    AlertCircle,
+    Wallet,
+    CreditCard,
+    FileText
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { downloadOrderPDF } from "@/lib/pdfGenerator";
@@ -85,6 +88,21 @@ export default function AdminOrdersPage() {
             <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-tighter ${styles[status]}`}>
                 <Icon className="w-3 h-3" />
                 {labels[status]}
+            </span>
+        );
+    };
+
+    const paymentMethodBadge = (order) => {
+        if (!order.payment_method || order.payment_method === 'NONE') return null;
+
+        const isWallet = order.payment_method === 'WALLET';
+        const Icon = isWallet ? Wallet : CreditCard;
+        const label = order.payment_method_display;
+
+        return (
+            <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-tighter bg-secondary/50 text-foreground-muted border-border/50`}>
+                <Icon className="w-3 h-3 opacity-70" />
+                {label}
             </span>
         );
     };
@@ -255,6 +273,7 @@ export default function AdminOrdersPage() {
                                                     {order.user?.full_name || 'کاربر بدون نام'}
                                                 </h3>
                                                 {statusBadge(order.status)}
+                                                {paymentMethodBadge(order)}
                                             </div>
                                             <div className="flex items-center gap-3 text-sm font-medium text-foreground-muted">
                                                 <span className="bg-secondary/50 px-2 py-0.5 rounded-lg">{order.user?.mobile}</span>
@@ -284,14 +303,29 @@ export default function AdminOrdersPage() {
                                     <div className="flex-1 flex flex-col justify-center gap-4">
                                         <div className="flex flex-wrap items-center gap-3">
                                             {order.payment_receipt ? (
-                                                <a 
-                                                    href={order.payment_receipt} 
-                                                    target="_blank" 
-                                                    className="flex items-center gap-2 text-primary hover:bg-primary/20 bg-primary/10 px-5 py-3 rounded-2xl text-xs font-black transition-all border border-primary/10"
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                    مشاهده فیش واریزی
-                                                </a>
+                                                <div className="flex items-center gap-3">
+                                                    <a 
+                                                        href={order.payment_receipt} 
+                                                        target="_blank" 
+                                                        className="flex items-center gap-2 text-primary hover:bg-primary/20 bg-primary/10 px-5 py-3 rounded-2xl text-xs font-black transition-all border border-primary/10 group/receipt relative overflow-hidden"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                        مشاهده فیش واریزی
+                                                        
+                                                        {/* Simple hover preview if it's an image */}
+                                                        <div className="absolute inset-0 bg-primary opacity-0 group-hover/receipt:opacity-5 transition-opacity" />
+                                                    </a>
+                                                    
+                                                    {/* Small thumbnail for quick reference */}
+                                                    <div className="w-12 h-12 rounded-xl border border-border overflow-hidden bg-secondary/30 shrink-0">
+                                                        <img 
+                                                            src={order.payment_receipt} 
+                                                            alt="Receipt" 
+                                                            className="w-full h-full object-cover hover:scale-110 transition-transform cursor-zoom-in"
+                                                            onClick={() => window.open(order.payment_receipt, '_blank')}
+                                                        />
+                                                    </div>
+                                                </div>
                                             ) : (
                                                 <div className="flex items-center gap-2 text-foreground-muted bg-secondary/30 px-5 py-3 rounded-2xl text-xs font-bold italic border border-dashed border-border">
                                                     <XCircle className="w-4 h-4 opacity-50" />

@@ -43,6 +43,7 @@ class OrderSerializer(serializers.ModelSerializer):
     cart_items = serializers.ListField(write_only=True, required=False)
     items = serializers.SerializerMethodField()
     user = serializers.SerializerMethodField()
+    payment_method_display = serializers.CharField(source='get_payment_method_display', read_only=True)
     
     def get_items(self, obj):
         """Get order items with context."""
@@ -53,8 +54,8 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         """Meta configuration for OrderSerializer."""
         model = Order
-        fields = ['id', 'user', 'total_price', 'status', 'created_at', 'payment_receipt', 'admin_notes', 'cart_items', 'items']
-        read_only_fields = ['total_price', 'created_at']
+        fields = ['id', 'user', 'total_price', 'status', 'payment_method', 'payment_method_display', 'created_at', 'payment_receipt', 'admin_notes', 'cart_items', 'items']
+        read_only_fields = ['total_price', 'created_at', 'payment_method']
     
     def get_user(self, obj):
         """Get user details safely."""
