@@ -102,8 +102,9 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
-        # Auto-approve staff comments
-        is_approved = user.is_staff
+        parent = serializer.validated_data.get('parent')
+        # Auto-approve staff comments OR any replies (as requested by user)
+        is_approved = user.is_staff or parent is not None
         comment = serializer.save(user=user, is_approved=is_approved)
         
         # Trigger WebSocket update if approved

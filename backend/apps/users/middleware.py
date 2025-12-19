@@ -2,6 +2,8 @@ from channels.db import database_sync_to_async
 from django.contrib.auth.models import AnonymousUser
 from rest_framework_simplejwt.tokens import AccessToken
 from django.contrib.auth import get_user_model
+from .models import SiteStats
+from django.db.models import F
 
 User = get_user_model()
 
@@ -15,17 +17,36 @@ def get_user(token_key):
         return AnonymousUser()
 
 class TokenAuthMiddleware:
+    """
+    Custom middleware that takes a token from the query string and authenticates the user.
+    """
     def __init__(self, inner):
         self.inner = inner
 
     async def __call__(self, scope, receive, send):
-        query_string = scope.get("query_string", b"").decode("utf-8")
-        query_params = dict(qp.split("=") for qp in query_string.split("&") if "=" in qp)
-        token_key = query_params.get("token")
+        query_string = scope.get('query_string', b'').decode()
+        token = None
+        for param in query_string.split('&'):
+            if param.startswith('token='):
+                token = param.split('=')[1]
+                break
         
-        if token_key:
-            scope["user"] = await get_user(token_key)
+        if token:
+            scope['user'] = await get_user(token)
         else:
-            scope["user"] = AnonymousUser()
+            scope['user'] = AnonymousUser()
             
         return await self.inner(scope, receive, send)
+
+class SiteStatsMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Update visit count only for unique sessions or just every request for simplicity
+        if request.path == '/' or request.path.startswith('/product/'):
+            stats, created = SiteStats.objects.get_or_create(id=1)
+            SiteStats.objects.filter(id=1).update(total_visits=F('total_visits') + 1)
+            
+        response = self.get_response(request)
+        return response

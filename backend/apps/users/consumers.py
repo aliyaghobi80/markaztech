@@ -1,70 +1,84 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
+from .models import SiteStats
+
+# Global variable to track online users (simple approach)
+# In production, use Redis for this
+online_users = set()
 
 class UserConsumer(AsyncWebsocketConsumer):
-    """Consumer for user-specific notifications (wallet, tickets)."""
     async def connect(self):
-        self.user = self.scope["user"]
-        if self.user.is_authenticated:
-            self.wallet_group = f"user_{self.user.id}_wallet"
-            self.ticket_group = f"user_{self.user.id}_tickets"
-            
-            await self.channel_layer.group_add(self.wallet_group, self.channel_name)
-            await self.channel_layer.group_add(self.ticket_group, self.channel_name)
-            
-            if self.user.is_staff:
-                await self.channel_layer.group_add("admin_notifications", self.channel_name)
-            
-            await self.accept()
-        else:
-            await self.close()
-
-    async def disconnect(self, close_code):
-        if hasattr(self, 'wallet_group'):
-            await self.channel_layer.group_discard(self.wallet_group, self.channel_name)
-        if hasattr(self, 'ticket_group'):
-            await self.channel_layer.group_discard(self.ticket_group, self.channel_name)
-        if self.user.is_authenticated and self.user.is_staff:
-            await self.channel_layer.group_discard("admin_notifications", self.channel_name)
-
-    async def wallet_update(self, event):
-        await self.send(text_data=json.dumps({
-            "type": "wallet_update",
-            "balance": event["balance"]
-        }))
-
-    async def wallet_request_update(self, event):
-        await self.send(text_data=json.dumps({
-            "type": "wallet_request_update",
-            "request_id": event["request_id"],
-            "status": event["status"],
-            "admin_note": event.get("admin_note")
-        }))
-
-    async def ticket_update(self, event):
-        await self.send(text_data=json.dumps({
-            "type": "ticket_update",
-            "ticket_id": event["ticket_id"],
-            "status": event["status"],
-            "user_mobile": event.get("user_mobile")
-        }))
-
-class ProductConsumer(AsyncWebsocketConsumer):
-    """Consumer for product-specific updates (comments)."""
-    async def connect(self):
-        self.product_id = self.scope['url_route']['kwargs']['product_id']
-        self.group_name = f"product_{self.product_id}_comments"
+        self.user = self.scope.get('user')
+        self.room_group_name = 'site_stats'
         
-        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        # Add to group
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name
+        )
+        
         await self.accept()
+        
+        # Track online status
+        if self.user and self.user.is_authenticated:
+            online_users.add(self.user.id)
+        else:
+            # For anonymous users, track by channel name or just increment a counter
+            online_users.add(self.channel_name)
+            
+        await self.broadcast_stats()
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        # Remove from group
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name
+        )
+        
+        # Track offline status
+        if self.user and self.user.is_authenticated:
+            if self.user.id in online_users:
+                online_users.remove(self.user.id)
+        else:
+            if self.channel_name in online_users:
+                online_users.remove(self.channel_name)
+                
+        await self.broadcast_stats()
 
-    async def comment_update(self, event):
-        await self.send(text_data=json.dumps({
-            "type": "comment_update",
-            "comment_id": event["comment_id"],
-            "product_id": event["product_id"],
-            "status": event["status"]
-        }))
+    async def receive(self, text_data):
+        pass
+
+    async def broadcast_stats(self):
+        # Fetch stats from DB
+        stats_data = await self.get_stats()
+        
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                "type": "stats_update",
+                "stats": {
+                    **stats_data,
+                    "online_users": len(online_users)
+                }
+            }
+        )
+
+    async def stats_update(self, event):
+        # Send message to WebSocket
+        await self.send(text_data=json.dumps(event))
+
+    @database_sync_to_async
+    def get_stats(self):
+        from .models import SiteStats, SatisfactionSurvey
+        stats, created = SiteStats.objects.get_or_create(id=1)
+        
+        total_votes = SatisfactionSurvey.objects.count()
+        satisfied_votes = SatisfactionSurvey.objects.filter(is_satisfied=True).count()
+        rate = (satisfied_votes / total_votes * 100) if total_votes > 0 else 100
+        
+        return {
+            "total_visits": stats.total_visits,
+            "total_satisfied": satisfied_votes,
+            "satisfaction_rate": round(rate, 1)
+        }

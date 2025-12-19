@@ -77,15 +77,20 @@ class ProductSerializer(serializers.ModelSerializer):
     category_slug = serializers.CharField(source='category.slug', read_only=True)
     comments = serializers.SerializerMethodField()
     is_favorite = serializers.SerializerMethodField()
+    created_at_human = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             'id', 'title', 'slug', 'description', 
             'price', 'discount_price', 'main_image', 
-            'delivery_time', 'category', 'category_slug', 'is_active',
-            'comments', 'is_favorite'
+            'delivery_time', 'stock', 'category', 'category_slug', 'is_active',
+            'comments', 'is_favorite', 'created_at_human'
         ]
+    
+    def get_created_at_human(self, obj):
+        from apps.users.utils import jalali_relative_time
+        return jalali_relative_time(obj.created_at)
     
     def get_category(self, obj):
         if obj.category:
@@ -124,7 +129,7 @@ class UpdateProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['title', 'slug', 'description', 'price', 'discount_price', 'main_image', 'delivery_time', 'category', 'is_active']
+        fields = ['title', 'slug', 'description', 'price', 'discount_price', 'main_image', 'delivery_time', 'stock', 'category', 'is_active']
 
     def to_internal_value(self, data):
         if hasattr(data, 'dict'):
@@ -163,7 +168,7 @@ class CreateProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'title', 'description', 'price', 'discount_price', 
-            'main_image', 'delivery_time', 'category'
+            'main_image', 'delivery_time', 'stock', 'category'
         ]
     
     def to_internal_value(self, data):

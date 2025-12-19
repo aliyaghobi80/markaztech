@@ -6,7 +6,6 @@ import { MessageSquare, Star, Send, User, Clock, CheckCircle, Reply, CornerDownL
 import api from "@/lib/axios";
 import { useAuth } from "@/context/AuthContext";
 import toast from "react-hot-toast";
-import { formatDistanceToNow, format } from "date-fns-jalali";
 
 export default function CommentsSection({ productId, comments: initialComments = [], onCommentSubmit }) {
   const { user } = useAuth();
@@ -42,15 +41,14 @@ export default function CommentsSection({ productId, comments: initialComments =
           }
           
           // If it's a reply, we need to find the parent and add it there
-          // Note: This only handles 1-level deep for simplicity in WS update, 
-          // but recursive rendering handles deeper if data is refreshed.
           return prevComments.map(c => {
             if (c.id === newComment.parent) {
-              const replyExists = c.replies.some(r => r.id === newComment.id);
+              const replies = c.replies || [];
+              const replyExists = replies.some(r => r.id === newComment.id);
               if (replyExists) {
-                return { ...c, replies: c.replies.map(r => r.id === newComment.id ? newComment : r) };
+                return { ...c, replies: replies.map(r => r.id === newComment.id ? newComment : r) };
               }
-              return { ...c, replies: [...c.replies, newComment] };
+              return { ...c, replies: [...replies, newComment] };
             }
             return c;
           });
@@ -84,17 +82,24 @@ export default function CommentsSection({ productId, comments: initialComments =
       });
       
       const newComment = response.data;
-      const isAutoApproved = user.is_staff;
+      const isAutoApproved = user.is_staff || parentId !== null;
 
       toast.success(isAutoApproved ? "نظر شما ثبت و منتشر شد" : "نظر شما ثبت شد و پس از تایید مدیر نمایش داده خواهد شد");
       
-      // Update local state immediately for the user
-      if (!isAutoApproved) {
+      // Update local state immediately for the user (only for replies or staff)
+      if (isAutoApproved) {
         setComments(prev => {
-          if (!parentId) return [newComment, ...prev];
+          if (!parentId) {
+            const exists = prev.some(c => c.id === newComment.id);
+            if (exists) return prev;
+            return [newComment, ...prev];
+          }
           return prev.map(c => {
             if (c.id === parentId) {
-              return { ...c, replies: [...(c.replies || []), newComment] };
+              const replies = c.replies || [];
+              const replyExists = replies.some(r => r.id === newComment.id);
+              if (replyExists) return c;
+              return { ...c, replies: [...replies, newComment] };
             }
             return c;
           });
@@ -159,7 +164,7 @@ export default function CommentsSection({ productId, comments: initialComments =
             />
           </div>
           <div className="flex justify-between items-center">
-            <p className="text-[10px] text-foreground-muted">نظرات پس از تایید توسط ادمین نمایش داده می‌شوند (بجز مدیران).</p>
+            <p className="text-[10px] text-foreground-muted">نظرات و پاسخ‌ها پس از ثبت نمایش داده می‌شوند.</p>
             <button
               type="submit"
               disabled={submitting}
@@ -216,13 +221,13 @@ function CommentItem({ comment, user, onReply, replyTo, setReplyTo, handleSubmit
                 {isPending && <span className="bg-yellow-500/10 text-yellow-600 text-[8px] px-1.5 py-0.5 rounded-md font-bold">در انتظار تایید</span>}
               </div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                <div className="flex items-center gap-1 text-[10px] text-foreground-muted" title={format(new Date(comment.created_at), "yyyy/MM/dd HH:mm")}>
+                <div className="flex items-center gap-1 text-[10px] text-foreground-muted" title={comment.created_at_full}>
                   <Clock className="w-3 h-3" />
-                  <span>{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</span>
+                  <span>{comment.created_at_human}</span>
                 </div>
                 <div className="hidden sm:flex items-center gap-1 text-[10px] text-foreground-muted/60">
                   <Calendar className="w-3 h-3" />
-                  <span>{format(new Date(comment.created_at), "dd MMMM yyyy")}</span>
+                  <span>{comment.created_at_full?.split(' ')[0]}</span>
                 </div>
               </div>
             </div>

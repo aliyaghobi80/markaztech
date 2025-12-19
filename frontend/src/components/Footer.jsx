@@ -1,10 +1,30 @@
 "use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Mail, Phone, MapPin, Instagram, Send, Shield, Clock, HeadphonesIcon } from "lucide-react";
+import { Mail, Phone, MapPin, Instagram, Send, Shield, Clock, HeadphonesIcon, Users, Eye } from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
   const persianYear = currentYear - 621;
+  const [stats, setStats] = useState({
+    total_visits: 0,
+    online_users: 0,
+    satisfaction_rate: 100
+  });
+
+  useEffect(() => {
+    const wsUrl = `ws://localhost:8000/ws/user/`;
+    const socket = new WebSocket(wsUrl);
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "stats_update") {
+        setStats(data.stats);
+      }
+    };
+
+    return () => socket.close();
+  }, []);
   
   return (
     <footer className="bg-card border-t border-border relative overflow-hidden">
@@ -37,34 +57,31 @@ export default function Footer() {
           <div>
             <h4 className="text-foreground font-bold mb-6 flex items-center gap-2">
               <span className="w-2 h-6 bg-primary rounded-sm"></span>
-              دسترسی سریع
+              آمار سایت
             </h4>
-            <ul className="space-y-3">
-              <li>
-                <Link href="/search" className="text-foreground-muted hover:text-foreground transition-colors text-sm flex items-center gap-2">
-                  <span className="w-1 h-1 bg-foreground-muted/50 rounded-full"></span>
-                  همه محصولات
-                </Link>
-              </li>
-              <li>
-                <Link href="/dashboard" className="text-foreground-muted hover:text-foreground transition-colors text-sm flex items-center gap-2">
-                  <span className="w-1 h-1 bg-foreground-muted/50 rounded-full"></span>
-                  پنل کاربری
-                </Link>
-              </li>
-              <li>
-                <Link href="/cart" className="text-foreground-muted hover:text-foreground transition-colors text-sm flex items-center gap-2">
-                  <span className="w-1 h-1 bg-foreground-muted/50 rounded-full"></span>
-                  سبد خرید
-                </Link>
-              </li>
-              <li>
-                <Link href="/register" className="text-foreground-muted hover:text-foreground transition-colors text-sm flex items-center gap-2">
-                  <span className="w-1 h-1 bg-foreground-muted/50 rounded-full"></span>
-                  ثبت‌نام
-                </Link>
-              </li>
-            </ul>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 bg-secondary/50 p-3 rounded-xl border border-border/50">
+                <div className="w-8 h-8 bg-blue-500/10 text-blue-500 rounded-lg flex items-center justify-center">
+                  <Eye className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-foreground-muted">کل بازدیدها</span>
+                  <span className="text-sm font-bold text-foreground">{stats.total_visits.toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-secondary/50 p-3 rounded-xl border border-border/50">
+                <div className="w-8 h-8 bg-green-500/10 text-green-500 rounded-lg flex items-center justify-center">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-foreground-muted">افراد آنلاین</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span className="text-sm font-bold text-foreground">{stats.online_users} نفر</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div>

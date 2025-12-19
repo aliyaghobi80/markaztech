@@ -12,9 +12,52 @@ from django.db.models import Sum, Q
 from .serializers import (
     UserSerializer, UserRegistrationSerializer, CustomTokenObtainPairSerializer,
     WalletTopUpRequestSerializer, WalletTopUpCreateSerializer, WalletAdjustmentSerializer,
-    TicketSerializer, TicketMessageSerializer
+    TicketSerializer, TicketMessageSerializer, SiteStatsSerializer, SatisfactionSurveySerializer
 )
-from .models import WalletTopUpRequest, Ticket, TicketMessage
+from .models import WalletTopUpRequest, Ticket, TicketMessage, SiteStats, SatisfactionSurvey
+
+class SiteStatsView(APIView):
+    """View for site-wide statistics."""
+    permission_classes = [permissions.AllowAny]
+    
+    def get(self, request):
+        stats, created = SiteStats.objects.get_or_create(id=1)
+        
+        # Calculate satisfaction stats
+        total_votes = SatisfactionSurvey.objects.count()
+        satisfied_votes = SatisfactionSurvey.objects.filter(is_satisfied=True).count()
+        satisfaction_rate = (satisfied_votes / total_votes * 100) if total_votes > 0 else 100
+        
+        return Response({
+            'total_visits': stats.total_visits,
+            'total_satisfied_customers': satisfied_votes,
+            'satisfaction_rate': round(satisfaction_rate, 1),
+            'total_votes': total_votes
+        })
+
+class SatisfactionSurveyViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing customer satisfaction survey."""
+    queryset = SatisfactionSurvey.objects.all()
+    serializer_class = SatisfactionSurveySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        # Check if user has at least one paid order
+        from apps.orders.models import Order
+        has_purchased = Order.objects.filter(user=self.request.user, status__in=[Order.Status.PAID, Order.Status.SENT]).exists()
+        
+        if not has_purchased:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError("فقط کاربرانی که خرید انجام داده‌اند می‌توانند در نظرسنجی شرکت کنند.")
+            
+        serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def my_vote(self, request):
+        vote = SatisfactionSurvey.objects.filter(user=request.user).first()
+        if vote:
+            return Response(SatisfactionSurveySerializer(vote).data)
+        return Response({'is_satisfied': None})
 from .utils import send_wallet_update, send_wallet_request_update, send_ticket_update
 
 

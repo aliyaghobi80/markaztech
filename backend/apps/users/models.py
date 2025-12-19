@@ -115,3 +115,22 @@ class TicketMessage(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender} on {self.ticket.subject}"
+
+class SiteStats(models.Model):
+    """General site statistics."""
+    total_visits = models.PositiveBigIntegerField(default=0)
+    
+    class Meta:
+        verbose_name = 'آمار سایت'
+        verbose_name_plural = 'آمار سایت'
+
+class SatisfactionSurvey(models.Model):
+    """Survey for customer satisfaction."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='satisfaction_votes')
+    is_satisfied = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'نظرسنجی رضایت'
+        verbose_name_plural = 'نظرسنجی‌های رضایت'
+        unique_together = ('user',)

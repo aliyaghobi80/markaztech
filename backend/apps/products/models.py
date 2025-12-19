@@ -42,6 +42,7 @@ class Product(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     delivery_time = models.CharField(_('زمان تحویل'), max_length=50, default='آنی')
+    stock = models.PositiveIntegerField(_('موجودی'), default=10)
 
     class Meta:
         verbose_name = _('محصول')

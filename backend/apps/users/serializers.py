@@ -1,5 +1,17 @@
 from rest_framework import serializers
-from .models import User, WalletTopUpRequest, Ticket, TicketMessage
+from .models import User, WalletTopUpRequest, Ticket, TicketMessage, SiteStats, SatisfactionSurvey
+
+class SiteStatsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SiteStats
+        fields = ['total_visits']
+
+class SatisfactionSurveySerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.full_name', read_only=True)
+    class Meta:
+        model = SatisfactionSurvey
+        fields = ['id', 'user', 'user_name', 'is_satisfied', 'created_at']
+        read_only_fields = ['id', 'user', 'created_at']
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class UserRegistrationSerializer(serializers.ModelSerializer):

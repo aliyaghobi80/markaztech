@@ -5,6 +5,7 @@ import api from "@/lib/axios";
 import { useProductWebSocket } from "@/lib/useProductWebSocket";
 import HeroSection from "@/components/HeroSection";
 import ProductCard from "@/components/ProductCard";
+import SatisfactionSurvey from "@/components/SatisfactionSurvey";
 import { Sparkles, Shield, Zap, Clock, HeadphonesIcon, CreditCard } from "lucide-react";
 
 export default function Home() {
@@ -99,6 +100,7 @@ export default function Home() {
   return (
     <div className="bg-background">
       <HeroSection />
+      <SatisfactionSurvey />
 
       <section className="py-16 bg-background">
         <div className="container mx-auto px-4">

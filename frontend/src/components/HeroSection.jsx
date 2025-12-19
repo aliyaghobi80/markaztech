@@ -1,8 +1,40 @@
+// مسیر: src/components/HeroSection.jsx
 "use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Sparkles, Zap, Shield, Clock } from "lucide-react";
+import api from "@/lib/axios";
 
 export default function HeroSection() {
+  const [stats, setStats] = useState({
+    total_visits: 5000,
+    total_satisfied_customers: 1200,
+    satisfaction_rate: 98
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await api.get("/users/site-stats/");
+        setStats(response.data);
+      } catch (error) {
+        console.error("Error fetching hero stats");
+      }
+    };
+    fetchStats();
+
+    // Use WebSocket for real-time stats if available
+    const wsUrl = `ws://localhost:8000/ws/user/`;
+    const socket = new WebSocket(wsUrl);
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "stats_update") {
+        setStats(prev => ({ ...prev, ...data.stats }));
+      }
+    };
+    return () => socket.close();
+  }, []);
+
   return (
     <section className="relative overflow-hidden bg-background">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/10 dark:from-slate-950 dark:via-blue-950 dark:to-slate-900"></div>
@@ -51,12 +83,14 @@ export default function HeroSection() {
 
             <div className="grid grid-cols-3 gap-4 max-w-md mx-auto lg:mx-0">
               <div className="text-center">
-                <div className="text-2xl md:text-3xl font-black text-foreground">۵۰۰۰+</div>
+                <div className="text-2xl md:text-3xl font-black text-foreground">
+                  {stats.total_satisfied_customers > 0 ? stats.total_satisfied_customers.toLocaleString() : '۱,۲۰۰'}+
+                </div>
                 <div className="text-xs text-foreground-muted">مشتری راضی</div>
               </div>
               <div className="text-center border-x border-border">
-                <div className="text-2xl md:text-3xl font-black text-foreground">۲۴/۷</div>
-                <div className="text-xs text-foreground-muted">پشتیبانی</div>
+                <div className="text-2xl md:text-3xl font-black text-foreground">{stats.satisfaction_rate}%</div>
+                <div className="text-xs text-foreground-muted">رضایت کاربران</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl md:text-3xl font-black text-foreground">۱۰۰٪</div>

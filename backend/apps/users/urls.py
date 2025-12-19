@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     UserViewSet, ProfileViewSet, CustomTokenObtainPairView, UserRegistrationView,
     WalletTopUpRequestViewSet, AdminWalletAdjustmentView, AdminStatisticsView, LogoutView,
-    TicketViewSet
+    TicketViewSet, SiteStatsView, SatisfactionSurveyViewSet
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -12,6 +12,7 @@ router = DefaultRouter()
 router.register(r'list', UserViewSet, basename='user-management')
 router.register(r'wallet-requests', WalletTopUpRequestViewSet, basename='wallet-requests')
 router.register(r'tickets', TicketViewSet, basename='tickets')
+router.register(r'satisfaction', SatisfactionSurveyViewSet, basename='satisfaction')
 
 urlpatterns = [
     # Authentication endpoints
@@ -22,6 +23,9 @@ urlpatterns = [
     
     # Profile management
     path('profile/', ProfileViewSet.as_view({'get': 'me', 'patch': 'me'}), name='user-profile'),
+    
+    # Stats
+    path('site-stats/', SiteStatsView.as_view(), name='site-stats'),
     
     # Admin endpoints
     path('wallet/adjust/', AdminWalletAdjustmentView.as_view(), name='admin-wallet-adjust'),

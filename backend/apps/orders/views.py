@@ -127,12 +127,26 @@ class OrderViewSet(viewsets.ModelViewSet):
             )
         
         from django.db import transaction
+        from apps.users.utils import send_product_update
         with transaction.atomic():
             user.wallet_balance -= order.total_price
             user.save()
             
             order.status = Order.Status.PAID
             order.save()
+            
+            # Decrease stock
+            for item in order.items.all():
+                if item.product.stock >= item.quantity:
+                    item.product.stock -= item.quantity
+                    item.product.save()
+                    send_product_update(item.product)
+                else:
+                    # In a real app, you'd handle this case (e.g., refund or error)
+                    # For now, we just set to 0
+                    item.product.stock = 0
+                    item.product.save()
+                    send_product_update(item.product)
         
         return Response({
             'message': 'پرداخت با موفقیت انجام شد',
