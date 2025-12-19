@@ -13,7 +13,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-**+_bn^^g-#be^vn&y%=h
 
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,.markaztech.ir,markaztech.ir').split(',')
+ALLOWED_HOSTS = ['*']
+
 
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
 
@@ -156,7 +157,7 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = True
 
 
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -169,6 +170,15 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+]
+# اضافه کردن آی‌پی فعلی به تراستد اوریجینز برای محیط Orchids
+if os.environ.get('HOSTNAME'):
+    CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ.get('HOSTNAME')}")
+
 
 # Security settings for production
 if not DEBUG:
