@@ -6,9 +6,9 @@ from .views import ProductViewSet, CategoryViewSet, CommentViewSet, FavoriteView
 router = DefaultRouter()
 router.register(r'comments', CommentViewSet, basename='comment')
 router.register(r'favorites', FavoriteViewSet, basename='favorite')
+router.register(r'categories', CategoryViewSet, basename='category')
 router.register(r'', ProductViewSet, basename='product')
 
 urlpatterns = [
-    path('categories/', CategoryViewSet.as_view({'get': 'list'}), name='categories-list'),
     path('', include(router.urls)),
 ]

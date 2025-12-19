@@ -42,6 +42,21 @@ class ArticleSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'slug', 'category', 'category_name', 'content', 'image', 'author', 'author_name', 'is_active', 'comments_count', 'created_at', 'created_at_human']
         read_only_fields = ['author', 'created_at']
 
+    def to_internal_value(self, data):
+        if hasattr(data, 'dict'):
+            data = data.dict()
+        else:
+            data = data.copy() if hasattr(data, 'copy') else dict(data)
+
+        if 'is_active' in data:
+            if isinstance(data['is_active'], str):
+                data['is_active'] = data['is_active'].lower() == 'true'
+        
+        if 'category' in data and data['category'] == '':
+            data.pop('category')
+
+        return super().to_internal_value(data)
+
     def get_created_at_human(self, obj):
         from apps.users.utils import jalali_relative_time
         return jalali_relative_time(obj.created_at)

@@ -7,14 +7,31 @@ User = get_user_model()
 class CategorySerializer(serializers.ModelSerializer):
     """Serializer for Category model with nested children for mega menu."""
     children = serializers.SerializerMethodField()
+    parent_name = serializers.CharField(source='parent.name', read_only=True)
 
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'icon', 'children']
+        fields = ['id', 'name', 'slug', 'icon', 'parent', 'parent_name', 'children', 'is_active']
 
     def get_children(self, obj):
-        children = obj.children.filter(is_active=True)
+        # Return children only if requested or limit depth
+        children = obj.children.all()
         return CategorySerializer(children, many=True).data
+
+    def to_internal_value(self, data):
+        if hasattr(data, 'dict'):
+            data = data.dict()
+        else:
+            data = data.copy() if hasattr(data, 'copy') else dict(data)
+            
+        if 'is_active' in data:
+            if isinstance(data['is_active'], str):
+                data['is_active'] = data['is_active'].lower() == 'true'
+        
+        if 'parent' in data and (data['parent'] == '' or data['parent'] == 'null'):
+            data['parent'] = None
+
+        return super().to_internal_value(data)
 
 class CommentSerializer(serializers.ModelSerializer):
     """Serializer for product comments."""
