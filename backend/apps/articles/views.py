@@ -8,6 +8,22 @@ from .serializers import ArticleSerializer, ArticleDetailSerializer, ArticleComm
 class ArticleViewSet(viewsets.ModelViewSet):
     lookup_field = 'slug'
     
+    def get_object(self):
+        """Override to support both ID and slug lookup."""
+        lookup_value = self.kwargs[self.lookup_field]
+        
+        if lookup_value.isdigit():
+            try:
+                return self.get_queryset().get(id=lookup_value)
+            except Article.DoesNotExist:
+                pass
+        
+        try:
+            return self.get_queryset().get(slug=lookup_value)
+        except Article.DoesNotExist:
+            from django.http import Http404
+            raise Http404("Article not found")
+    
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return ArticleDetailSerializer
