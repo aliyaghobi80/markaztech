@@ -10,13 +10,16 @@ django_asgi_app = get_asgi_application()
 
 from apps.products.routing import websocket_urlpatterns as products_ws
 from apps.orders.routing import websocket_urlpatterns as orders_ws
+from apps.users.routing import websocket_urlpatterns as users_ws
 
 # ترکیب تمام WebSocket URL patterns
-all_websocket_urlpatterns = products_ws + orders_ws
+all_websocket_urlpatterns = products_ws + orders_ws + users_ws
+
+from apps.users.middleware import TokenAuthMiddleware
 
 application = ProtocolTypeRouter({
     'http': django_asgi_app,
-    'websocket': AuthMiddlewareStack(
+    'websocket': TokenAuthMiddleware(
         URLRouter(all_websocket_urlpatterns)
     ),
 })

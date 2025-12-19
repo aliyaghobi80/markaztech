@@ -14,6 +14,7 @@ from .serializers import (
     WalletTopUpRequestSerializer, WalletTopUpCreateSerializer, WalletAdjustmentSerializer
 )
 from .models import WalletTopUpRequest
+from .utils import send_wallet_update
 
 
 User = get_user_model()
@@ -171,6 +172,9 @@ class WalletTopUpRequestViewSet(viewsets.ModelViewSet):
             user = wallet_request.user
             user.wallet_balance += wallet_request.amount
             user.save()
+            
+            # ارسال نوتیفیکیشن ریل‌تایم
+            send_wallet_update(user)
         
         return Response({
             'message': 'درخواست تایید شد و موجودی کیف پول کاربر افزایش یافت.',
@@ -219,6 +223,9 @@ class AdminWalletAdjustmentView(APIView):
         
         user.wallet_balance = new_balance
         user.save()
+        
+        # ارسال نوتیفیکیشن ریل‌تایم
+        send_wallet_update(user)
         
         return Response({
             'message': 'موجودی کیف پول با موفقیت تغییر کرد.',
