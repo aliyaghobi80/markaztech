@@ -66,19 +66,15 @@ export default function ProfilePage() {
     e.preventDefault();
     setIsLoading(true);
 
-      try {
-        const submitData = new FormData();
-        
-        // اضافه کردن فیلدهای متنی
-        Object.keys(formData).forEach(key => {
-          if (formData[key]) {
-            if (key === 'birth_date' && typeof formData[key] === 'object' && formData[key]?.format) {
-              submitData.append(key, formData[key].format('YYYY-MM-DD'));
-            } else {
-              submitData.append(key, formData[key]);
-            }
-          }
-        });
+    try {
+      const submitData = new FormData();
+      
+      // اضافه کردن فیلدهای متنی
+      Object.keys(formData).forEach(key => {
+        if (formData[key]) {
+          submitData.append(key, formData[key]);
+        }
+      });
 
       // اضافه کردن فایل آواتار
       if (avatarFile) {
