@@ -44,7 +44,12 @@ class UserConsumer(AsyncWebsocketConsumer):
         elif self.session and self.session.session_key:
             online_id = f"s_{self.session.session_key}"
         else:
-            online_id = f"c_{self.channel_name}"
+            # Fallback to IP address to group connections from same anonymous user
+            client_ip = self.scope.get('client', [None])[0]
+            if client_ip:
+                online_id = f"ip_{client_ip}"
+            else:
+                online_id = f"c_{self.channel_name}"
             
         self.online_id = online_id
         
