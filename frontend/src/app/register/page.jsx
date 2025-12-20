@@ -4,15 +4,19 @@ import { useState } from "react";
 import api from "@/lib/axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { UserPlus, Phone, Lock, User, Loader2, Eye, EyeOff, Camera, Sparkles } from "lucide-react";
+import { UserPlus, Phone, Lock, User, Loader2, Eye, EyeOff, Camera, Sparkles, Calendar } from "lucide-react";
 import toast from "react-hot-toast";
+import DatePicker from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({ 
     mobile: "", 
     password: "", 
     confirmPassword: "",
-    full_name: "" 
+    full_name: "",
+    birth_date: null
   });
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
@@ -72,11 +76,16 @@ export default function RegisterPage() {
 
     try {
       const submitData = new FormData();
-      submitData.append('mobile', formData.mobile);
-      submitData.append('password', formData.password);
-      submitData.append('full_name', formData.full_name.trim());
-      
-      if (avatarFile) {
+        submitData.append('mobile', formData.mobile);
+        submitData.append('password', formData.password);
+        submitData.append('full_name', formData.full_name.trim());
+        
+        if (formData.birth_date) {
+          // Format date to YYYY-MM-DD (Jalali) for the backend
+          submitData.append('birth_date', formData.birth_date.format('YYYY-MM-DD'));
+        }
+        
+        if (avatarFile) {
         submitData.append('avatar', avatarFile);
       }
 
@@ -157,22 +166,36 @@ export default function RegisterPage() {
               </p>
             </div>
 
-              <div className="relative">
-                <User className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="نام و نام خانوادگی"
-                  className={`w-full bg-secondary border rounded-xl py-3 pr-12 pl-4 outline-none focus:ring-2 text-foreground placeholder:text-foreground-muted transition-all ${
-                    formData.full_name && formData.full_name.trim().length >= 2
-                      ? 'border-green-500 focus:ring-green-500'
-                      : 'border-border focus:ring-primary'
-                  }`}
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  required
-                  minLength={2}
-                />
-              </div>
+                <div className="relative">
+                  <User className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="نام و نام خانوادگی"
+                    className={`w-full bg-secondary border rounded-xl py-3 pr-12 pl-4 outline-none focus:ring-2 text-foreground placeholder:text-foreground-muted transition-all ${
+                      formData.full_name && formData.full_name.trim().length >= 2
+                        ? 'border-green-500 focus:ring-green-500'
+                        : 'border-border focus:ring-primary'
+                    }`}
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    required
+                    minLength={2}
+                  />
+                </div>
+
+                <div className="relative">
+                  <Calendar className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5 z-10" />
+                  <DatePicker
+                    placeholder="تاریخ تولد (اختیاری)"
+                    calendar={persian}
+                    locale={persian_fa}
+                    calendarPosition="bottom-right"
+                    inputClass="w-full bg-secondary border border-border rounded-xl py-3 pr-12 pl-4 outline-none focus:ring-2 focus:ring-primary text-foreground placeholder:text-foreground-muted transition-all"
+                    containerClassName="w-full"
+                    value={formData.birth_date}
+                    onChange={(date) => setFormData({ ...formData, birth_date: date })}
+                  />
+                </div>
 
               <div className="relative">
                 <Phone className="absolute right-4 top-3.5 text-foreground-muted w-5 h-5" />

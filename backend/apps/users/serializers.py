@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import User, WalletTopUpRequest, Ticket, TicketMessage, SiteStats, SatisfactionSurvey
+from django_jalali.serializers.serializerfield import JDateField
 
 class SiteStatsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,13 +18,15 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """Serializer for user registration with mobile number and optional avatar."""
     password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    birth_date = JDateField(required=False, allow_null=True)
     
     class Meta:
         model = User
-        fields = ['mobile', 'password', 'full_name', 'avatar']
+        fields = ['mobile', 'password', 'full_name', 'avatar', 'birth_date']
 
     def create(self, validated_data):
         avatar = validated_data.pop('avatar', None)
+        birth_date = validated_data.pop('birth_date', None)
         user = User.objects.create_user(
             mobile=validated_data['mobile'],
             password=validated_data['password'],
@@ -31,16 +34,19 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         )
         if avatar:
             user.avatar = avatar
-            user.save()
+        if birth_date:
+            user.birth_date = birth_date
+        user.save()
         return user
 
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializer for user profile with role detection."""
     role = serializers.SerializerMethodField()
+    birth_date = JDateField(required=False, allow_null=True)
 
     class Meta:
         model = User
-        fields = ['id', 'mobile', 'full_name', 'email', 'avatar', 'wallet_balance', 'role', 'is_staff', 'is_superuser']
+        fields = ['id', 'mobile', 'full_name', 'email', 'avatar', 'wallet_balance', 'role', 'is_staff', 'is_superuser', 'birth_date']
         read_only_fields = ['mobile', 'wallet_balance', 'is_staff', 'is_superuser']
 
     def get_role(self, obj):
@@ -63,6 +69,7 @@ class UserSerializer(serializers.ModelSerializer):
     """Serializer for user list in admin panel."""
     role = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
+    birth_date = JDateField(required=False, allow_null=True)
     
     class Meta:
         model = User

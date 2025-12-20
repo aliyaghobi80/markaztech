@@ -6,6 +6,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
+import DatePicker from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
 import { 
   User, Phone, Mail, Calendar, 
   Upload, Camera, Save, Loader2, 
@@ -63,15 +66,19 @@ export default function ProfilePage() {
     e.preventDefault();
     setIsLoading(true);
 
-    try {
-      const submitData = new FormData();
-      
-      // اضافه کردن فیلدهای متنی
-      Object.keys(formData).forEach(key => {
-        if (formData[key]) {
-          submitData.append(key, formData[key]);
-        }
-      });
+      try {
+        const submitData = new FormData();
+        
+        // اضافه کردن فیلدهای متنی
+        Object.keys(formData).forEach(key => {
+          if (formData[key]) {
+            if (key === 'birth_date' && typeof formData[key] === 'object' && formData[key]?.format) {
+              submitData.append(key, formData[key].format('YYYY-MM-DD'));
+            } else {
+              submitData.append(key, formData[key]);
+            }
+          }
+        });
 
       // اضافه کردن فایل آواتار
       if (avatarFile) {
@@ -255,21 +262,24 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* تاریخ تولد */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  تاریخ تولد (اختیاری)
-                </label>
-                <div className="relative">
-                  <Calendar className="absolute right-3 top-3 text-foreground-muted w-5 h-5" />
-                  <input
-                    type="date"
-                    className="w-full bg-secondary border border-border rounded-xl py-3 pr-10 pl-4 outline-none focus:ring-2 focus:ring-primary text-foreground"
-                    value={formData.birth_date}
-                    onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
-                  />
+                {/* تاریخ تولد */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    تاریخ تولد (اختیاری)
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute right-3 top-3 text-foreground-muted w-5 h-5 z-10" />
+                    <DatePicker
+                      calendar={persian}
+                      locale={persian_fa}
+                      calendarPosition="bottom-right"
+                      inputClass="w-full bg-secondary border border-border rounded-xl py-3 pr-10 pl-4 outline-none focus:ring-2 focus:ring-primary text-foreground"
+                      containerClassName="w-full"
+                      value={formData.birth_date}
+                      onChange={(date) => setFormData({ ...formData, birth_date: date })}
+                    />
+                  </div>
                 </div>
-              </div>
             </div>
 
             {/* دکمه‌های عملیات */}

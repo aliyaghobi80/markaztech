@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'channels',
 
     # اپلیکیشن‌های ما
+    'django_jalali',
     'apps.users',
     'apps.products',
     'apps.orders',
