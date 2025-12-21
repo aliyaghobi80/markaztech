@@ -28,8 +28,14 @@ class SiteStatsView(APIView):
         satisfied_votes = SatisfactionSurvey.objects.filter(is_satisfied=True).count()
         satisfaction_rate = (satisfied_votes / total_votes * 100) if total_votes > 0 else 100
         
+        # Get online users count
+        from .consumers import online_user_connections
+        online_users = len(online_user_connections)
+        
         return Response({
             'total_visits': stats.total_visits,
+            'today_visits': stats.today_visits,
+            'online_users': online_users,
             'total_satisfied_customers': satisfied_votes,
             'satisfaction_rate': round(satisfaction_rate, 1),
             'total_votes': total_votes

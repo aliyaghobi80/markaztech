@@ -42,7 +42,16 @@ export default function HeroSection() {
 
     // Use WebSocket for real-time stats
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.hostname}:8000/ws/user/`;
+    let wsHostname = window.location.hostname;
+    
+    // Handle Orchids environment where ports are in subdomains
+    if (wsHostname.includes("-3000")) {
+      wsHostname = wsHostname.replace("-3000", "-8000");
+    } else if (wsHostname === "localhost" || wsHostname === "127.0.0.1") {
+      wsHostname = "localhost"; // Use localhost explicitly
+    }
+    
+    const wsUrl = `${protocol}//${wsHostname}:8000/ws/user/`;
     const socket = new WebSocket(wsUrl);
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);

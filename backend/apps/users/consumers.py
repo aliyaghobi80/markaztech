@@ -44,7 +44,7 @@ class UserConsumer(AsyncWebsocketConsumer):
         elif self.session and self.session.session_key:
             online_id = f"s_{self.session.session_key}"
         else:
-            # Fallback to IP address to group connections from same anonymous user
+            # Group by IP to avoid counting multiple connections from Same browser/user as different people
             client_ip = self.scope.get('client', [None])[0]
             if client_ip:
                 online_id = f"ip_{client_ip}"
