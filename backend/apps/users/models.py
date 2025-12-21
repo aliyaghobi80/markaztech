@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils.translation import gettext_lazy as _
 from django.core.validators import RegexValidator
-from django_jalali.models import jDateField, jManager
+from django_jalali.db import models as jmodels
 
 # اعتبارسنجی شماره موبایل
 mobile_validator = RegexValidator(
@@ -43,7 +43,7 @@ class User(AbstractUser):
     full_name = models.CharField('نام کامل', max_length=100, blank=True)
     national_code = models.CharField('کد ملی', max_length=10, blank=True, null=True)
     
-    birth_date = jDateField('تاریخ تولد', blank=True, null=True)
+    birth_date = jmodels.jDateField('تاریخ تولد', blank=True, null=True)
     bio = models.TextField('بیوگرافی', blank=True, null=True)
     avatar = models.ImageField('تصویر پروفایل', upload_to='avatars/', blank=True, null=True)
     wallet_balance = models.DecimalField('موجودی کیف پول', max_digits=12, decimal_places=0, default=0)
@@ -54,7 +54,7 @@ class User(AbstractUser):
     REQUIRED_FIELDS = []
 
     objects = UserManager()
-    j_objects = jManager()
+    j_objects = jmodels.jManager()
 
     def __str__(self):
         return self.mobile
