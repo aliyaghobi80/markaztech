@@ -24,7 +24,17 @@ export default function Header() {
   const { user } = useAuth();
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [activeCategory, setActiveCategory] = useState(null);
+    const [expandedMobileCats, setExpandedMobileCats] = useState({});
+
+    const toggleMobileCat = (id) => {
+      setExpandedMobileCats(prev => ({
+        ...prev,
+        [id]: !prev[id]
+      }));
+    };
+
 
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
   const isAdmin = user?.role === 'ADMIN' || user?.is_staff;
@@ -91,53 +101,107 @@ export default function Header() {
                   <BookOpen className="w-4 h-4 text-primary" />
                   مقالات
                 </Link>
-              
-                  <div className="group relative py-2">
-                    <button className="px-2 xl:px-3 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-xs xl:text-sm font-bold flex items-center gap-2 whitespace-nowrap">
-                      <LayoutDashboard className="w-4 h-4 text-primary" />
-                      دسته‌بندی‌ها
-                    </button>
-                    <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 absolute top-[calc(100%-5px)] right-0 w-64 bg-card shadow-2xl border border-border rounded-2xl transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50 p-2">
-
-                    {loading ? (
-                      <div className="p-4 text-center text-sm text-foreground-muted">درحال بارگذاری...</div>
-                    ) : (
-                      categories.map((cat) => (
-                        <div key={cat.id} className="group/item relative">
-                          <Link 
-                            href={`/category/${cat.slug}`}
-                            className="flex items-center justify-between px-3 py-2.5 hover:bg-primary/10 hover:text-primary rounded-xl transition-all text-sm font-medium"
-                          >
-                            <span className="flex items-center gap-2">
-                              {cat.icon && <img src={cat.icon} alt="" className="w-4 h-4 object-contain opacity-70" />}
-                              {cat.name}
-                            </span>
-                            {cat.children?.length > 0 && <ChevronLeft className="w-4 h-4 opacity-50 group-hover/item:translate-x-[-2px] transition-transform" />}
-                          </Link>
-                          
-                          {/* زیردسته‌ها */}
-                          {cat.children?.length > 0 && (
-                            <div className="invisible opacity-0 group-hover/item:visible group-hover/item:opacity-100 absolute right-[calc(100%+5px)] top-0 w-64 bg-card shadow-2xl border border-border rounded-2xl transition-all duration-200 transform translate-x-2 group-hover/item:translate-x-0 p-2 z-[60]">
-                              <div className="px-3 py-2 mb-1 border-b border-border/50">
-                                <span className="text-[10px] font-black text-foreground-muted uppercase tracking-widest">زیرمجموعه {cat.name}</span>
+                
+                    <div 
+                      className="group/mega relative py-2"
+                      onMouseLeave={() => setActiveCategory(null)}
+                    >
+                      <button className="px-2 xl:px-3 py-2 hover:bg-card hover:shadow-sm rounded-xl transition-all text-xs xl:text-sm font-bold flex items-center gap-2 whitespace-nowrap">
+                        <LayoutDashboard className="w-4 h-4 text-primary" />
+                        دسته‌بندی‌ها
+                      </button>
+                      
+                      {/* مگامنو دسکتاپ */}
+                      <div className="invisible opacity-0 group-hover/mega:visible group-hover/mega:opacity-100 absolute top-full right-0 mt-1 w-[600px] bg-card/95 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 rounded-3xl transition-all duration-300 transform translate-y-4 group-hover/mega:translate-y-0 z-[100] overflow-hidden flex h-[400px]">
+                        
+                        {/* لیست دسته‌های اصلی */}
+                        <div className="w-1/3 bg-secondary/30 border-l border-border/50 p-3 overflow-y-auto custom-scrollbar">
+                          {loading ? (
+                            <div className="flex flex-col gap-2">
+                              {[1,2,3,4].map(i => <div key={i} className="h-10 bg-secondary/50 rounded-xl animate-pulse" />)}
+                            </div>
+                          ) : (
+                            categories.map((cat) => (
+                              <div
+                                key={cat.id}
+                                onMouseEnter={() => setActiveCategory(cat)}
+                                className={`flex items-center justify-between px-3 py-3 rounded-xl transition-all text-sm font-bold cursor-pointer mb-1 ${
+                                  activeCategory?.id === cat.id 
+                                    ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' 
+                                    : 'hover:bg-primary/10 hover:text-primary'
+                                }`}
+                              >
+                                <span className="flex items-center gap-2">
+                                  {cat.icon && (
+                                    <img 
+                                      src={cat.icon} 
+                                      alt="" 
+                                      className={`w-5 h-5 object-contain transition-all ${activeCategory?.id === cat.id ? 'brightness-0 invert' : 'opacity-70 group-hover:opacity-100'}`} 
+                                    />
+                                  )}
+                                  {cat.name}
+                                </span>
+                                <ChevronLeft className={`w-4 h-4 transition-transform ${activeCategory?.id === cat.id ? 'translate-x-[-4px]' : 'opacity-30'}`} />
                               </div>
-                              {cat.children.map(sub => (
+                            ))
+                          )}
+                        </div>
+
+                        {/* محتوای زیردسته‌ها یا بنر تبلیغاتی */}
+                        <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
+                          {activeCategory ? (
+                            <div className="animate-in fade-in slide-in-from-left-4 duration-300">
+                              <div className="flex items-center justify-between mb-6 border-b border-border/50 pb-4">
+                                <h3 className="text-lg font-black flex items-center gap-3">
+                                  {activeCategory.icon && <img src={activeCategory.icon} alt="" className="w-6 h-6 object-contain" />}
+                                  {activeCategory.name}
+                                </h3>
                                 <Link 
-                                  key={sub.id} 
-                                  href={`/category/${sub.slug}`}
-                                  className="flex items-center justify-between px-3 py-2.5 hover:bg-secondary rounded-xl transition-colors text-sm font-medium"
+                                  href={`/category/${activeCategory.slug}`}
+                                  className="text-xs font-black text-primary hover:underline flex items-center gap-1"
                                 >
-                                  {sub.name}
-                                  <ChevronLeft className="w-3 h-3 opacity-30" />
+                                  مشاهده همه محصولات
+                                  <ChevronLeft className="w-3 h-3" />
                                 </Link>
-                              ))}
+                              </div>
+                              
+                              {activeCategory.children?.length > 0 ? (
+                                <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                                  {activeCategory.children.map(sub => (
+                                    <Link 
+                                      key={sub.id} 
+                                      href={`/category/${sub.slug}`}
+                                      className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary transition-colors group/sub"
+                                    >
+                                      <div className="w-1.5 h-1.5 rounded-full bg-primary/20 group-hover/sub:bg-primary transition-colors" />
+                                      <span className="text-sm font-semibold text-foreground-muted group-hover/sub:text-foreground">
+                                        {sub.name}
+                                      </span>
+                                    </Link>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="flex flex-col items-center justify-center h-48 opacity-20">
+                                  <LayoutDashboard className="w-16 h-16 mb-2" />
+                                  <span className="text-sm font-bold">زیرمجموعه‌ای یافت نشد</span>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
+                              <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mb-4">
+                                <Sparkles className="w-10 h-10 text-primary animate-pulse" />
+                              </div>
+                              <p className="text-sm font-bold leading-relaxed">
+                                برای مشاهده زیرمجموعه‌ها،<br />
+                                نشانگر را روی یک دسته قرار دهید
+                              </p>
                             </div>
                           )}
                         </div>
-                      ))
-                    )}
-                  </div>
-                </div>
+                      </div>
+                    </div>
+
 
             </nav>
 
@@ -247,22 +311,50 @@ export default function Header() {
                   </Link>
                 )}
 
-              <div className="pt-6">
-                <h3 className="px-4 text-xs font-black text-foreground-muted uppercase tracking-widest mb-4">دسته‌بندی‌ها</h3>
-                <div className="grid grid-cols-1 gap-1">
-                  {categories.map((cat) => (
-                    <Link 
-                      key={cat.id} 
-                      href={`/category/${cat.slug}`}
-                      onClick={() => setIsMenuOpen(false)}
-                      className="px-4 py-3 hover:bg-secondary rounded-xl text-sm font-bold transition-colors flex items-center justify-between"
-                    >
-                      {cat.name}
-                      <ChevronLeft className="w-4 h-4 opacity-30" />
-                    </Link>
-                  ))}
+                <div className="pt-6">
+                  <h3 className="px-4 text-[10px] font-black text-foreground-muted uppercase tracking-widest mb-4">دسته‌بندی‌های هوشمند</h3>
+                  <div className="px-2 space-y-1">
+                    {categories.map((cat) => (
+                      <div key={cat.id} className="overflow-hidden">
+                        <div className="flex items-center gap-1">
+                          <Link 
+                            href={`/category/${cat.slug}`}
+                            onClick={() => setIsMenuOpen(false)}
+                            className="flex-1 flex items-center gap-3 p-3.5 hover:bg-secondary rounded-2xl transition-all"
+                          >
+                            {cat.icon && <img src={cat.icon} alt="" className="w-5 h-5 opacity-70" />}
+                            <span className="font-bold text-sm">{cat.name}</span>
+                          </Link>
+                          {cat.children?.length > 0 && (
+                            <button 
+                              onClick={() => toggleMobileCat(cat.id)}
+                              className={`p-3.5 rounded-2xl transition-all ${expandedMobileCats[cat.id] ? 'bg-primary text-white' : 'bg-secondary/50'}`}
+                            >
+                              <ChevronLeft className={`w-4 h-4 transition-transform ${expandedMobileCats[cat.id] ? '-rotate-90' : ''}`} />
+                            </button>
+                          )}
+                        </div>
+                        
+                        {/* زیرمجموعه‌های موبایل */}
+                        {cat.children?.length > 0 && expandedMobileCats[cat.id] && (
+                          <div className="mr-6 pr-4 border-r-2 border-primary/20 mt-1 mb-2 space-y-1 animate-in slide-in-from-right-2 duration-200">
+                            {cat.children.map(sub => (
+                              <Link 
+                                key={sub.id} 
+                                href={`/category/${sub.slug}`}
+                                onClick={() => setIsMenuOpen(false)}
+                                className="block p-3 hover:bg-secondary rounded-xl text-sm font-medium transition-colors"
+                              >
+                                {sub.name}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+
             </nav>
 
             {!user && (
