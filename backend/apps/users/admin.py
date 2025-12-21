@@ -2,10 +2,10 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import User
-from django_jalali.admin.jadmin import JalaliModelAdmin
+import django_jalali.admin as jadmin
 
 @admin.register(User)
-class CustomUserAdmin(UserAdmin, JalaliModelAdmin):
+class CustomUserAdmin(UserAdmin):
     # تنظیمات نمایش در لیست
     list_display = ('mobile', 'email', 'full_name', 'role', 'is_staff')
     list_filter = ('role', 'is_staff', 'is_active')
