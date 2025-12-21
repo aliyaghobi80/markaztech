@@ -146,12 +146,12 @@ export default function ProductPage() {
                     ) : isLowStock ? (
                         <span className="bg-orange-500/10 text-orange-600 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 animate-pulse">
                             <Zap className="w-3 h-3 fill-current" />
-                            تنها {product.stock} عدد در انبار باقیست!
+                            تنها {product.stock} ظرفیت باقی‌مانده!
                         </span>
                     ) : (
                         <span className="bg-success/10 text-success px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" />
-                            {product.stock} عدد موجود در انبار
+                            {product.stock} عدد آماده تحویل آنی
                         </span>
                     )}
                 </div>

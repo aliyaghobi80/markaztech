@@ -259,9 +259,9 @@ export default function HeroSection() {
                           <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${currentProduct.stock > 0 ? 'bg-green-400' : 'bg-red-400'} opacity-75`}></span>
                           <span className={`relative inline-flex rounded-full h-2 w-2 ${currentProduct.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`}></span>
                         </span>
-                        <span className="text-foreground text-xs font-bold">
-                          {currentProduct.stock > 0 ? 'موجود در انبار' : 'اتمام موجودی'}
-                        </span>
+                          <span className="text-foreground text-xs font-bold">
+                            {currentProduct.stock > 0 ? `${currentProduct.stock} عدد آماده تحویل` : 'اتمام موجودی'}
+                          </span>
                       </div>
                     </div>
                   </motion.div>
