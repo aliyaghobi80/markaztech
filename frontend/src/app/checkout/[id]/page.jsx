@@ -317,10 +317,10 @@ export default function CheckoutPage() {
                     <ul className="space-y-2 mb-4">
                         {order.items && order.items.length > 0 ? (
                             order.items.map((item, index) => (
-                                <li key={index} className="flex justify-between text-sm text-foreground-muted">
-                                    <span>{item.quantity} x {item.title}</span>
-                                    <span>{formatPrice(item.price * item.quantity)}</span>
-                                </li>
+                                  <li key={index} className="flex justify-between text-sm text-foreground-muted">
+                                      <span>{item.quantity} x {item.product?.title}</span>
+                                      <span>{formatPrice(item.price * item.quantity)}</span>
+                                  </li>
                             ))
                         ) : (
                             <li className="text-sm text-foreground-muted">در حال بارگذاری آیتم‌ها...</li>
