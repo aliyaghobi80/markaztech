@@ -137,135 +137,173 @@ export default function HeroSection() {
               </div>
             </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto lg:mx-0">
-                <div className="text-center p-4 bg-card/50 backdrop-blur rounded-2xl border border-border">
-                  <div className="text-xl md:text-2xl font-black text-foreground">
-                    {stats.total_visits?.toLocaleString() || '۰'}
-                  </div>
-                  <div className="text-[10px] text-foreground-muted uppercase tracking-wider">کل بازدیدها</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto lg:mx-0">
+                  {[
+                    { label: 'کل بازدیدها', value: stats.total_visits, color: 'text-foreground' },
+                    { label: 'بازدید امروز', value: stats.today_visits, color: 'text-primary' },
+                    { label: 'کاربران آنلاین', value: stats.online_users, color: 'text-green-500', isOnline: true },
+                    { label: 'رضایت کاربران', value: `${stats.satisfaction_rate}%`, color: 'text-foreground' }
+                  ].map((stat, i) => (
+                    <div key={i} className="group relative text-center p-4 bg-card/30 backdrop-blur-md rounded-2xl border border-white/5 hover:border-primary/20 hover:bg-card/50 transition-all duration-300">
+                      <div className="relative z-10">
+                        <div className={`text-xl md:text-2xl font-black ${stat.color} mb-1 transition-transform group-hover:scale-110`}>
+                          {stat.value?.toLocaleString() || '۰'}
+                        </div>
+                        <div className="text-[9px] text-foreground-muted uppercase tracking-[0.1em] font-bold">{stat.label}</div>
+                      </div>
+                      {stat.isOnline && (
+                        <div className="absolute top-2 right-2">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-                <div className="text-center p-4 bg-card/50 backdrop-blur rounded-2xl border border-border">
-                  <div className="text-xl md:text-2xl font-black text-primary">
-                    {stats.today_visits?.toLocaleString() || '۰'}
-                  </div>
-                  <div className="text-[10px] text-foreground-muted uppercase tracking-wider">بازدید امروز</div>
-                </div>
-                <div className="text-center p-4 bg-card/50 backdrop-blur rounded-2xl border border-border relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-1">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                    </span>
-                  </div>
-                  <div className="text-xl md:text-2xl font-black text-green-500">
-                    {stats.online_users?.toLocaleString() || '۰'}
-                  </div>
-                  <div className="text-[10px] text-foreground-muted uppercase tracking-wider">کاربران آنلاین</div>
-                </div>
-                <div className="text-center p-4 bg-card/50 backdrop-blur rounded-2xl border border-border">
-                  <div className="text-xl md:text-2xl font-black text-foreground">
-                    {stats.satisfaction_rate}%
-                  </div>
-                  <div className="text-[10px] text-foreground-muted uppercase tracking-wider">رضایت کاربران</div>
-                </div>
-              </div>
 
           </div>
 
           <div className="hidden lg:block relative w-[400px]">
             <AnimatePresence initial={false} custom={direction} mode="wait">
               {currentProduct ? (
-                <motion.div
-                  key={currentProduct.id}
-                  custom={direction}
-                  variants={variants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{
-                    x: { type: "spring", stiffness: 300, damping: 30 },
-                    opacity: { duration: 0.2 }
-                  }}
-                  className="relative"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-cyan-500/20 rounded-3xl blur-2xl"></div>
-                  
-                  <Link href={`/product/${currentProduct.slug}`} className="block relative bg-card/80 backdrop-blur-xl border border-border p-8 rounded-3xl shadow-2xl hover:border-primary/50 transition-colors">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-12 h-12 bg-gradient-to-br from-primary to-cyan-500 rounded-xl flex items-center justify-center overflow-hidden">
-                        {currentProduct.main_image ? (
-                          <img src={currentProduct.main_image} alt={currentProduct.title} className="w-full h-full object-cover" />
+                  <motion.div
+                    key={currentProduct.id}
+                    custom={direction}
+                    variants={variants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{
+                      x: { type: "spring", stiffness: 300, damping: 30 },
+                      opacity: { duration: 0.2 }
+                    }}
+                    className="relative group"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-cyan-500/30 rounded-[2.5rem] blur-3xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                    
+                    <Link href={`/product/${currentProduct.slug}`} className="block relative bg-card/40 backdrop-blur-2xl border border-white/10 p-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.15)] hover:border-primary/30 transition-all duration-500 overflow-hidden">
+                      {/* Decorative elements */}
+                      <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors"></div>
+                      
+                      <div className="flex items-center gap-4 mb-8">
+                        <div className="relative">
+                          <div className="w-16 h-16 bg-gradient-to-br from-primary to-cyan-500 rounded-2xl flex items-center justify-center overflow-hidden shadow-lg p-0.5">
+                            <div className="w-full h-full bg-card rounded-[0.9rem] overflow-hidden">
+                              {currentProduct.main_image ? (
+                                <img src={currentProduct.main_image} alt={currentProduct.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center animate-pulse">
+                                  <Sparkles className="w-7 h-7 text-primary" />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-foreground leading-tight group-hover:text-primary transition-colors">{currentProduct.title}</h3>
+                          <span className="inline-block px-2 py-0.5 mt-1 bg-primary/10 text-primary text-[10px] font-bold rounded-md uppercase tracking-wide">
+                            {currentProduct.category?.name || 'اکانت پریمیوم'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 gap-4 mb-8">
+                        <div className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+                          <div className="w-8 h-8 rounded-xl bg-yellow-500/10 flex items-center justify-center">
+                            <Zap className="w-4 h-4 text-yellow-500" />
+                          </div>
+                          <span className="text-sm text-foreground/80">بالاترین کیفیت موجود در بازار</span>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+                          <div className="w-8 h-8 rounded-xl bg-green-500/10 flex items-center justify-center">
+                            <Shield className="w-4 h-4 text-green-500" />
+                          </div>
+                          <span className="text-sm text-foreground/80">ضمانت کامل و پشتیبانی اختصاصی</span>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+                          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                            <Clock className="w-4 h-4 text-primary" />
+                          </div>
+                          <span className="text-sm text-foreground/80">تحویل فوری در {currentProduct.delivery_time || 'کمتر از ۱ ساعت'}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-end justify-between pt-4 border-t border-white/5">
+                        <div className="space-y-1">
+                          {currentProduct.discount_price && (
+                            <div className="text-foreground-muted text-xs line-through opacity-60 decoration-red-500/50">{currentProduct.price.toLocaleString()} تومان</div>
+                          )}
+                          <div className="text-2xl font-black text-foreground flex items-center gap-1">
+                            {(currentProduct.discount_price || currentProduct.price).toLocaleString()}
+                            <span className="text-xs font-medium opacity-70">تومان</span>
+                          </div>
+                        </div>
+                        
+                        {currentProduct.discount_price ? (
+                          <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-black px-3 py-1.5 rounded-xl shadow-lg shadow-red-500/20">
+                            {Math.round((1 - currentProduct.discount_price / currentProduct.price) * 100)}٪ تخفیف ویژه
+                          </div>
                         ) : (
-                          <Sparkles className="w-6 h-6 text-white" />
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                            <ArrowLeft className="w-5 h-5" />
+                          </div>
                         )}
                       </div>
-                      <div>
-                        <div className="text-foreground font-bold">{currentProduct.title}</div>
-                        <div className="text-foreground-muted text-sm">{currentProduct.category?.name || 'اکانت پریمیوم'}</div>
+                    </Link>
+  
+                    <div className="absolute -top-3 -right-3 bg-card/60 backdrop-blur-xl border border-white/10 px-4 py-2 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
+                      <div className="flex items-center gap-2">
+                        <span className={`relative flex h-2 w-2`}>
+                          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${currentProduct.stock > 0 ? 'bg-green-400' : 'bg-red-400'} opacity-75`}></span>
+                          <span className={`relative inline-flex rounded-full h-2 w-2 ${currentProduct.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                        </span>
+                        <span className="text-foreground text-xs font-bold">
+                          {currentProduct.stock > 0 ? 'موجود در انبار' : 'اتمام موجودی'}
+                        </span>
                       </div>
                     </div>
-                    
-                    <div className="space-y-3 mb-6">
-                      <div className="flex items-center gap-2 text-foreground-secondary text-sm">
-                        <Zap className="w-4 h-4 text-yellow-500" />
-                        <span>بالاترین کیفیت موجود</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-foreground-secondary text-sm">
-                        <Shield className="w-4 h-4 text-green-500" />
-                        <span>ضمانت کامل</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-foreground-secondary text-sm">
-                        <Clock className="w-4 h-4 text-primary" />
-                        <span>تحویل در {currentProduct.delivery_time || 'کمتر از ۱ ساعت'}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div>
-                        {currentProduct.discount_price && (
-                          <div className="text-foreground-muted text-xs line-through">{currentProduct.price.toLocaleString()} تومان</div>
-                        )}
-                        <div className="text-foreground text-xl font-black">
-                          {(currentProduct.discount_price || currentProduct.price).toLocaleString()} تومان
-                        </div>
-                      </div>
-                      {currentProduct.discount_price && (
-                        <div className="bg-red-500/10 text-red-500 text-xs font-bold px-3 py-1 rounded-full">
-                          {Math.round((1 - currentProduct.discount_price / currentProduct.price) * 100)}٪ تخفیف
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-
-                  <div className="absolute -top-4 -right-4 bg-card/90 backdrop-blur border border-border px-4 py-2 rounded-xl shadow-lg animate-bounce">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-foreground text-sm font-medium">
-                        {currentProduct.stock > 0 ? 'موجود در انبار' : 'اتمام موجودی'}
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
+                  </motion.div>
               ) : (
                 <div className="w-80 h-[300px] bg-card/20 animate-pulse rounded-3xl border border-border"></div>
               )}
             </AnimatePresence>
 
-            {heroProducts.length > 1 && (
-              <div className="flex justify-center gap-4 mt-8">
-                <button onClick={prevSlide} className="p-2 rounded-full bg-card border border-border hover:border-primary transition-colors">
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-                <div className="flex items-center gap-2">
-                  {heroProducts.map((_, i) => (
-                    <div key={i} className={`w-2 h-2 rounded-full transition-all ${i === currentIndex ? 'bg-primary w-4' : 'bg-border'}`} />
-                  ))}
+              {heroProducts.length > 1 && (
+                <div className="flex justify-center gap-6 mt-10">
+                  <button 
+                    onClick={prevSlide} 
+                    className="w-12 h-12 flex items-center justify-center rounded-full bg-card/50 backdrop-blur-xl border border-white/10 hover:border-primary/50 hover:bg-card/80 transition-all shadow-lg active:scale-95 group"
+                  >
+                    <ChevronRight className="w-6 h-6 text-foreground/70 group-hover:text-primary transition-colors" />
+                  </button>
+                  
+                  <div className="flex items-center gap-3">
+                    {heroProducts.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setDirection(i > currentIndex ? 1 : -1);
+                          setCurrentIndex(i);
+                        }}
+                        className={`transition-all duration-300 rounded-full ${
+                          i === currentIndex 
+                            ? 'w-10 h-2 bg-gradient-to-r from-primary to-cyan-500' 
+                            : 'w-2 h-2 bg-border hover:bg-primary/30'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  
+                  <button 
+                    onClick={nextSlide} 
+                    className="w-12 h-12 flex items-center justify-center rounded-full bg-card/50 backdrop-blur-xl border border-white/10 hover:border-primary/50 hover:bg-card/80 transition-all shadow-lg active:scale-95 group"
+                  >
+                    <ChevronLeft className="w-6 h-6 text-foreground/70 group-hover:text-primary transition-colors" />
+                  </button>
                 </div>
-                <button onClick={nextSlide} className="p-2 rounded-full bg-card border border-border hover:border-primary transition-colors">
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-              </div>
-            )}
+              )}
           </div>
         </div>
       </div>
