@@ -65,16 +65,16 @@ export default function AdminOrdersPage() {
 
     const statusBadge = (status) => {
         const styles = {
-            'PENDING': 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-            'PAID': 'bg-green-500/10 text-green-500 border-green-500/20',
-            'CANCELED': 'bg-red-500/10 text-red-500 border-red-500/20',
-            'SENT': 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+            'PENDING': 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+            'PAID': 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+            'CANCELED': 'bg-rose-500/10 text-rose-500 border-rose-500/20',
+            'SENT': 'bg-sky-500/10 text-sky-500 border-sky-500/20'
         };
         const labels = {
-            'PENDING': 'در انتظار پرداخت',
-            'PAID': 'پرداخت شده',
+            'PENDING': 'در انتظار',
+            'PAID': 'آماده ارسال',
             'CANCELED': 'لغو شده',
-            'SENT': 'ارسال شده'
+            'SENT': 'تحویل شده'
         };
         const Icons = {
             'PENDING': Clock,
@@ -85,8 +85,8 @@ export default function AdminOrdersPage() {
         const Icon = Icons[status] || AlertCircle;
 
         return (
-            <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-tighter ${styles[status]}`}>
-                <Icon className="w-3 h-3" />
+            <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border ${styles[status]}`}>
+                <Icon className="w-3.5 h-3.5" />
                 {labels[status]}
             </span>
         );
@@ -100,8 +100,8 @@ export default function AdminOrdersPage() {
         const label = order.payment_method_display;
 
         return (
-            <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-tighter bg-secondary/50 text-foreground-muted border-border/50`}>
-                <Icon className="w-3 h-3 opacity-70" />
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border bg-secondary/30 text-foreground-muted border-border/50">
+                <Icon className="w-3.5 h-3.5 opacity-70" />
                 {label}
             </span>
         );
@@ -125,7 +125,7 @@ export default function AdminOrdersPage() {
     });
 
     const ActionButtons = ({ order }) => {
-        const btnClass = "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50";
+        const btnClass = "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all disabled:opacity-50 active:scale-95";
         
         return (
             <div className="flex flex-wrap items-center gap-2">
@@ -134,16 +134,16 @@ export default function AdminOrdersPage() {
                     <>
                         <button 
                             onClick={() => handleStatusChange(order.id, 'PAID')}
-                            className={`${btnClass} bg-green-500 text-white hover:bg-green-600 shadow-lg shadow-green-500/20`}
+                            className={`${btnClass} bg-emerald-500 text-white hover:bg-emerald-600 shadow-md shadow-emerald-500/20`}
                         >
-                            <CheckCircle className="w-3.5 h-3.5" />
-                            تایید و پرداخت
+                            <CheckCircle className="w-4 h-4" />
+                            تایید پرداخت
                         </button>
                         <button 
                             onClick={() => handleStatusChange(order.id, 'CANCELED')}
-                            className={`${btnClass} bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white`}
+                            className={`${btnClass} bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white`}
                         >
-                            <XCircle className="w-3.5 h-3.5" />
+                            <XCircle className="w-4 h-4" />
                             رد سفارش
                         </button>
                     </>
@@ -154,17 +154,17 @@ export default function AdminOrdersPage() {
                     <>
                         <button 
                             onClick={() => handleStatusChange(order.id, 'SENT')}
-                            className={`${btnClass} bg-blue-500 text-white hover:bg-blue-600 shadow-lg shadow-blue-500/20`}
+                            className={`${btnClass} bg-sky-500 text-white hover:bg-sky-600 shadow-md shadow-sky-500/20`}
                         >
-                            <Truck className="w-3.5 h-3.5" />
-                            علامت به عنوان ارسال شده
+                            <Truck className="w-4 h-4" />
+                            ارسال شد
                         </button>
                         <button 
                             onClick={() => handleStatusChange(order.id, 'CANCELED')}
-                            className={`${btnClass} bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white`}
+                            className={`${btnClass} bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white`}
                         >
-                            <XCircle className="w-3.5 h-3.5" />
-                            لغو سفارش
+                            <XCircle className="w-4 h-4" />
+                            لغو
                         </button>
                     </>
                 )}
@@ -176,8 +176,8 @@ export default function AdminOrdersPage() {
                             onClick={() => handleStatusChange(order.id, 'PAID')}
                             className={`${btnClass} bg-secondary/50 text-foreground-muted hover:bg-secondary`}
                         >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                            بازگشت به پرداخت شده
+                            <RotateCcw className="w-4 h-4" />
+                            خروج از ارسال
                         </button>
                     </>
                 )}
@@ -186,10 +186,10 @@ export default function AdminOrdersPage() {
                 {order.status === 'CANCELED' && (
                     <button 
                         onClick={() => handleStatusChange(order.id, 'PENDING')}
-                        className={`${btnClass} bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500 hover:text-white`}
+                        className={`${btnClass} bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white`}
                     >
-                        <RotateCcw className="w-3.5 h-3.5" />
-                        بازگردانی به انتظار
+                        <RotateCcw className="w-4 h-4" />
+                        بازگردانی
                     </button>
                 )}
             </div>
@@ -197,139 +197,138 @@ export default function AdminOrdersPage() {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="max-w-6xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-foreground tracking-tight">مدیریت سفارش‌ها</h1>
-                    <p className="text-foreground-muted text-sm mt-1">کنترل وضعیت تراکنش‌ها و تحویل محصولات</p>
+                    <h1 className="text-2xl font-black text-foreground">مدیریت سفارش‌ها</h1>
+                    <p className="text-foreground-muted text-xs mt-1">لیست تمامی تراکنش‌های فروشگاه</p>
                 </div>
                 
-                <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-2 bg-card p-1.5 rounded-2xl border border-border shadow-sm">
-                        <div className="px-4 py-2 bg-primary/10 rounded-xl text-primary font-black text-xs">
-                            {orders.length} کل
-                        </div>
-                        <div className="px-4 py-2 bg-yellow-500/10 rounded-xl text-yellow-500 font-black text-xs">
-                            {orders.filter(o => o.status === 'PENDING').length} معلق
-                        </div>
+                <div className="flex items-center gap-3 bg-card p-1 rounded-2xl border border-border">
+                    <div className="px-4 py-2 bg-primary/5 rounded-xl text-primary font-bold text-xs flex items-center gap-2">
+                        <FileText className="w-3.5 h-3.5" />
+                        {orders.length} کل
+                    </div>
+                    <div className="px-4 py-2 bg-amber-500/5 rounded-xl text-amber-600 font-bold text-xs flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5" />
+                        {orders.filter(o => o.status === 'PENDING').length} جدید
                     </div>
                 </div>
             </div>
 
             {/* Filters Bar */}
-            <div className="flex flex-col md:flex-row gap-4">
-                <div className="relative flex-1 group">
-                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground-muted group-focus-within:text-primary transition-colors" />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <div className="lg:col-span-8 relative group">
+                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted group-focus-within:text-primary transition-colors" />
                     <input 
                         type="text" 
-                        placeholder="جستجو بر اساس نام، شناسه یا موبایل..."
+                        placeholder="جستجو (اسم، موبایل، کد سفارش...)"
                         value={searchQuery}
                         onChange={(e) => setSearchSearchQuery(e.target.value)}
-                        className="w-full bg-card border border-border rounded-2xl py-3.5 pr-12 pl-4 outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-sm font-medium shadow-sm"
+                        className="w-full bg-card border border-border rounded-xl py-3 pr-11 pl-4 outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 transition-all text-xs font-medium"
                     />
                 </div>
                 
-                <div className="flex items-center gap-2 bg-card border border-border rounded-2xl p-1.5 shadow-sm overflow-x-auto whitespace-nowrap scrollbar-hide">
+                <div className="lg:col-span-4 flex items-center gap-1 bg-card border border-border rounded-xl p-1 shadow-sm overflow-x-auto whitespace-nowrap">
                     {['ALL', 'PENDING', 'PAID', 'SENT', 'CANCELED'].map((s) => (
                         <button
                             key={s}
                             onClick={() => setStatusFilter(s)}
-                            className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
+                            className={`flex-1 px-3 py-2 rounded-lg text-[10px] font-bold transition-all ${
                                 statusFilter === s 
-                                ? 'bg-primary text-white shadow-lg shadow-primary/20' 
+                                ? 'bg-primary text-white shadow-md shadow-primary/20' 
                                 : 'text-foreground-muted hover:bg-secondary/50'
                             }`}
                         >
-                            {s === 'ALL' ? 'همه' : s === 'PENDING' ? 'معلق' : s === 'PAID' ? 'پرداخت شده' : s === 'SENT' ? 'ارسال شده' : 'لغو شده'}
+                            {s === 'ALL' ? 'همه' : s === 'PENDING' ? 'معلق' : s === 'PAID' ? 'آماده' : s === 'SENT' ? 'ارسال شده' : 'لغو'}
                         </button>
                     ))}
                 </div>
             </div>
 
             {/* Orders List */}
-            <div className="grid gap-6 pb-20">
+            <div className="grid gap-4 pb-20">
                 <AnimatePresence mode="popLayout">
                     {filteredOrders.length > 0 ? (
                         filteredOrders.map((order, index) => (
                             <motion.div 
                                 layout
-                                initial={{ opacity: 0, y: 20 }}
+                                initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                transition={{ duration: 0.3, delay: index * 0.05 }}
+                                exit={{ opacity: 0, scale: 0.98 }}
+                                transition={{ duration: 0.2 }}
                                 key={order.id} 
-                                className="bg-card rounded-[2.5rem] border border-border shadow-sm overflow-hidden group hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all"
+                                className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden group/card hover:shadow-lg hover:shadow-primary/5 transition-all"
                             >
-                                <div className="p-8 flex flex-col xl:flex-row gap-8">
-                                    {/* Order Info */}
-                                    <div className="flex items-start gap-5 min-w-[300px]">
-                                        <div className="w-16 h-16 bg-gradient-to-br from-secondary to-border rounded-[1.5rem] flex items-center justify-center font-black text-xl text-foreground shadow-inner border border-white/5 shrink-0">
+                                <div className="p-6 md:p-8 flex flex-col xl:flex-row gap-6">
+                                    {/* Left: Client Info */}
+                                    <div className="flex items-start gap-4 xl:min-w-[280px]">
+                                        <div className="w-14 h-14 bg-secondary/50 rounded-2xl flex items-center justify-center font-black text-lg text-foreground shrink-0 border border-border/50">
                                             #{order.id}
                                         </div>
-                                        <div className="space-y-1.5">
+                                        <div className="space-y-2">
                                             <div className="flex flex-wrap items-center gap-2">
-                                                <h3 className="font-black text-lg text-foreground tracking-tight">
+                                                <h3 className="font-bold text-base text-foreground leading-none">
                                                     {order.user?.full_name || 'کاربر بدون نام'}
                                                 </h3>
-                                                {statusBadge(order.status)}
-                                                {paymentMethodBadge(order)}
                                             </div>
-                                            <div className="flex items-center gap-3 text-sm font-medium text-foreground-muted">
-                                                <span className="bg-secondary/50 px-2 py-0.5 rounded-lg">{order.user?.mobile}</span>
-                                                <span className="w-1 h-1 bg-border rounded-full"></span>
-                                                <span>{new Date(order.created_at).toLocaleString('fa-IR')}</span>
+                                            <div className="flex flex-col gap-1.5">
+                                                <div className="flex items-center gap-2 text-[11px] font-medium text-foreground-muted">
+                                                    <span className="bg-secondary/50 px-2 py-0.5 rounded-md">{order.user?.mobile}</span>
+                                                    <span className="w-1 h-1 bg-border rounded-full"></span>
+                                                    <span>{new Date(order.created_at).toLocaleString('fa-IR')}</span>
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    {statusBadge(order.status)}
+                                                    {paymentMethodBadge(order)}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Price & Items Summary */}
-                                    <div className="flex flex-col md:flex-row xl:flex-col justify-center gap-6 xl:min-w-[200px] xl:border-r xl:border-border/50 xl:pr-8">
-                                        <div className="space-y-1">
-                                            <div className="text-[10px] font-black text-foreground-muted uppercase tracking-widest">مبلغ کل سفارش</div>
-                                            <div className="text-2xl font-black text-primary tracking-tighter">
-                                                {formatPrice(order.total_price)} <span className="text-sm">تومان</span>
+                                    {/* Middle: Financials */}
+                                    <div className="flex flex-row xl:flex-col items-center xl:items-start justify-between xl:justify-center gap-4 xl:min-w-[180px] xl:border-r xl:border-border/30 xl:pr-6 border-y md:border-y-0 py-4 md:py-0">
+                                        <div className="space-y-0.5">
+                                            <div className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">مبلغ نهایی</div>
+                                            <div className="text-xl font-black text-primary tracking-tight">
+                                                {formatPrice(order.total_price)} <span className="text-[10px] font-bold">تومان</span>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Zap className="w-4 h-4 text-yellow-500" />
-                                            <span className="text-xs font-bold text-foreground-muted">
-                                                {order.items?.length || 0} ردیف محصول
+                                        <div className="flex items-center gap-1.5 bg-yellow-500/5 px-2 py-1 rounded-lg">
+                                            <Zap className="w-3.5 h-3.5 text-yellow-500" />
+                                            <span className="text-[11px] font-bold text-yellow-600">
+                                                {order.items?.length || 0} ردیف کالا
                                             </span>
                                         </div>
                                     </div>
 
-                                    {/* Actions & Receipt */}
+                                    {/* Right: Quick Actions */}
                                     <div className="flex-1 flex flex-col justify-center gap-4">
-                                        <div className="flex flex-wrap items-center gap-3">
+                                        <div className="flex flex-wrap items-center gap-2">
                                             {order.payment_receipt ? (
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-2">
                                                     <a 
                                                         href={order.payment_receipt} 
                                                         target="_blank" 
-                                                        className="flex items-center gap-2 text-primary hover:bg-primary/20 bg-primary/10 px-5 py-3 rounded-2xl text-xs font-black transition-all border border-primary/10 group/receipt relative overflow-hidden"
+                                                        className="flex items-center gap-2 text-primary hover:bg-primary/20 bg-primary/5 px-4 py-2 rounded-xl text-[11px] font-bold transition-all border border-primary/20"
                                                     >
-                                                        <Eye className="w-4 h-4" />
-                                                        مشاهده فیش واریزی
-                                                        
-                                                        {/* Simple hover preview if it's an image */}
-                                                        <div className="absolute inset-0 bg-primary opacity-0 group-hover/receipt:opacity-5 transition-opacity" />
+                                                        <Eye className="w-3.5 h-3.5" />
+                                                        فیش واریز
                                                     </a>
-                                                    
-                                                    {/* Small thumbnail for quick reference */}
-                                                    <div className="w-12 h-12 rounded-xl border border-border overflow-hidden bg-secondary/30 shrink-0">
+                                                    <div className="w-10 h-10 rounded-lg border border-border overflow-hidden bg-secondary/30 shrink-0">
                                                         <img 
                                                             src={order.payment_receipt} 
                                                             alt="Receipt" 
-                                                            className="w-full h-full object-cover hover:scale-110 transition-transform cursor-zoom-in"
+                                                            className="w-full h-full object-cover hover:scale-110 transition-transform cursor-pointer"
                                                             onClick={() => window.open(order.payment_receipt, '_blank')}
                                                         />
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className="flex items-center gap-2 text-foreground-muted bg-secondary/30 px-5 py-3 rounded-2xl text-xs font-bold italic border border-dashed border-border">
-                                                    <XCircle className="w-4 h-4 opacity-50" />
-                                                    فیش آپلود نشده
+                                                <div className="flex items-center gap-2 text-foreground-muted bg-secondary/30 px-4 py-2 rounded-xl text-[11px] font-bold border border-dashed border-border opacity-70">
+                                                    <AlertCircle className="w-3.5 h-3.5" />
+                                                    بدون فیش
                                                 </div>
                                             )}
                                             
@@ -340,9 +339,9 @@ export default function AdminOrdersPage() {
                                                         const originalContent = btn.innerHTML;
                                                         try {
                                                             btn.disabled = true;
-                                                            btn.innerHTML = '<span class="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></span>';
+                                                            btn.innerHTML = '<span class="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full font-bold"></span>';
                                                             await downloadOrderPDF(order);
-                                                            toast.success("فاکتور آماده دانلود شد");
+                                                            toast.success("فاکتور دانلود شد");
                                                         } catch (err) {
                                                             toast.error(err.message);
                                                         } finally {
@@ -350,47 +349,44 @@ export default function AdminOrdersPage() {
                                                             btn.innerHTML = originalContent;
                                                         }
                                                     }}
-                                                    className="flex items-center gap-2 text-green-500 hover:bg-green-500/20 bg-green-500/10 px-5 py-3 rounded-2xl text-xs font-black transition-all border border-green-500/10 disabled:opacity-50"
+                                                    className="flex items-center gap-2 text-emerald-500 hover:bg-emerald-500/20 bg-emerald-500/5 px-4 py-2 rounded-xl text-[11px] font-bold transition-all border border-emerald-500/20"
                                                 >
-                                                    <Download className="w-4 h-4" />
-                                                    دریافت فاکتور PDF
+                                                    <Download className="w-3.5 h-3.5" />
+                                                    فاکتور PDF
                                                 </button>
                                             )}
                                         </div>
 
-                                        <div className="h-px bg-border/50 w-full hidden md:block"></div>
+                                        <div className="h-px bg-border/30 w-full"></div>
 
                                         <ActionButtons order={order} />
                                     </div>
                                 </div>
 
-                                {/* Admin Notes & Products Detail */}
-                                <div className="px-8 pb-8 pt-0 border-t border-border/30 bg-secondary/5 space-y-6">
-                                    {/* Products list */}
-                                    <div className="flex flex-wrap gap-3 items-center pt-6">
-                                        <span className="text-[10px] font-black text-foreground-muted uppercase tracking-widest flex items-center gap-1.5">
-                                            <Zap className="w-3 h-3" />
-                                            محصولات خریداری شده:
-                                        </span>
+                                {/* Footer: items & Notes */}
+                                <div className="px-6 md:px-8 py-5 border-t border-border/20 bg-secondary/10 flex flex-col gap-4">
+                                    {/* Products */}
+                                    <div className="flex flex-wrap gap-2 items-center">
+                                        <span className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">اقلام:</span>
                                         {order.items?.map((item, idx) => (
-                                            <div key={idx} className="flex items-center gap-2 bg-card px-4 py-1.5 rounded-xl border border-border/50 text-[11px] font-bold shadow-sm">
-                                                <span className="text-primary">{item.quantity}x</span>
+                                            <div key={idx} className="flex items-center gap-1.5 bg-card px-3 py-1 rounded-lg border border-border/50 text-[10px] font-bold shadow-sm">
+                                                <span className="text-primary">{item.quantity}×</span>
                                                 <span className="text-foreground-secondary">{item.product?.title}</span>
                                             </div>
                                         ))}
                                     </div>
 
-                                    {/* Admin Notes Section */}
-                                    <div className="bg-card/50 rounded-3xl p-5 border border-border/50 group/notes relative">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex items-center gap-2 text-[10px] font-black text-foreground-muted uppercase tracking-widest">
+                                    {/* Notes */}
+                                    <div className="bg-card/40 rounded-2xl p-4 border border-border/40 group/notes relative">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-foreground-muted uppercase tracking-wider">
                                                 <Edit3 className="w-3 h-3 text-primary" />
-                                                توضیحات ادمین (اطلاعات تحویل، لایسنس و ...)
+                                                توضیحات و لایسنس
                                             </div>
                                             {editingNotes !== order.id && (
                                                 <button 
                                                     onClick={() => startEditingNotes(order)}
-                                                    className="text-primary hover:text-primary-dark transition-colors opacity-0 group-hover/notes:opacity-100 p-1 bg-primary/10 rounded-lg"
+                                                    className="text-primary hover:text-primary-dark opacity-0 group-hover/notes:opacity-100 p-1 transition-all"
                                                 >
                                                     <Edit3 className="w-3.5 h-3.5" />
                                                 </button>
@@ -403,35 +399,28 @@ export default function AdminOrdersPage() {
                                                     autoFocus
                                                     value={notesValue}
                                                     onChange={(e) => setNotesValue(e.target.value)}
-                                                    placeholder="اطلاعات اکانت یا کدهای لایسنس را اینجا وارد کنید..."
-                                                    className="w-full bg-card border border-primary/30 rounded-xl p-4 text-xs font-medium outline-none focus:ring-4 focus:ring-primary/5 min-h-[80px] leading-relaxed shadow-inner"
+                                                    placeholder="اطلاعات ارسال یا لایسنس..."
+                                                    className="w-full bg-card border border-primary/30 rounded-xl p-3 text-[11px] font-medium outline-none focus:ring-4 focus:ring-primary/5 min-h-[60px] leading-relaxed"
                                                 />
                                                 <div className="flex justify-end gap-2">
-                                                    <button 
-                                                        onClick={() => setEditingNotes(null)}
-                                                        className="px-4 py-2 text-[10px] font-black text-foreground-muted hover:text-foreground"
-                                                    >
-                                                        انصراف
-                                                    </button>
+                                                    <button onClick={() => setEditingNotes(null)} className="text-[10px] font-bold text-foreground-muted">انصراف</button>
                                                     <button 
                                                         onClick={() => handleUpdateNotes(order.id)}
-                                                        className="flex items-center gap-1.5 bg-primary text-white px-5 py-2 rounded-xl text-[10px] font-black shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+                                                        className="bg-primary text-white px-4 py-1.5 rounded-lg text-[10px] font-bold"
                                                     >
-                                                        <Save className="w-3 h-3" />
-                                                        ذخیره توضیحات
+                                                        ذخیره
                                                     </button>
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="text-xs text-foreground-secondary leading-relaxed font-medium min-h-[20px] flex items-center">
+                                            <div className="text-[11px] text-foreground-secondary leading-relaxed font-medium">
                                                 {order.admin_notes ? (
                                                     <span className="whitespace-pre-wrap">{order.admin_notes}</span>
                                                 ) : (
-                                                    <span className="text-foreground-muted/50 italic">بدون توضیح... برای ثبت کلیک کنید.</span>
+                                                    <span className="text-foreground-muted/40 italic">برای افزودن توضیحات یا کد لایسنس اینجا کلیک کنید...</span>
                                                 )}
-                                                {/* Clickable area if empty */}
                                                 {!order.admin_notes && (
-                                                    <button onClick={() => startEditingNotes(order)} className="absolute inset-0 w-full h-full cursor-pointer z-0"></button>
+                                                    <button onClick={() => startEditingNotes(order)} className="absolute inset-0 w-full h-full z-0"></button>
                                                 )}
                                             </div>
                                         )}
@@ -443,20 +432,15 @@ export default function AdminOrdersPage() {
                         <motion.div 
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="bg-card rounded-[2.5rem] border border-dashed border-border p-20 text-center space-y-4"
+                            className="bg-card rounded-[2rem] border border-dashed border-border p-16 text-center"
                         >
-                            <div className="w-20 h-20 bg-secondary/30 rounded-full flex items-center justify-center mx-auto">
-                                <Search className="w-8 h-8 text-foreground-muted" />
-                            </div>
-                            <div>
-                                <h3 className="font-black text-xl text-foreground">سفارشی یافت نشد</h3>
-                                <p className="text-foreground-muted text-sm mt-1">با فیلترهای فعلی هیچ موردی پیدا نکردیم.</p>
-                            </div>
+                            <Search className="w-10 h-10 text-foreground-muted/30 mx-auto mb-4" />
+                            <h3 className="font-bold text-lg text-foreground">نتیجه‌ای یافت نشد</h3>
                             <button 
                                 onClick={() => { setSearchSearchQuery(""); setStatusFilter("ALL"); }}
-                                className="text-primary font-black text-xs hover:underline underline-offset-8"
+                                className="text-primary font-bold text-xs mt-4 underline underline-offset-4"
                             >
-                                پاک کردن همه فیلترها
+                                حذف فیلترها
                             </button>
                         </motion.div>
                     )}
