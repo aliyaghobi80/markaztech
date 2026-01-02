@@ -12,7 +12,7 @@ export const getAvatarUrl = (avatarPath) => {
   if (avatarPath.startsWith('http')) return avatarPath;
   
   // Construct full URL with backend base URL
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
   return `${baseUrl}${avatarPath}`;
 };
 

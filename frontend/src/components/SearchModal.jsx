@@ -27,7 +27,7 @@ export default function SearchModal({ isOpen, onClose }) {
     if (isOpen) {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.hostname;
-      const port = '8000'; // Django port
+      const port = '8001'; // Django port
       const wsUrl = `${protocol}//${host}:${port}/ws/search/`;
       
       socketRef.current = new WebSocket(wsUrl);
@@ -121,10 +121,10 @@ export default function SearchModal({ isOpen, onClose }) {
   const navigateToSearch = useCallback(() => {
     if (query.trim()) {
       saveSearch(query);
-      router.push(`/search?q=${encodeURIComponent(query)}`);
+      router.push(`/products?q=${encodeURIComponent(query)}`);
       onClose();
     } else {
-      router.push('/search');
+      router.push('/products');
       onClose();
     }
   }, [query, saveSearch, router, onClose]);
@@ -208,7 +208,7 @@ export default function SearchModal({ isOpen, onClose }) {
           {!query.trim() && (
             <div className="p-5 space-y-6">
               <button
-                onClick={() => { router.push('/search'); onClose(); }}
+                onClick={() => { router.push('/products'); onClose(); }}
                 className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-2xl hover:from-primary/20 hover:to-primary/10 transition-all group"
               >
                 <div className="flex items-center gap-3">
@@ -303,7 +303,7 @@ export default function SearchModal({ isOpen, onClose }) {
                     >
                       <div className="w-14 h-14 rounded-xl overflow-hidden bg-secondary flex-shrink-0 border border-border">
                         <img 
-                          src={product.main_image.startsWith('http') ? product.main_image : `http://localhost:8000${product.main_image}`} 
+                          src={product.main_image.startsWith('http') ? product.main_image : `http://localhost:8001${product.main_image}`} 
                           alt={product.title}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
@@ -318,7 +318,7 @@ export default function SearchModal({ isOpen, onClose }) {
                       </div>
                       <div className="text-left flex-shrink-0">
                         <p className="font-black text-primary text-lg">
-                          {formatPrice(product.discount_price || product.price)}
+                          {formatPrice(product.discount_price !== null ? product.discount_price : product.price)}
                         </p>
                         {product.discount_price && (
                           <p className="text-xs text-foreground-muted line-through">
@@ -339,7 +339,7 @@ export default function SearchModal({ isOpen, onClose }) {
                     برای "{query}" محصولی پیدا نکردیم
                   </p>
                   <button
-                    onClick={() => { router.push('/search'); onClose(); }}
+                    onClick={() => { router.push('/products'); onClose(); }}
                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-all text-sm"
                   >
                     مشاهده همه محصولات

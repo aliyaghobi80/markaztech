@@ -50,7 +50,7 @@ export default function UserFavorites() {
                   {fav.product_details.title}
                 </Link>
                 <p className="text-sm text-primary font-black mb-3">
-                  {formatPrice(fav.product_details.discount_price || fav.product_details.price)} تومان
+                  {formatPrice(fav.product_details.discount_price !== null ? fav.product_details.discount_price : fav.product_details.price)} تومان
                 </p>
                 <div className="flex items-center gap-2">
                   <button 

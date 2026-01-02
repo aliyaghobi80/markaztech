@@ -5,19 +5,23 @@ class ProductWebSocket {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 1000;
+    this.fallback = false;
   }
 
   connect() {
+    if (this.fallback) return;
     if (this.ws?.readyState === WebSocket.OPEN) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//localhost:8000/ws/products/`;
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/api/ws/products/`;
     
     this.ws = new WebSocket(wsUrl);
     
     this.ws.onopen = () => {
       console.log('WebSocket connected');
       this.reconnectAttempts = 0;
+      this.fallback = false;
     };
     
     this.ws.onmessage = (event) => {
@@ -36,6 +40,7 @@ class ProductWebSocket {
     
     this.ws.onerror = (error) => {
       console.error('WebSocket error:', error);
+      this.triggerFallback();
     };
   }
 
@@ -44,7 +49,9 @@ class ProductWebSocket {
       this.reconnectAttempts++;
       console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
       setTimeout(() => this.connect(), this.reconnectDelay * this.reconnectAttempts);
+      return;
     }
+    this.triggerFallback();
   }
 
   disconnect() {
@@ -62,6 +69,14 @@ class ProductWebSocket {
   notifyListeners(data) {
     this.listeners.forEach(callback => callback(data));
   }
+
+  triggerFallback() {
+    if (this.fallback) return;
+    console.log('Switching to polling fallback for products');
+    this.fallback = true;
+    this.notifyListeners({ type: 'fallback', mode: 'polling' });
+    this.disconnect();
+  }
 }
 
 class OrderWebSocket {
@@ -77,7 +92,8 @@ class OrderWebSocket {
     if (this.ws?.readyState === WebSocket.OPEN) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//localhost:8000/ws/orders/`;
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/api/ws/orders/`;
     
     this.ws = new WebSocket(wsUrl);
     

@@ -153,8 +153,8 @@ export default function AdminUsers() {
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center overflow-hidden">
-                        {user.avatar ? (
-                          <img src={user.avatar} alt="پروفایل" className="w-full h-full object-cover" />
+                        {user.avatar_url ? (
+                          <img src={user.avatar_url} alt="پروفایل" className="w-full h-full object-cover" />
                         ) : (
                           <User className="w-5 h-5 text-foreground-muted" />
                         )}
@@ -282,8 +282,8 @@ function EditUserModal({ user, onClose, onSave, onWalletAdjust }) {
         <div className="mb-6 p-4 bg-secondary/50 rounded-xl">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
-              {user.avatar ? (
-                <img src={user.avatar} alt="پروفایل" className="w-full h-full rounded-full object-cover" />
+              {user.avatar_url ? (
+                <img src={user.avatar_url} alt="پروفایل" className="w-full h-full rounded-full object-cover" />
               ) : (
                 <User className="w-5 h-5 text-foreground-muted" />
               )}

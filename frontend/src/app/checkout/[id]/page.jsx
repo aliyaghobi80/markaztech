@@ -122,7 +122,13 @@ export default function CheckoutPage() {
         try {
           const response = await api.post(`/orders/${id}/pay_with_wallet/`);
           toast.dismiss(loadingToast);
-          toast.success("پرداخت با موفقیت انجام شد!", { duration: 3000 });
+          
+          if (response.data.is_free) {
+            toast.success("محصول رایگان با موفقیت دریافت شد! 🎉", { duration: 3000 });
+          } else {
+            toast.success("پرداخت با موفقیت انجام شد!", { duration: 3000 });
+          }
+          
           clearCart();
           if (refreshUser) refreshUser();
           router.push("/dashboard");
@@ -209,11 +215,24 @@ export default function CheckoutPage() {
                 </div>
                 <div className="bg-secondary/50 rounded-xl p-4 text-center">
                   <p className="text-xs text-foreground-muted mb-1">مبلغ سفارش</p>
-                  <p className="text-xl font-black text-foreground">{formatPrice(order.total_price)} تومان</p>
+                  <p className={`text-xl font-black ${order.total_price === 0 ? 'text-success' : 'text-foreground'}`}>
+                    {order.total_price === 0 ? 'رایگان' : `${formatPrice(order.total_price)} تومان`}
+                  </p>
                 </div>
               </div>
 
-              {!canPayWithWallet && (
+              {order.total_price === 0 ? (
+                <div className="bg-success/10 border border-success/20 rounded-xl p-4 mb-6 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-success/5 translate-x-full group-hover:translate-x-0 transition-transform duration-500"></div>
+                  <div className="flex items-center gap-2 text-success relative z-10">
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span className="font-bold text-sm">سفارش رایگان</span>
+                  </div>
+                  <p className="text-success/80 text-xs mt-1 relative z-10">
+                    این سفارش کاملاً رایگان است. برای دریافت کلیک کنید.
+                  </p>
+                </div>
+              ) : !canPayWithWallet ? (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                   <div>
@@ -222,16 +241,14 @@ export default function CheckoutPage() {
                       برای خرید این محصول، {formatPrice(order.total_price - walletBalance)} تومان به کیف پول خود شارژ کنید.
                     </p>
                     <button
-                      onClick={() => router.push("/dashboard")}
+                      onClick={() => router.push("/dashboard?tab=wallet-charge")}
                       className="mt-3 text-xs bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
                     >
                       افزایش موجودی
                     </button>
                   </div>
                 </div>
-              )}
-
-              {canPayWithWallet && (
+              ) : (
                 <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-6 relative overflow-hidden group">
                   <div className="absolute inset-0 bg-green-500/5 translate-x-full group-hover:translate-x-0 transition-transform duration-500"></div>
                   <div className="flex items-center gap-2 text-green-500 relative z-10">
@@ -246,7 +263,7 @@ export default function CheckoutPage() {
 
               <button
                 onClick={handleWalletPayment}
-                disabled={walletPaying || !canPayWithWallet}
+                disabled={walletPaying || (order.total_price > 0 && !canPayWithWallet)}
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-4 rounded-xl font-bold shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
               >
                 {walletPaying ? (
@@ -257,7 +274,7 @@ export default function CheckoutPage() {
                 ) : (
                   <>
                     <Wallet className="w-5 h-5" />
-                    پرداخت {formatPrice(order.total_price)} تومان
+                    {order.total_price === 0 ? 'دریافت رایگان' : `پرداخت ${formatPrice(order.total_price)} تومان`}
                   </>
                 )}
               </button>
@@ -301,8 +318,9 @@ export default function CheckoutPage() {
                             </div>
                             <div>
                                 <label className="text-xs opacity-70 block mb-1">مبلغ قابل پرداخت</label>
-                                {/* اینجا قبلا ارور میداد چون order نال بود */}
-                                <span className="text-xl font-black">{formatPrice(order.total_price)} تومان</span>
+                                <span className="text-xl font-black">
+                                  {order.total_price === 0 ? 'رایگان' : `${formatPrice(order.total_price)} تومان`}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -319,7 +337,9 @@ export default function CheckoutPage() {
                             order.items.map((item, index) => (
                                   <li key={index} className="flex justify-between text-sm text-foreground-muted">
                                       <span>{item.quantity} x {item.product?.title}</span>
-                                      <span>{formatPrice(item.price * item.quantity)}</span>
+                                      <span>
+                                        {item.price === 0 ? 'رایگان' : `${formatPrice(item.price * item.quantity)} تومان`}
+                                      </span>
                                   </li>
                             ))
                         ) : (
@@ -328,7 +348,7 @@ export default function CheckoutPage() {
                     </ul>
                     <div className="border-t border-border pt-3 flex justify-between font-bold text-foreground">
                         <span>جمع کل</span>
-                        <span>{formatPrice(order.total_price)} تومان</span>
+                        <span>{order.total_price === 0 ? 'رایگان' : `${formatPrice(order.total_price)} تومان`}</span>
                     </div>
                 </div>
             </div>

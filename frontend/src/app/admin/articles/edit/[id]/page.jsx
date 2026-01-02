@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
+import RichTextEditor from "@/components/RichTextEditor";
 import { 
   ArrowRight, Save, Loader2, FileText, 
   Upload, Image as ImageIcon, Tag, 
@@ -246,12 +247,10 @@ export default function EditArticlePage({ params }) {
 
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-foreground pr-2">متن مقاله</label>
-                  <textarea
-                    rows={15}
-                    required
-                    className="w-full bg-secondary/50 border border-border rounded-2xl py-4 px-5 outline-none focus:ring-2 focus:ring-primary/20 text-foreground resize-none leading-relaxed"
-                    value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  <RichTextEditor
+                    content={formData.content}
+                    onChange={(content) => setFormData({ ...formData, content })}
+                    placeholder="محتوای مقاله را ویرایش کنید..."
                   />
                 </div>
 

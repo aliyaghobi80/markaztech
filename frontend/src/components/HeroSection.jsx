@@ -2,9 +2,10 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Zap, Shield, Clock, ChevronRight, ChevronLeft } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import api from "@/lib/axios";
-import { motion, AnimatePresence } from "framer-motion";
+import { useGlobalWebSocket } from "@/lib/globalWebSocket";
+import { getImageUrl } from "@/lib/utils";
 
 export default function HeroSection() {
     const [stats, setStats] = useState({
@@ -15,18 +16,22 @@ export default function HeroSection() {
       satisfaction_rate: 100
     });
 
-  const [heroProducts, setHeroProducts] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState(0);
+    const [siteSettings, setSiteSettings] = useState({
+      site_name: 'مرکزتک',
+      hero_logo: null,
+      site_description: 'پلتفرم شماره ۱ فروش اکانت‌های پریمیوم'
+    });
 
-  const fetchHeroProducts = async () => {
-    try {
-      const response = await api.get("/products/hero_products/");
-      setHeroProducts(response.data);
-    } catch (error) {
-      console.error("Error fetching hero products");
+  // استفاده از WebSocket مرکزی
+  const handleWebSocketMessage = useCallback((data) => {
+    if (data.type === 'stats_update') {
+      setStats(prevStats => ({ ...prevStats, ...data.stats }));
+    } else if (data.type === 'site_settings_update') {
+      setSiteSettings(prevSettings => ({ ...prevSettings, ...data.settings }));
     }
-  };
+  }, []);
+
+  useGlobalWebSocket('hero-section', handleWebSocketMessage);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -37,69 +42,19 @@ export default function HeroSection() {
         console.error("Error fetching hero stats");
       }
     };
-    fetchStats();
-    fetchHeroProducts();
 
-    // Use WebSocket for real-time stats
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    let wsHostname = window.location.hostname;
-    
-    // Handle Orchids environment where ports are in subdomains
-    if (wsHostname.includes("-3000")) {
-      wsHostname = wsHostname.replace("-3000", "-8000");
-    } else if (wsHostname === "localhost" || wsHostname === "127.0.0.1") {
-      wsHostname = "localhost"; // Use localhost explicitly
-    }
-    
-    const wsUrl = `${protocol}//${wsHostname}:8000/ws/user/`;
-    const socket = new WebSocket(wsUrl);
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "stats_update") {
-        setStats(prev => ({ ...prev, ...data.stats }));
+    const fetchSiteSettings = async () => {
+      try {
+        const response = await api.get("/users/site-settings/");
+        setSiteSettings(response.data);
+      } catch (error) {
+        console.error("Error fetching site settings");
       }
     };
-    return () => socket.close();
+
+    fetchStats();
+    fetchSiteSettings();
   }, []);
-
-  const nextSlide = useCallback(() => {
-    setDirection(1);
-    setCurrentIndex((prev) => (prev + 1) % heroProducts.length);
-  }, [heroProducts.length]);
-
-  const prevSlide = useCallback(() => {
-    setDirection(-1);
-    setCurrentIndex((prev) => (prev - 1 + heroProducts.length) % heroProducts.length);
-  }, [heroProducts.length]);
-
-  useEffect(() => {
-    if (heroProducts.length > 1) {
-      const timer = setInterval(nextSlide, 5000);
-      return () => clearInterval(timer);
-    }
-  }, [heroProducts.length, nextSlide]);
-
-  const variants = {
-    enter: (direction) => ({
-      x: direction > 0 ? 500 : -500,
-      opacity: 0,
-      scale: 0.8
-    }),
-    center: {
-      zIndex: 1,
-      x: 0,
-      opacity: 1,
-      scale: 1
-    },
-    exit: (direction) => ({
-      zIndex: 0,
-      x: direction < 0 ? 500 : -500,
-      opacity: 0,
-      scale: 0.8
-    })
-  };
-
-  const currentProduct = heroProducts[currentIndex];
 
   return (
     <section className="relative overflow-hidden bg-background">
@@ -131,7 +86,7 @@ export default function HeroSection() {
             
             <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start mb-10">
               <Link
-                href="/search"
+                href="/products"
                 className="group px-8 py-4 bg-primary text-primary-foreground font-bold rounded-2xl hover:bg-primary/90 transition-all shadow-xl shadow-primary/25 hover:shadow-primary/40 flex items-center gap-2"
               >
                 مشاهده محصولات
@@ -174,145 +129,39 @@ export default function HeroSection() {
 
           </div>
 
-          <div className="hidden lg:block relative w-[400px]">
-            <AnimatePresence initial={false} custom={direction} mode="wait">
-              {currentProduct ? (
-                  <motion.div
-                    key={currentProduct.id}
-                    custom={direction}
-                    variants={variants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={{
-                      x: { type: "spring", stiffness: 300, damping: 30 },
-                      opacity: { duration: 0.2 }
-                    }}
-                    className="relative group"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-cyan-500/30 rounded-[2.5rem] blur-3xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                    
-                    <Link href={`/product/${currentProduct.slug}`} className="block relative bg-card/40 backdrop-blur-2xl border border-white/10 p-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.15)] hover:border-primary/30 transition-all duration-500 overflow-hidden">
-                      {/* Decorative elements */}
-                      <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors"></div>
-                      
-                      <div className="flex items-center gap-4 mb-8">
-                        <div className="relative">
-                          <div className="w-16 h-16 bg-gradient-to-br from-primary to-cyan-500 rounded-2xl flex items-center justify-center overflow-hidden shadow-lg p-0.5">
-                            <div className="w-full h-full bg-card rounded-[0.9rem] overflow-hidden">
-                              {currentProduct.main_image ? (
-                                <img src={currentProduct.main_image} alt={currentProduct.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center animate-pulse">
-                                  <Sparkles className="w-7 h-7 text-primary" />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-foreground leading-tight group-hover:text-primary transition-colors">{currentProduct.title}</h3>
-                          <span className="inline-block px-2 py-0.5 mt-1 bg-primary/10 text-primary text-[10px] font-bold rounded-md uppercase tracking-wide">
-                            {currentProduct.category?.name || 'اکانت پریمیوم'}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 gap-4 mb-8">
-                        <div className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
-                          <div className="w-8 h-8 rounded-xl bg-yellow-500/10 flex items-center justify-center">
-                            <Zap className="w-4 h-4 text-yellow-500" />
-                          </div>
-                          <span className="text-sm text-foreground/80">بالاترین کیفیت موجود در بازار</span>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
-                          <div className="w-8 h-8 rounded-xl bg-green-500/10 flex items-center justify-center">
-                            <Shield className="w-4 h-4 text-green-500" />
-                          </div>
-                          <span className="text-sm text-foreground/80">ضمانت کامل و پشتیبانی اختصاصی</span>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
-                          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <Clock className="w-4 h-4 text-primary" />
-                          </div>
-                          <span className="text-sm text-foreground/80">تحویل فوری در {currentProduct.delivery_time || 'کمتر از ۱ ساعت'}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-end justify-between pt-4 border-t border-white/5">
-                        <div className="space-y-1">
-                          {currentProduct.discount_price && (
-                            <div className="text-foreground-muted text-xs line-through opacity-60 decoration-red-500/50">{currentProduct.price.toLocaleString()} تومان</div>
-                          )}
-                          <div className="text-2xl font-black text-foreground flex items-center gap-1">
-                            {(currentProduct.discount_price || currentProduct.price).toLocaleString()}
-                            <span className="text-xs font-medium opacity-70">تومان</span>
-                          </div>
-                        </div>
-                        
-                        {currentProduct.discount_price ? (
-                          <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-black px-3 py-1.5 rounded-xl shadow-lg shadow-red-500/20">
-                            {Math.round((1 - currentProduct.discount_price / currentProduct.price) * 100)}٪ تخفیف ویژه
-                          </div>
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
-                            <ArrowLeft className="w-5 h-5" />
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-  
-                    <div className="absolute -top-3 -right-3 bg-card/60 backdrop-blur-xl border border-white/10 px-4 py-2 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
-                      <div className="flex items-center gap-2">
-                        <span className={`relative flex h-2 w-2`}>
-                          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${currentProduct.stock > 0 ? 'bg-green-400' : 'bg-red-400'} opacity-75`}></span>
-                          <span className={`relative inline-flex rounded-full h-2 w-2 ${currentProduct.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                        </span>
-                          <span className="text-foreground text-xs font-bold">
-                            {currentProduct.stock > 0 ? `${currentProduct.stock} عدد آماده تحویل` : 'اتمام موجودی'}
-                          </span>
-                      </div>
+          <div className="hidden lg:block relative w-full max-w-2xl">
+            {/* Simple Logo Section */}
+            <div className="flex items-center justify-center">
+              <div className="relative group">
+                <div className="w-80 h-80 bg-gradient-to-br from-card via-card to-card/80 backdrop-blur-xl border border-border rounded-3xl p-8 shadow-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-105">
+                  
+                  {/* Background glow */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-blue-500/10 rounded-3xl blur-xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
+                  
+                  <div className="relative z-10 text-center">
+                    {/* Main Logo */}
+                    <div className="w-32 h-32 bg-gradient-to-br from-primary/20 to-blue-500/20 rounded-3xl flex items-center justify-center mb-6 mx-auto border border-border shadow-lg group-hover:shadow-xl transition-all overflow-hidden">
+                      {siteSettings.hero_logo_url ? (
+                        <img 
+                          src={siteSettings.hero_logo_url} 
+                          alt={siteSettings.site_name}
+                          className="w-full h-full object-contain group-hover:scale-110 transition-transform"
+                        />
+                      ) : (
+                        <Sparkles className="w-16 h-16 text-primary group-hover:scale-110 transition-transform" />
+                      )}
                     </div>
-                  </motion.div>
-              ) : (
-                <div className="w-80 h-[300px] bg-card/20 animate-pulse rounded-3xl border border-border"></div>
-              )}
-            </AnimatePresence>
-
-              {heroProducts.length > 1 && (
-                <div className="flex justify-center gap-6 mt-10">
-                  <button 
-                    onClick={prevSlide} 
-                    className="w-12 h-12 flex items-center justify-center rounded-full bg-card/50 backdrop-blur-xl border border-white/10 hover:border-primary/50 hover:bg-card/80 transition-all shadow-lg active:scale-95 group"
-                  >
-                    <ChevronRight className="w-6 h-6 text-foreground/70 group-hover:text-primary transition-colors" />
-                  </button>
-                  
-                  <div className="flex items-center gap-3">
-                    {heroProducts.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          setDirection(i > currentIndex ? 1 : -1);
-                          setCurrentIndex(i);
-                        }}
-                        className={`transition-all duration-300 rounded-full ${
-                          i === currentIndex 
-                            ? 'w-10 h-2 bg-gradient-to-r from-primary to-cyan-500' 
-                            : 'w-2 h-2 bg-border hover:bg-primary/30'
-                        }`}
-                      />
-                    ))}
+                    
+                    <h3 className="text-3xl font-black text-foreground mb-3 bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+                      {siteSettings.site_name}
+                    </h3>
+                    <p className="text-foreground-muted text-lg leading-relaxed">
+                      {siteSettings.site_description || 'پلتفرم شماره ۱ فروش اکانت‌های پریمیوم'}
+                    </p>
                   </div>
-                  
-                  <button 
-                    onClick={nextSlide} 
-                    className="w-12 h-12 flex items-center justify-center rounded-full bg-card/50 backdrop-blur-xl border border-white/10 hover:border-primary/50 hover:bg-card/80 transition-all shadow-lg active:scale-95 group"
-                  >
-                    <ChevronLeft className="w-6 h-6 text-foreground/70 group-hover:text-primary transition-colors" />
-                  </button>
                 </div>
-              )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

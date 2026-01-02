@@ -1,0 +1,56 @@
+# MarkazTech Routing Configuration
+RewriteEngine On
+
+# WebSocket routes -> Django (ASGI). Keep path but hand off to /api app.
+# Upgrade handling for Apache/LiteSpeed with proxy-wstunnel support.
+RewriteCond %{HTTP:Upgrade} websocket [NC]
+RewriteCond %{HTTP:Connection} upgrade [NC]
+RewriteRule ^ws/(.*)$ ws://127.0.0.1/api/ws/$1 [P,L]
+
+# Fallback: internally rewrite to Django app (when proxy-wstunnel not available)
+RewriteCond %{REQUEST_URI} ^/ws/
+RewriteRule ^ws/(.*)$ /api/ws/$1 [QSA,PT,L]
+
+# API requests go to Django Python app (Passenger in /api)
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^ - [L]
+
+# All other requests proxy to Node.js app on port 3000
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteRule ^(.*)$ http://localhost:3000/$1 [P,L]
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Gzip Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+    AddOutputFilterByType DEFLATE application/json
+</IfModule>
+
+# Browser Caching
+<IfModule mod_expires.c>
+    ExpiresActive on
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>

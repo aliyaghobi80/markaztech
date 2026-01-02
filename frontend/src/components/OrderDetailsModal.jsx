@@ -184,28 +184,73 @@ export default function OrderDetailsModal({ orderId, onClose }) {
             </h3>
             <div className="space-y-3">
               {order.items?.map((item, index) => (
-                <div key={index} className="bg-secondary/30 rounded-xl p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                      {item.product?.main_image ? (
-                        <img 
-                          src={item.product.main_image} 
-                          alt={item.product.title}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                      ) : (
-                        <Package className="w-6 h-6 text-primary" />
-                      )}
+                <div key={index} className="bg-secondary/30 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                        {item.product?.main_image ? (
+                          <img 
+                            src={item.product.main_image} 
+                            alt={item.product.title}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        ) : (
+                          <Package className="w-6 h-6 text-primary" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-bold text-foreground">{item.product?.title || "محصول حذف شده"}</p>
+                        <div className="flex items-center gap-2 text-sm text-foreground-muted">
+                          <span>تعداد: {item.quantity}</span>
+                          {item.product?.product_type === 'file' && (
+                            <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-medium">
+                              فایل
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-foreground">{item.product?.title || "محصول حذف شده"}</p>
-                      <p className="text-sm text-foreground-muted">تعداد: {item.quantity}</p>
+                    <div className="text-left">
+                      <p className="font-bold text-foreground">{formatPrice(item.price)}</p>
+                      <p className="text-xs text-foreground-muted">قیمت واحد</p>
                     </div>
                   </div>
-                  <div className="text-left">
-                    <p className="font-bold text-foreground">{formatPrice(item.price)}</p>
-                    <p className="text-xs text-foreground-muted">قیمت واحد</p>
-                  </div>
+                  
+                  {/* Download button for file products */}
+                  {item.product?.product_type === 'file' && order.status === 'PAID' && (
+                    <div className="border-t border-border pt-3">
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await api.get(`/products/${item.product.slug}/download/`, {
+                              responseType: 'blob'
+                            });
+                            
+                            // Create download link
+                            const url = window.URL.createObjectURL(new Blob([response.data]));
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.setAttribute('download', `${item.product.title}.${item.product.file_type || 'file'}`);
+                            document.body.appendChild(link);
+                            link.click();
+                            link.remove();
+                            window.URL.revokeObjectURL(url);
+                            
+                            toast.success("دانلود شروع شد");
+                          } catch (error) {
+                            toast.error("خطا در دانلود فایل");
+                          }
+                        }}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        دانلود فایل
+                        {item.product.file_type && (
+                          <span className="text-xs opacity-75">({item.product.file_type.toUpperCase()})</span>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

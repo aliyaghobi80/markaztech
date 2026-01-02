@@ -16,7 +16,7 @@ export default function ProfileEditModal({ user, onClose, onUpdate }) {
     birth_date: user.birth_date || "",
   });
   const [avatarFile, setAvatarFile] = useState(null);
-  const [avatarPreview, setAvatarPreview] = useState(user.avatar || null);
+  const [avatarPreview, setAvatarPreview] = useState(user.avatar_url || null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAvatarChange = (e) => {

@@ -108,9 +108,9 @@ useEffect(() => {
   const sortedProducts = [...products].sort((a, b) => {
     switch (sortOrder) {
       case "price-low": // ارزان‌ترین
-        return (a.discount_price || a.price) - (b.discount_price || b.price);
+        return (a.discount_price !== null ? a.discount_price : a.price) - (b.discount_price !== null ? b.discount_price : b.price);
       case "price-high": // گران‌ترین
-        return (b.discount_price || b.price) - (a.discount_price || a.price);
+        return (b.discount_price !== null ? b.discount_price : b.price) - (a.discount_price !== null ? a.discount_price : a.price);
       case "oldest": // قدیمی‌ترین
         return new Date(a.created_at) - new Date(b.created_at);
       case "newest": // جدیدترین (پیش‌فرض)

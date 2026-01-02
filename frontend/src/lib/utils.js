@@ -16,15 +16,14 @@ export const getImageUrl = (imagePath) => {
     
     // اگر URL کامل است، همان را برگردان
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        // تبدیل testserver به آدرس واقعی
-        return imagePath.replace('http://testserver', 'http://127.0.0.1:8000');
+        return imagePath;
     }
     
     // اگر مسیر نسبی است، آدرس کامل بساز
     if (imagePath.startsWith('/media/')) {
-        return `http://127.0.0.1:8000${imagePath}`;
+        return `http://127.0.0.1:8001${imagePath}`;
     }
     
     // اگر فقط نام فایل است
-    return `http://127.0.0.1:8000/media/${imagePath}`;
+    return `http://127.0.0.1:8001/media/${imagePath}`;
 };

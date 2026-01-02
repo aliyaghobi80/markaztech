@@ -75,25 +75,9 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const submitData = new FormData();
-        submitData.append('mobile', formData.mobile);
-        submitData.append('password', formData.password);
-        submitData.append('full_name', formData.full_name.trim());
-        
-        if (formData.birth_date) {
-          // Format date to YYYY-MM-DD (Jalali) for the backend
-          submitData.append('birth_date', formData.birth_date.format('YYYY-MM-DD'));
-        }
-        
-        if (avatarFile) {
-        submitData.append('avatar', avatarFile);
-      }
-
-      const response = await api.post("/users/register/", submitData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      // استفاده از mock auth در حالت frontend-only
+      const { mockAuth } = await import('@/lib/mockAuth');
+      const response = await mockAuth.register(formData.mobile, formData.password, formData.full_name);
       
       toast.success("حساب کاربری با موفقیت ساخته شد!");
       
@@ -101,19 +85,14 @@ export default function RegisterPage() {
     } catch (err) {
       console.error("Registration error:", err);
       
-      if (err.response?.data) {
-        const errors = err.response.data;
-        if (errors.mobile) {
-          toast.error("این شماره موبایل قبلاً ثبت شده است");
-        } else if (errors.password) {
-          toast.error("رمز عبور معتبر نیست");
-        } else if (errors.full_name) {
-          toast.error("نام و نام خانوادگی معتبر نیست");
-        } else {
-          toast.error("خطا در ثبت‌نام. لطفاً دوباره تلاش کنید");
-        }
+      if (err.message.includes('موبایل')) {
+        toast.error("شماره موبایل باید با 09 شروع شود و 11 رقم باشد");
+      } else if (err.message.includes('رمز')) {
+        toast.error("رمز عبور باید حداقل 6 کاراکتر باشد");
+      } else if (err.message.includes('نام')) {
+        toast.error("نام و نام خانوادگی الزامی است");
       } else {
-        toast.error("خطا در اتصال به سرور");
+        toast.error("خطا در ثبت‌نام. لطفاً دوباره تلاش کنید");
       }
     } finally {
       setIsLoading(false);

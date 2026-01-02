@@ -12,7 +12,7 @@ import api from "@/lib/axios";
 import toast from "react-hot-toast";
 
 export default function CartPage() {
-    const { cart, addToCart, removeFromCart, clearCart, totalPrice } = useCart();
+    const { cart, addToCart, removeFromCart, clearCart, totalPrice, isAllFree } = useCart();
     const { user } = useAuth(); // چک میکنیم کاربر لاگین هست یا نه
     const { showLoading, hideLoading } = useLoading();
     const router = useRouter();
@@ -105,7 +105,12 @@ export default function CartPage() {
                                     <h3 className="font-bold text-foreground mb-1">{item.title}</h3>
                                     <p className="text-sm text-foreground-muted mb-2">{item.category?.name || item.category}</p>
                                     <div className="text-primary font-bold">
-                                        {formatPrice(item.discount_price || item.price)} تومان
+                                        {(() => {
+                                            const finalPrice = item.discount_price !== null && item.discount_price !== undefined 
+                                                ? item.discount_price 
+                                                : item.price;
+                                            return finalPrice === 0 ? 'رایگان' : `${formatPrice(finalPrice)} تومان`;
+                                        })()}
                                     </div>
                                 </div>
 
@@ -138,14 +143,23 @@ export default function CartPage() {
                                 </div>
                                 <div className="flex justify-between text-foreground font-bold text-lg">
                                     <span>مبلغ قابل پرداخت:</span>
-                                    <span className="text-primary">{formatPrice(totalPrice)} تومان</span>
+                                    <span className={`${totalPrice === 0 ? 'text-success' : 'text-primary'}`}>
+                                        {totalPrice === 0 ? 'رایگان' : `${formatPrice(totalPrice)} تومان`}
+                                    </span>
                                 </div>
+                                {isAllFree && (
+                                    <div className="bg-success/10 border border-success/20 rounded-xl p-3 text-center">
+                                        <p className="text-success text-sm font-medium">
+                                            🎉 تمام محصولات سبد خرید شما رایگان هستند!
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             <button
                                 onClick={handleCheckout}
                                 className="btn-primary w-full py-4 rounded-xl shadow-theme-lg">
-                                ادامه جهت تسویه حساب
+                                {totalPrice === 0 ? 'دریافت رایگان' : 'ادامه جهت تسویه حساب'}
                             </button>
                             <p className="text-xs text-foreground-muted mt-4 text-center">
                                 کالاهای موجود در سبد خرید شما ثبت و رزرو نشده‌اند.

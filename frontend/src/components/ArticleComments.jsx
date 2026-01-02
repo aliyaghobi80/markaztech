@@ -22,7 +22,7 @@ export default function ArticleComments({ articleId, initialComments: propCommen
     if (!articleId) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.hostname}:8000/ws/articles/${articleId}/comments/`;
+    const wsUrl = `${protocol}//${window.location.hostname}:8001/ws/articles/${articleId}/comments/`;
     const socket = new WebSocket(wsUrl);
 
     socket.onmessage = (event) => {

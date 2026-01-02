@@ -82,7 +82,7 @@ export default function OrderDetailsPage() {
       return;
     }
     
-    if (order.status !== 'PAID') {
+    if (order.status !== 'PAID' && order.status !== 'paid') {
       toast.error("فقط سفارشات پرداخت شده قابل دانلود هستند");
       return;
     }
@@ -208,6 +208,37 @@ export default function OrderDetailsPage() {
                     <div className="text-left">
                       <p className="font-bold text-foreground">{formatPrice(item.price * item.quantity)}</p>
                       <p className="text-xs text-foreground-muted">قیمت کل</p>
+                      
+                      {/* Download button for file products */}
+                      {item.product?.product_type === 'file' && (order.status === 'PAID' || order.status === 'paid') && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await api.get(`/products/${item.product.slug}/download/`, {
+                                responseType: 'blob'
+                              });
+                              
+                              // Create download link
+                              const url = window.URL.createObjectURL(new Blob([response.data]));
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.setAttribute('download', `${item.product.title}.${item.product.file_type || 'file'}`);
+                              document.body.appendChild(link);
+                              link.click();
+                              link.remove();
+                              window.URL.revokeObjectURL(url);
+                              
+                              toast.success("دانلود شروع شد");
+                            } catch (error) {
+                              toast.error("خطا در دانلود فایل");
+                            }
+                          }}
+                          className="mt-2 flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                        >
+                          <Download className="w-3 h-3" />
+                          دانلود فایل
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -303,7 +334,7 @@ export default function OrderDetailsPage() {
             </div>
 
               {/* دکمه دانلود PDF */}
-              {order.status === 'PAID' && (
+              {(order.status === 'PAID' || order.status === 'paid') && (
                 <button
                   onClick={handleDownloadPDF}
                   disabled={downloading}

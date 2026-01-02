@@ -1,7 +1,7 @@
 // مسیر: src/lib/pdfGenerator.js
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001/api";
 
 // تابع برای دانلود PDF از بک‌اند Django
 export const downloadOrderPDF = async (order) => {

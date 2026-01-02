@@ -19,7 +19,7 @@ const handleAvatarChange = async (e) => {
 
 // ... در قسمت JSX، روی عکس پروفایل این اینپوت رو بذار:
 <div className="relative group cursor-pointer w-20 h-20 mx-auto mb-4">
-    <img src={user.avatar || "/default-avatar.png"} className="w-full h-full rounded-full object-cover border-2 border-primary" />
+    <img src={user.avatar_url || "/default-avatar.png"} className="w-full h-full rounded-full object-cover border-2 border-primary" />
     
     {/* لایه مخفی که با هاور نمایش داده میشه */}
     <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition">

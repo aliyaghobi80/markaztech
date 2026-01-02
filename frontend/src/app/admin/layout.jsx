@@ -36,6 +36,7 @@ export default function AdminLayout({ children }) {
       { name: "مدیریت مقالات", icon: BookOpen, href: "/admin/articles" },
       { name: "مدیریت کاربران", icon: Users, href: "/admin/users" },
       { name: "سفارشات و پرداخت", icon: CreditCard, href: "/admin/orders" },
+      { name: "چت پشتیبانی", icon: MessageSquare, href: "/admin/chat" },
       { name: "نظرات", icon: MessageSquare, href: "/admin/comments" },
       { name: "تیکت‌ها", icon: Ticket, href: "/admin/tickets" },
     ];

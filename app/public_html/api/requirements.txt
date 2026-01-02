@@ -1,0 +1,39 @@
+# Django and REST Framework
+Django==4.2.11
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.1
+django-cors-headers==4.3.1
+
+# Image processing
+Pillow==10.3.0
+
+# Environment variables
+python-decouple==3.8
+
+# Database (PyMySQL works on cPanel Python 3.12 without compilation)
+PyMySQL==1.1.0
+
+# Static files serving for production (optional with Apache)
+whitenoise==6.6.0
+
+# WSGI/ASGI server (not used by Passenger but safe)
+gunicorn==21.2.0
+daphne==4.1.2
+
+# Security
+cryptography==42.0.8
+
+# Utilities
+python-dateutil==2.8.2
+
+# PDF generation
+reportlab==4.1.0
+jdatetime==5.0.0
+arabic-reshaper==3.0.0
+python-bidi==0.4.2
+
+# WebSocket support (in-memory only)
+channels==4.0.0
+
+# Additional dependencies
+requests==2.32.3

@@ -1,10 +1,11 @@
 // مسیر: src/context/AuthContext.jsx
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import api from "@/lib/axios";
 import { useRouter, usePathname } from "next/navigation";
 import { mutate } from "swr";
+import { useGlobalWebSocket } from "@/lib/globalWebSocket";
 
 const AuthContext = createContext();
 
@@ -13,6 +14,22 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+
+  // استفاده از WebSocket مرکزی
+  const handleWebSocketMessage = useCallback((data) => {
+    if (data.type === "wallet_update") {
+      setUser(prev => ({ ...prev, wallet_balance: data.balance }));
+    } else if (data.type === 'wallet_request_update') {
+      mutate("/users/wallet-requests/");
+      window.dispatchEvent(new CustomEvent('wallet_request_status_changed', { detail: data }));
+    } else if (data.type === 'ticket_update') {
+      mutate("/users/tickets/");
+      mutate(data.ticket_id ? `/users/tickets/${data.ticket_id}/messages/` : null);
+      window.dispatchEvent(new CustomEvent('ticket_updated', { detail: data }));
+    }
+  }, []);
+
+  useGlobalWebSocket('auth-context', handleWebSocketMessage);
 
   useEffect(() => {
     checkUserLoggedIn();
@@ -79,40 +96,11 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!user) return;
 
-    const token = localStorage.getItem("accessToken");
-    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000'}/ws/user/?token=${token}`;
-    let socket;
-
-    try {
-      socket = new WebSocket(wsUrl);
-
-      socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        
-        if (data.type === "wallet_update") {
-          setUser(prev => ({ ...prev, wallet_balance: data.balance }));
-        } else if (data.type === 'wallet_request_update') {
-          mutate("/users/wallet-requests/");
-          window.dispatchEvent(new CustomEvent('wallet_request_status_changed', { detail: data }));
-        } else if (data.type === 'ticket_update') {
-          mutate("/users/tickets/");
-          mutate(data.ticket_id ? `/users/tickets/${data.ticket_id}/messages/` : null);
-          window.dispatchEvent(new CustomEvent('ticket_updated', { detail: data }));
-        }
-      };
-
-      socket.onclose = () => console.log("User WebSocket disconnected");
-      socket.onerror = (error) => console.error("User WebSocket error:", error);
-    } catch (err) {
-      console.error("WebSocket connection error:", err);
-    }
-
     const handleFocus = () => refreshUser();
     window.addEventListener('focus', handleFocus);
 
     return () => {
       window.removeEventListener('focus', handleFocus);
-      if (socket) socket.close();
     };
   }, [user?.id]);
 

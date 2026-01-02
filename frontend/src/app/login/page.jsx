@@ -18,31 +18,28 @@ export default function LoginPage() {
       setLoading(true);
 
       try {
-        const res = await api.post('/users/login/', {
-          mobile: mobile,
-          password: password
-        });
+        // استفاده از mock auth در حالت frontend-only
+        const { mockAuth } = await import('@/lib/mockAuth');
+        const res = await mockAuth.login(mobile, password);
 
-          localStorage.setItem('accessToken', res.data.access);
-          localStorage.setItem('refreshToken', res.data.refresh);
-          localStorage.setItem('isAdmin', res.data.is_admin);
-          
-          toast.success("ورود موفقیت‌آمیز بود");
+        localStorage.setItem('accessToken', res.data.access);
+        localStorage.setItem('refreshToken', res.data.refresh);
+        localStorage.setItem('isAdmin', res.data.is_admin.toString());
+        localStorage.setItem('user', JSON.stringify(res.data));
         
-          setTimeout(() => {
-              window.location.href = '/dashboard';
-          }, 1000);
-
+        toast.success("ورود موفقیت‌آمیز بود");
+      
+        setTimeout(() => {
+            window.location.href = '/dashboard';
+        }, 1000);
 
     } catch (error) {
-      console.error("Login Error Details:", error.response?.data);
+      console.error("Login Error Details:", error.message);
 
-      if (error.response?.status === 400) {
-          toast.error("لطفاً شماره موبایل و رمز عبور را وارد کنید");
-      } else if (error.response?.status === 401) {
+      if (error.message.includes('اشتباه')) {
           toast.error("شماره موبایل یا رمز عبور اشتباه است");
       } else {
-          toast.error("خطا در برقراری ارتباط با سرور");
+          toast.error("خطا در ورود - لطفاً دوباره تلاش کنید");
       }
     } finally {
       setLoading(false);

@@ -20,35 +20,108 @@ import { toast } from "react-hot-toast";
 const fetcher = (url) => api.get(url).then((res) => res.data.results || res.data);
 
 export default function AdminWalletRequests() {
-  const { data: requests, error, mutate } = useSWR("/users/wallet-requests/", fetcher);
+  const { data: serverRequests, error, mutate } = useSWR("/users/wallet-requests/", fetcher, {
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+    refreshInterval: 0,
+    dedupingInterval: 0,
+    revalidateIfStale: true,
+    revalidateOnMount: true,
+    fallbackData: null
+  });
+  
+  const [localRequests, setLocalRequests] = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [adminNote, setAdminNote] = useState("");
   const [processing, setProcessing] = useState(false);
 
+  // Sync server data with local state
+  useEffect(() => {
+    if (serverRequests) {
+      setLocalRequests(serverRequests);
+    }
+  }, [serverRequests]);
+
+  // Use local requests if available, otherwise server requests
+  const requests = localRequests || serverRequests;
+
   // گوش دادن به تغییرات ریل‌تایم برای آپدیت لیست ادمین
   useEffect(() => {
-    const handleStatusChange = () => {
-      mutate(); // رفرش لیست از سرور
+    const handleStatusChange = (event) => {
+      console.log('Wallet request status changed:', event.detail);
+      // Update local state
+      if (localRequests) {
+        const updatedRequests = localRequests.map(req => 
+          req.id === event.detail.request_id 
+            ? { ...req, status: event.detail.status, admin_note: event.detail.admin_note } 
+            : req
+        );
+        setLocalRequests(updatedRequests);
+      }
+      // Also force refresh from server
+      setTimeout(() => mutate(), 100);
+    };
+
+    const handleWebSocketMessage = (data) => {
+      console.log('WebSocket message received:', data);
+      if (data.type === 'wallet_request_update') {
+        // Update local state immediately
+        if (localRequests) {
+          const updatedRequests = localRequests.map(req => 
+            req.id === data.request_id 
+              ? { ...req, status: data.status, admin_note: data.admin_note } 
+              : req
+          );
+          setLocalRequests(updatedRequests);
+        }
+        // Also force refresh from server
+        setTimeout(() => mutate(), 100);
+      }
     };
 
     window.addEventListener('wallet_request_status_changed', handleStatusChange);
-    return () => window.removeEventListener('wallet_request_status_changed', handleStatusChange);
-  }, [mutate]);
+    
+    // Listen to WebSocket messages directly
+    if (window.globalWebSocket) {
+      window.globalWebSocket.subscribe('admin-wallet-requests', handleWebSocketMessage);
+    }
+
+    return () => {
+      window.removeEventListener('wallet_request_status_changed', handleStatusChange);
+      if (window.globalWebSocket) {
+        window.globalWebSocket.unsubscribe('admin-wallet-requests');
+      }
+    };
+  }, [mutate, localRequests]);
 
   const handleApprove = async (id) => {
     if (!confirm("آیا از تایید این درخواست اطمینان دارید؟")) return;
     setProcessing(true);
     try {
+      console.log('Approving request:', id);
       const formData = new FormData();
       formData.append('admin_note', adminNote);
-      await api.post(`/users/wallet-requests/${id}/approve/`, formData, {
+      const response = await api.post(`/users/wallet-requests/${id}/approve/`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+      console.log('Approve response:', response.data);
+      
+      // Update local state immediately
+      if (localRequests) {
+        const updatedRequests = localRequests.map(req => 
+          req.id === id ? { ...req, status: 'approved', admin_note: adminNote } : req
+        );
+        setLocalRequests(updatedRequests);
+      }
+      
       toast.success("درخواست تایید شد و موجودی کاربر افزایش یافت");
       setSelectedRequest(null);
       setAdminNote("");
-      mutate();
+      
+      // Force refresh from server after a short delay
+      setTimeout(() => mutate(), 500);
     } catch (err) {
+      console.error('Approve error:', err);
       toast.error(err.response?.data?.error || "خطا در تایید درخواست");
     } finally {
       setProcessing(false);
@@ -59,16 +132,30 @@ export default function AdminWalletRequests() {
     if (!confirm("آیا از رد این درخواست اطمینان دارید؟")) return;
     setProcessing(true);
     try {
+      console.log('Rejecting request:', id);
       const formData = new FormData();
       formData.append('admin_note', adminNote || "درخواست توسط ادمین رد شد.");
-      await api.post(`/users/wallet-requests/${id}/reject/`, formData, {
+      const response = await api.post(`/users/wallet-requests/${id}/reject/`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+      console.log('Reject response:', response.data);
+      
+      // Update local state immediately
+      if (localRequests) {
+        const updatedRequests = localRequests.map(req => 
+          req.id === id ? { ...req, status: 'rejected', admin_note: adminNote || "درخواست توسط ادمین رد شد." } : req
+        );
+        setLocalRequests(updatedRequests);
+      }
+      
       toast.success("درخواست رد شد");
       setSelectedRequest(null);
       setAdminNote("");
-      mutate();
+      
+      // Force refresh from server after a short delay
+      setTimeout(() => mutate(), 500);
     } catch (err) {
+      console.error('Reject error:', err);
       toast.error(err.response?.data?.error || "خطا در رد درخواست");
     } finally {
       setProcessing(false);
@@ -77,17 +164,17 @@ export default function AdminWalletRequests() {
 
   const getStatusConfig = (status) => {
     const configs = {
-      PENDING: { label: "در انتظار بررسی", bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-600 dark:text-amber-400", icon: Clock },
-      APPROVED: { label: "تایید شده", bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-600 dark:text-green-400", icon: CheckCircle },
-      REJECTED: { label: "رد شده", bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-600 dark:text-red-400", icon: XCircle }
+      pending: { label: "در انتظار بررسی", bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-600 dark:text-amber-400", icon: Clock },
+      approved: { label: "تایید شده", bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-600 dark:text-green-400", icon: CheckCircle },
+      rejected: { label: "رد شده", bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-600 dark:text-red-400", icon: XCircle }
     };
-    return configs[status] || configs.PENDING;
+    return configs[status] || configs.pending;
   };
 
   if (error) return <div className="text-center py-10 text-error">خطا در دریافت درخواست‌ها</div>;
   if (!requests) return <div className="text-center py-10 text-foreground-muted">در حال بارگذاری...</div>;
 
-  const pendingCount = requests.filter(r => r.status === 'PENDING').length;
+  const pendingCount = requests.filter(r => r.status === 'pending').length;
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -141,8 +228,8 @@ export default function AdminWalletRequests() {
                           <User className="w-5 h-5 text-foreground-muted" />
                         </div>
                         <div>
-                          <p className="font-bold text-foreground">{req.user?.full_name || "نام نامشخص"}</p>
-                          <p className="text-xs text-foreground-muted">{req.user?.mobile}</p>
+                          <p className="font-bold text-foreground">{req.user_details?.full_name || req.user?.full_name || "نام نامشخص"}</p>
+                          <p className="text-xs text-foreground-muted">{req.user_details?.mobile || req.user?.mobile}</p>
                         </div>
                       </div>
                     </td>
@@ -171,7 +258,7 @@ export default function AdminWalletRequests() {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        {req.status === 'PENDING' && (
+                        {req.status === 'pending' && (
                           <>
                             <button
                               onClick={() => handleApprove(req.id)}
@@ -220,10 +307,10 @@ export default function AdminWalletRequests() {
                   <User className="w-6 h-6 text-foreground-muted" />
                 </div>
                 <div>
-                  <p className="font-bold text-foreground">{selectedRequest.user?.full_name || "نام نامشخص"}</p>
-                  <p className="text-sm text-foreground-muted">{selectedRequest.user?.mobile}</p>
+                  <p className="font-bold text-foreground">{selectedRequest.user_details?.full_name || selectedRequest.user?.full_name || "نام نامشخص"}</p>
+                  <p className="text-sm text-foreground-muted">{selectedRequest.user_details?.mobile || selectedRequest.user?.mobile}</p>
                   <p className="text-xs text-foreground-muted mt-1">
-                    موجودی فعلی: <span className="font-bold text-primary">{formatPrice(selectedRequest.user?.wallet_balance || 0)} تومان</span>
+                    موجودی فعلی: <span className="font-bold text-primary">{formatPrice(selectedRequest.user_details?.wallet_balance || selectedRequest.user?.wallet_balance || 0)} تومان</span>
                   </p>
                 </div>
               </div>
@@ -258,7 +345,7 @@ export default function AdminWalletRequests() {
                 </div>
               )}
 
-              {selectedRequest.status === 'PENDING' && (
+              {selectedRequest.status === 'pending' && (
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">توضیحات ادمین (اختیاری)</label>
                   <textarea
@@ -278,7 +365,7 @@ export default function AdminWalletRequests() {
                 </div>
               )}
 
-              {selectedRequest.status === 'PENDING' && (
+              {selectedRequest.status === 'pending' && (
                 <div className="flex gap-3 pt-4">
                   <button
                     onClick={() => handleApprove(selectedRequest.id)}

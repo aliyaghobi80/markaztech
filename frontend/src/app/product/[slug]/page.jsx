@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import api from "@/lib/axios";
-import { formatPrice, calculateDiscount } from "@/lib/utils";
+import { formatPrice, calculateDiscount, getImageUrl } from "@/lib/utils";
 import { 
   ShoppingCart, ShieldCheck, Zap, Clock, Star, 
   CheckCircle2, AlertCircle, Heart, Share2, Headphones 
@@ -83,19 +83,46 @@ export default function ProductPage() {
           <div className="lg:col-span-4">
             <div className="sticky top-24 space-y-4">
                 <div className="relative aspect-square rounded-3xl overflow-hidden bg-secondary border border-border shadow-sm group">
-                    <img 
-                    src={product.main_image} 
-                    alt={product.title} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
+                    {product.main_image ? (
+                        <img 
+                            src={getImageUrl(product.main_image)} 
+                            alt={product.title} 
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            onError={(e) => {
+                                console.log('Image load error:', e.target.src);
+                                e.target.src = '/placeholder-product.jpg';
+                                e.target.onerror = null;
+                            }}
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-secondary">
+                            <span className="text-foreground-muted text-lg">بدون تصویر</span>
+                        </div>
+                    )}
                     
                     {/* نشان‌های روی عکس */}
                     <div className="absolute top-4 right-4 flex flex-col gap-2">
-                        {product.discount_price && (
-                            <span className="bg-red-500 text-white text-sm font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-red-500/20">
-                                {calculateDiscount(product.price, product.discount_price)}% تخفیف
-                            </span>
-                        )}
+                        {(() => {
+                            const finalPrice = product.discount_price !== null && product.discount_price !== undefined 
+                                ? product.discount_price 
+                                : product.price;
+                            const isFree = Number(finalPrice) === 0;
+                            
+                            if (isFree) {
+                                return (
+                                    <span className="bg-success text-white text-sm font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-success/20">
+                                        رایگان
+                                    </span>
+                                );
+                            } else if (product.discount_price && product.discount_price < product.price) {
+                                return (
+                                    <span className="bg-red-500 text-white text-sm font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-red-500/20">
+                                        {calculateDiscount(product.price, product.discount_price)}% تخفیف
+                                    </span>
+                                );
+                            }
+                            return null;
+                        })()}
                     </div>
                 </div>
                 
@@ -137,7 +164,7 @@ export default function ProductPage() {
                 </h1>
                 
                 {/* Stock Status */}
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-6">
                     {isOutOfStock ? (
                         <span className="bg-destructive/10 text-destructive px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" />
@@ -156,9 +183,49 @@ export default function ProductPage() {
                     )}
                 </div>
 
-                <p className="text-foreground-muted leading-relaxed line-clamp-3">
-                    این محصول یکی از بهترین گزینه‌ها برای حرفه‌ای‌هاست. با خرید این اکانت، به تمام قابلیت‌های پریمیوم دسترسی خواهید داشت.
-                </p>
+                {/* File Information - Only show for file products */}
+                {product.product_type === 'file' && (
+                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 mb-6">
+                        <h3 className="font-bold text-blue-800 dark:text-blue-200 mb-2 text-sm flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                            فایل قابل دانلود
+                        </h3>
+                        <div className="space-y-2 text-sm">
+                            {product.file_type && (
+                                <div className="flex items-center justify-between">
+                                    <span className="text-blue-700 dark:text-blue-300">نوع فایل:</span>
+                                    <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-md font-medium uppercase">
+                                        {product.file_type}
+                                    </span>
+                                </div>
+                            )}
+                            {product.file_size && (
+                                <div className="flex items-center justify-between">
+                                    <span className="text-blue-700 dark:text-blue-300">حجم فایل:</span>
+                                    <span className="text-blue-800 dark:text-blue-200 font-medium">
+                                        {product.file_size}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                                💡 پس از خرید و تایید سفارش، فایل برای دانلود در دسترس خواهد بود
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* توضیحات محصول */}
+            <div className="bg-secondary/50 rounded-2xl p-4 md:p-6">
+                 <h3 className="font-bold text-foreground mb-3 flex items-center gap-2 justify-start">
+                    <Clock className="w-5 h-5 text-primary" />
+                    توضیحات
+                </h3>
+                <div className="text-foreground-muted text-sm leading-8 whitespace-pre-line text-right">
+                    {product.description || 'توضیحات محصول موجود نیست.'}
+                </div>
             </div>
 
             {/* ویژگی‌های کلیدی */}
@@ -180,17 +247,6 @@ export default function ProductPage() {
                 </ul>
             </div>
 
-            {/* توضیحات کامل */}
-            <div className="bg-secondary/50 rounded-2xl p-4 md:p-6">
-                 <h3 className="font-bold text-foreground mb-3 flex items-center gap-2 justify-start">
-                    <Clock className="w-5 h-5 text-primary" />
-                    توضیحات تکمیلی
-                </h3>
-                <div className="text-foreground-muted text-sm leading-8 whitespace-pre-line text-right">
-                    {product.description}
-                </div>
-            </div>
-
             {/* بخش نظرات */}
             <CommentsSection 
               productId={product.id} 
@@ -205,20 +261,39 @@ export default function ProductPage() {
                 
                 {/* قیمت */}
                 <div className="mb-6">
-                    <div className="flex items-center justify-between mb-1 text-foreground-muted text-sm">
-                        <span>قیمت اصلی:</span>
-                        {product.discount_price && (
-                            <span className="line-through decoration-red-400 decoration-2">
-                                {formatPrice(product.price)}
-                            </span>
-                        )}
-                    </div>
-                    <div className="flex items-center justify-end gap-2">
-                        <span className="text-4xl font-black text-foreground">
-                            {formatPrice(product.discount_price || product.price)}
-                        </span>
-                        <span className="text-sm font-medium text-foreground-muted mt-2">تومان</span>
-                    </div>
+                    {(() => {
+                        const finalPrice = product.discount_price !== null && product.discount_price !== undefined 
+                            ? product.discount_price 
+                            : product.price;
+                        const isFree = finalPrice === 0 || finalPrice === '0' || Number(finalPrice) === 0;
+                        
+                        return (
+                            <>
+                                <div className="flex items-center justify-between mb-1 text-foreground-muted text-sm">
+                                    <span>قیمت اصلی:</span>
+                                    {product.discount_price !== null && product.discount_price !== undefined && product.price > 0 && (
+                                        <span className="line-through decoration-red-400 decoration-2">
+                                            {formatPrice(product.price)}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex items-center justify-end gap-2">
+                                    {isFree ? (
+                                        <span className="text-4xl font-black text-success">
+                                            رایگان
+                                        </span>
+                                    ) : (
+                                        <>
+                                            <span className="text-4xl font-black text-foreground">
+                                                {formatPrice(finalPrice)}
+                                            </span>
+                                            <span className="text-sm font-medium text-foreground-muted mt-2">تومان</span>
+                                        </>
+                                    )}
+                                </div>
+                            </>
+                        );
+                    })()}
                 </div>
 
                   {/* دکمه خرید */}
@@ -250,6 +325,39 @@ export default function ProductPage() {
                           </>
                       )}
                   </button>
+
+                  {/* Download Button for purchased file products */}
+                  {product.product_type === 'file' && product.can_download && (
+                      <button 
+                          onClick={async () => {
+                              try {
+                                  const response = await api.get(`/products/${product.slug}/download/`, {
+                                      responseType: 'blob'
+                                  });
+                                  
+                                  // Create download link
+                                  const url = window.URL.createObjectURL(new Blob([response.data]));
+                                  const link = document.createElement('a');
+                                  link.href = url;
+                                  link.setAttribute('download', `${product.title}.${product.file_type || 'file'}`);
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  link.remove();
+                                  window.URL.revokeObjectURL(url);
+                                  
+                                  toast.success("دانلود شروع شد");
+                              } catch (error) {
+                                  toast.error("خطا در دانلود فایل");
+                              }
+                          }}
+                          className="w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-all flex items-center justify-center gap-2 mb-4 bg-green-600 hover:bg-green-700 text-white shadow-green-600/25 hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                          دانلود فایل
+                      </button>
+                  )}
 
                 {/* سیگنال‌های اعتماد */}
                 <div className="grid grid-cols-2 gap-3">

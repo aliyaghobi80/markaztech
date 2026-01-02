@@ -145,6 +145,61 @@
     @apply bg-background-secondary;
   }
 
+  /* استایل جدول‌ها در ویرایشگر */
+  .ProseMirror table {
+    border-collapse: collapse;
+    border: 1px solid hsl(var(--border));
+    width: 100%;
+    margin: 16px 0;
+    table-layout: auto;
+    background: hsl(var(--background));
+  }
+  
+  .ProseMirror th {
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--secondary));
+    padding: 12px 8px;
+    font-weight: bold;
+    text-align: center;
+    vertical-align: middle;
+    min-width: 80px;
+  }
+  
+  .ProseMirror td {
+    border: 1px solid hsl(var(--border));
+    padding: 12px 8px;
+    vertical-align: top;
+    min-height: 1em;
+    min-width: 80px;
+  }
+  
+  .ProseMirror table p {
+    margin: 0;
+  }
+  
+  /* جدول‌ها در حالت نمایش */
+  .prose table {
+    border-collapse: collapse;
+    border: 1px solid hsl(var(--border));
+    width: 100%;
+    margin: 16px 0;
+    background: hsl(var(--background));
+  }
+  
+  .prose th {
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--secondary));
+    padding: 12px 8px;
+    font-weight: bold;
+    text-align: center;
+  }
+  
+  .prose td {
+    border: 1px solid hsl(var(--border));
+    padding: 12px 8px;
+    vertical-align: top;
+  }
+
   /* اسکرول‌بار سفارشی */
   .custom-scrollbar::-webkit-scrollbar {
     width: 5px;

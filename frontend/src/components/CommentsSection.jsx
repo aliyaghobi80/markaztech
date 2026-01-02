@@ -24,7 +24,7 @@ export default function CommentsSection({ productId, comments: initialComments =
     if (!productId) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.hostname}:8000/ws/products/${productId}/comments/`;
+    const wsUrl = `${protocol}//${window.location.hostname}:8001/ws/products/${productId}/comments/`;
     const socket = new WebSocket(wsUrl);
 
     socket.onmessage = (event) => {

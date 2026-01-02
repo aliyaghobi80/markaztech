@@ -69,13 +69,26 @@ export function CartProvider({ children }) {
   // محاسبه قیمت کل با useMemo برای بهینه‌سازی
   const totalPrice = useMemo(() => {
     return cart.reduce((total, item) => {
-      const price = item.discount_price || item.price;
-      return total + price * item.quantity;
+      const finalPrice = item.discount_price !== null && item.discount_price !== undefined 
+        ? item.discount_price 
+        : item.price;
+      return total + (finalPrice * item.quantity);
     }, 0);
   }, [cart]);
 
+  // بررسی اینکه آیا همه محصولات رایگان هستند
+  const isAllFree = useMemo(() => {
+    if (cart.length === 0) return false;
+    return cart.every(item => {
+      const finalPrice = item.discount_price !== null && item.discount_price !== undefined 
+        ? item.discount_price 
+        : item.price;
+      return finalPrice === 0;
+    });
+  }, [cart]);
+
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, totalPrice }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, totalPrice, isAllFree }}>
       {children}
     </CartContext.Provider>
   );

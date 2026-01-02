@@ -43,7 +43,7 @@ export default function ProfilePage() {
         email: user.email || "",
         birth_date: user.birth_date || "",
       });
-      setAvatarPreview(user.avatar || null);
+      setAvatarPreview(user.avatar_url || null);
     }
   }, [user]);
 
@@ -71,8 +71,16 @@ export default function ProfilePage() {
       
       // اضافه کردن فیلدهای متنی
       Object.keys(formData).forEach(key => {
-        if (formData[key]) {
-          submitData.append(key, formData[key]);
+        const value = formData[key];
+        if (value !== null && value !== undefined && value !== '') {
+          let processedValue = value;
+          
+          // تبدیل تاریخ به فرمت مناسب
+          if (key === 'birth_date' && typeof value === 'object' && value.format) {
+            processedValue = value.format('YYYY-MM-DD');
+          }
+          
+          submitData.append(key, processedValue);
         }
       });
 
@@ -81,11 +89,13 @@ export default function ProfilePage() {
         submitData.append('avatar', avatarFile);
       }
 
-      const response = await api.patch("/users/profile/", submitData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      console.log('Submitting profile data:');
+      for (let [key, value] of submitData.entries()) {
+        console.log(key, ':', value);
+      }
+
+      const response = await api.patch("/users/profile/", submitData);
+      // Note: Removed Content-Type header to let browser set it automatically for FormData
 
       toast.success("پروفایل با موفقیت بروزرسانی شد");
       
@@ -98,7 +108,25 @@ export default function ProfilePage() {
       }, 1500);
     } catch (error) {
       console.error("Profile update error:", error);
-      const errorMsg = error.response?.data?.detail || "خطا در بروزرسانی پروفایل";
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      
+      let errorMsg = "خطا در بروزرسانی پروفایل";
+      
+      if (error.response?.data) {
+        if (typeof error.response.data === 'object') {
+          // نمایش اولین خطای validation
+          const firstError = Object.values(error.response.data)[0];
+          if (Array.isArray(firstError)) {
+            errorMsg = firstError[0];
+          } else if (typeof firstError === 'string') {
+            errorMsg = firstError;
+          }
+        } else if (error.response.data.detail) {
+          errorMsg = error.response.data.detail;
+        }
+      }
+      
       toast.error(errorMsg);
     } finally {
       setIsLoading(false);
@@ -139,8 +167,8 @@ export default function ProfilePage() {
           <div className="bg-secondary/30 rounded-xl p-6 mb-8">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center overflow-hidden border-2 border-border">
-                {user.avatar ? (
-                  <img src={user.avatar} alt="پروفایل فعلی" className="w-full h-full object-cover" />
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt="پروفایل فعلی" className="w-full h-full object-cover" />
                 ) : (
                   <User className="w-8 h-8 text-foreground-muted" />
                 )}
@@ -273,6 +301,8 @@ export default function ProfilePage() {
                       containerClassName="w-full"
                       value={formData.birth_date}
                       onChange={(date) => setFormData({ ...formData, birth_date: date })}
+                      placeholder="تاریخ تولد خود را انتخاب کنید"
+                      format="YYYY/MM/DD"
                     />
                   </div>
                 </div>

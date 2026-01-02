@@ -1,21 +1,23 @@
 // مسیر: src/app/dashboard/page.jsx
 "use client";
 
-import { useEffect, useState } from "react";
-import useSWR, { mutate as globalMutate } from "swr";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import useSWR from "swr";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/axios";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
 import { getAvatarUrl } from "@/lib/avatar";
 import toast from "react-hot-toast";
 import { 
   User, LogOut, Wallet, ShoppingBag, 
   CreditCard, Package, Users, MessageSquare,
-  Eye, Calendar, ArrowLeft, Clock, CheckCircle, XCircle,
-  Plus, Upload, Loader2, BarChart3, Heart, Headphones, DollarSign
+  Calendar, ArrowLeft, Clock, CheckCircle, XCircle,
+  Upload, BarChart3, Heart, Headphones, DollarSign,
+  Menu, ChevronRight
 } from "lucide-react";
 import Link from "next/link";
+import { useGlobalWebSocket } from "@/lib/globalWebSocket";
 
 // ایمپورت کامپوننت‌های ادمین
 import AdminProducts from "@/components/admin/AdminProducts";
@@ -24,20 +26,31 @@ import AdminUsers from "@/components/admin/AdminUsers";
 import AdminWalletRequests from "@/components/admin/AdminWalletRequests";
 import AdminComments from "@/components/admin/AdminComments";
 import AdminTickets from "@/components/admin/AdminTickets";
+import AdminChat from "@/components/admin/AdminChat";
 
 // ایمپورت کامپوننت‌های کاربر
 import UserFavorites from "@/components/UserFavorites";
 import UserComments from "@/components/UserComments";
 import UserTickets from "@/components/UserTickets";
+import UserDownloads from "@/components/UserDownloads";
 
-
-export default function DashboardPage() {
+function DashboardContent() {
   const { user, logout, loading: authLoading, refreshUser } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   const [activeTab, setActiveTab] = useState("my-orders");
   const [userOrders, setUserOrders] = useState([]);
   const [adminStats, setAdminStats] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Handle URL parameters for tab switching
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (user) {
@@ -72,6 +85,7 @@ export default function DashboardPage() {
       { id: "my-orders", label: "سفارش‌های من", icon: ShoppingBag, adminOnly: false },
       { id: "wallet-charge", label: "افزایش موجودی", icon: Wallet, adminOnly: false },
       { id: "my-favorites", label: "علاقه‌مندی‌ها", icon: Heart, adminOnly: false },
+      { id: "my-downloads", label: "فایل‌های من", icon: Package, adminOnly: false },
       { id: "my-comments", label: "نظرات من", icon: MessageSquare, adminOnly: false },
       { id: "my-tickets", label: "تیکت‌های پشتیبانی", icon: Headphones, adminOnly: false },
       
@@ -81,95 +95,28 @@ export default function DashboardPage() {
       { id: "admin-users", label: "مدیریت کاربران", icon: Users, adminOnly: true },
       { id: "admin-comments", label: "مدیریت نظرات", icon: MessageSquare, adminOnly: true },
       { id: "admin-tickets", label: "مدیریت تیکت‌ها", icon: Headphones, adminOnly: true },
+      { id: "admin-chat", label: "چت پشتیبانی", icon: MessageSquare, adminOnly: true },
     ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20 py-8 transition-colors duration-300">
-      <div className="container mx-auto px-4">
-        
-        {/* Welcome Header */}
-        <div className="mb-8">
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-black text-foreground mb-2 text-center md:text-right">
-                  خوش آمدید، {user.full_name || "کاربر عزیز"}! 👋
-                </h1>
-                <p className="text-foreground-muted text-center md:text-right">
-                  {isAdmin ? "پنل مدیریت سیستم مرکز تک" : "داشبورد شخصی شما در مرکز تک"}
-                </p>
-              </div>
-              <div className="text-left w-full md:w-auto">
-                <div className="bg-primary/10 px-4 py-2 rounded-xl border border-primary/20 flex flex-col items-center md:items-start">
-                  <p className="text-xs text-primary font-medium">موجودی حساب</p>
-                  <p className="text-lg font-black text-primary">{formatPrice(user.wallet_balance || 0)} تومان</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20 transition-colors duration-300">
+      
+      {/* Sidebar Toggle Button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="fixed top-20 right-4 z-50 bg-primary text-primary-foreground p-2 rounded-lg shadow-lg hover:bg-primary/90 transition-all duration-300"
+      >
+        {sidebarOpen ? <ChevronRight className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+      </button>
 
-        {/* Admin Statistics Section */}
-        {isAdmin && adminStats && (
-          <div className="mb-8">
-            <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-primary" />
-              آمار کلی سیستم
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center shrink-0">
-                    <DollarSign className="w-6 h-6 text-green-500" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] md:text-xs text-foreground-muted">فروش کل</p>
-                    <p className="text-sm md:text-lg font-black text-green-500 truncate">{formatPrice(adminStats.total_sales)}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
-                    <ShoppingBag className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] md:text-xs text-foreground-muted">سفارشات</p>
-                    <p className="text-sm md:text-lg font-black text-foreground">{adminStats.total_orders}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center shrink-0">
-                    <Users className="w-6 h-6 text-blue-500" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] md:text-xs text-foreground-muted">کاربران</p>
-                    <p className="text-sm md:text-lg font-black text-foreground">{adminStats.total_users}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center shrink-0">
-                    <Package className="w-6 h-6 text-purple-500" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] md:text-xs text-foreground-muted">محصولات</p>
-                    <p className="text-sm md:text-lg font-black text-foreground">{adminStats.active_products}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+      <div className="flex min-h-screen">
         
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          
-          {/* --- سایدبار --- */}
-          <div className="lg:col-span-1">
-            <div className="bg-card border border-border rounded-3xl p-6 lg:sticky lg:top-24 shadow-theme-lg backdrop-blur-sm">
+        {/* Collapsible Sidebar */}
+        <div className={`fixed right-0 top-16 h-[calc(100vh-4rem)] bg-card border-l border-border shadow-2xl z-40 transition-all duration-300 overflow-hidden ${
+          sidebarOpen ? 'w-80 translate-x-0 opacity-100 visible' : 'w-0 translate-x-full opacity-0 invisible'
+        }`}>
+          {sidebarOpen && (
+            <div className="h-full overflow-y-auto p-6 pt-8 w-80">
               
               {/* پروفایل */}
               <div className="text-center mb-6">
@@ -209,77 +156,178 @@ export default function DashboardPage() {
                 </div>
               </Link>
 
-              {/* دکمه‌های منو - ریسپانسیو (Scroll horizontal on mobile) */}
-              <nav className="flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
+              {/* دکمه‌های منو */}
+              <nav className="flex flex-col gap-1">
                 {menuItems.map((item) => {
                     if (item.adminOnly && !isAdmin) return null;
 
                     return (
                         <button
                             key={item.id}
-                            onClick={() => setActiveTab(item.id)}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all shrink-0 lg:w-full ${
+                            onClick={() => {
+                              setActiveTab(item.id);
+                              // روی موبایل sidebar رو ببند
+                              if (window.innerWidth < 1024) {
+                                setSidebarOpen(false);
+                              }
+                            }}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all w-full ${
                                 activeTab === item.id 
                                 ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" 
                                 : "text-foreground-muted hover:bg-secondary hover:text-foreground"
                             }`}
                         >
                             <item.icon className="w-5 h-5" />
-                            <span className="text-sm whitespace-nowrap">{item.label}</span>
+                            <span className="text-sm">{item.label}</span>
                         </button>
                     );
                 })}
 
                 <button 
                     onClick={logout}
-                    className="flex items-center gap-3 px-4 py-3 text-error hover:bg-error/10 rounded-xl font-medium transition-colors lg:mt-4 lg:border-t border-border lg:pt-4 shrink-0"
+                    className="flex items-center gap-3 px-4 py-3 text-error hover:bg-error/10 rounded-xl font-medium transition-colors mt-4 border-t border-border pt-4 w-full"
                 >
                     <LogOut className="w-5 h-5" />
-                    <span className="text-sm whitespace-nowrap">خروج</span>
+                    <span className="text-sm">خروج</span>
                 </button>
               </nav>
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* --- محتوای اصلی --- */}
-          <div className="lg:col-span-3">
+        {/* Sidebar Overlay for mobile */}
+        {sidebarOpen && (
+          <div 
+            className="lg:hidden fixed inset-0 bg-black/50 z-30 transition-opacity duration-300"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Main Content */}
+        <div className={`flex-1 transition-all duration-300 ${
+          sidebarOpen ? 'lg:mr-80' : 'mr-0'
+        } min-h-screen`}>
+          <div className="container mx-auto px-4 py-8 h-full">
             
-            {activeTab === 'my-orders' && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="flex items-center justify-between mb-6">
-                        <h1 className="text-2xl font-black text-foreground flex items-center gap-2">
-                            <span className="w-2 h-8 bg-primary rounded-full"></span>
-                            سفارش‌های من
-                        </h1>
+            {/* Welcome Header */}
+            <div className="mb-8">
+              <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div>
+                    <h1 className="text-2xl font-black text-foreground mb-2 text-center md:text-right">
+                      خوش آمدید، {user.full_name || "کاربر عزیز"}! 👋
+                    </h1>
+                    <p className="text-foreground-muted text-center md:text-right">
+                      {isAdmin ? "پنل مدیریت سیستم مرکز تک" : "داشبورد شخصی شما در مرکز تک"}
+                    </p>
+                  </div>
+                  <div className="text-left w-full md:w-auto">
+                    <div className="bg-primary/10 px-4 py-2 rounded-xl border border-primary/20 flex flex-col items-center md:items-start">
+                      <p className="text-xs text-primary font-medium">موجودی حساب</p>
+                      <p className="text-lg font-black text-primary">{formatPrice(user.wallet_balance || 0)} تومان</p>
                     </div>
-                    
-                    {userOrders.length > 0 ? (
-                        <div className="space-y-6">
-                            {userOrders.map(order => (
-                                <OrderListItem key={order.id} order={order} />
-                            ))}
-                        </div>
-                    ) : (
-                        <EmptyState icon={ShoppingBag} title="هنوز سفارشی ثبت نکرده‌اید" description="برای شروع خرید به فروشگاه بروید" />
-                    )}
+                  </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Admin Statistics Section */}
+            {isAdmin && adminStats && (
+              <div className="mb-8">
+                <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-primary" />
+                  آمار کلی سیستم
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center shrink-0">
+                        <DollarSign className="w-6 h-6 text-green-500" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] md:text-xs text-foreground-muted">فروش کل</p>
+                        <p className="text-sm md:text-lg font-black text-green-500 truncate">{formatPrice(adminStats.total_sales)}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+                        <ShoppingBag className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] md:text-xs text-foreground-muted">سفارشات</p>
+                        <p className="text-sm md:text-lg font-black text-foreground">{adminStats.total_orders}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center shrink-0">
+                        <Users className="w-6 h-6 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] md:text-xs text-foreground-muted">کاربران</p>
+                        <p className="text-sm md:text-lg font-black text-foreground">{adminStats.total_users}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center shrink-0">
+                        <Package className="w-6 h-6 text-purple-500" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] md:text-xs text-foreground-muted">محصولات</p>
+                        <p className="text-sm md:text-lg font-black text-foreground">{adminStats.active_products}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
-
-            {activeTab === 'wallet-charge' && <WalletChargeSection user={user} />}
             
-            {activeTab === 'my-favorites' && <UserFavorites />}
-            {activeTab === 'my-comments' && <UserComments />}
-            {activeTab === 'my-tickets' && <UserTickets />}
+            {/* Content Area */}
+            <div className="h-[calc(100vh-200px)] overflow-y-auto">
+              
+              {activeTab === 'my-orders' && (
+                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      <div className="flex items-center justify-between mb-6">
+                          <h1 className="text-2xl font-black text-foreground flex items-center gap-2">
+                              <span className="w-2 h-8 bg-primary rounded-full"></span>
+                              سفارش‌های من
+                          </h1>
+                      </div>
+                      
+                      {userOrders.length > 0 ? (
+                          <div className="space-y-6">
+                              {userOrders.map(order => (
+                                  <OrderListItem key={order.id} order={order} />
+                              ))}
+                          </div>
+                      ) : (
+                          <EmptyState icon={ShoppingBag} title="هنوز سفارشی ثبت نکرده‌اید" description="برای شروع خرید به فروشگاه بروید" />
+                      )}
+                  </div>
+              )}
 
-            {activeTab === 'admin-products' && isAdmin && <AdminProducts />}
-            {activeTab === 'admin-orders' && isAdmin && <AdminOrders />}
-            {activeTab === 'admin-wallet-requests' && isAdmin && <AdminWalletRequests />}
-            {activeTab === 'admin-users' && isAdmin && <AdminUsers />}
-            {activeTab === 'admin-comments' && isAdmin && <AdminComments />}
-            {activeTab === 'admin-tickets' && isAdmin && <AdminTickets />}
+              {activeTab === 'wallet-charge' && <WalletChargeSection user={user} />}
+              
+              {activeTab === 'my-favorites' && <UserFavorites />}
+              {activeTab === 'my-downloads' && <UserDownloads />}
+              {activeTab === 'my-comments' && <UserComments />}
+              {activeTab === 'my-tickets' && <UserTickets />}
 
+              {activeTab === 'admin-products' && isAdmin && <AdminProducts />}
+              {activeTab === 'admin-orders' && isAdmin && <AdminOrders />}
+              {activeTab === 'admin-wallet-requests' && isAdmin && <AdminWalletRequests />}
+              {activeTab === 'admin-users' && isAdmin && <AdminUsers />}
+              {activeTab === 'admin-comments' && isAdmin && <AdminComments />}
+              {activeTab === 'admin-tickets' && isAdmin && <AdminTickets />}
+              {activeTab === 'admin-chat' && isAdmin && <AdminChat />}
+
+            </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -355,17 +403,50 @@ function WalletChargeSection({ user }) {
   const [loading, setLoading] = useState(false);
 
   const fetcher = (url) => api.get(url).then((res) => res.data.results || res.data);
-  const { data: myRequests = [], error: requestsError, mutate } = useSWR("/users/wallet-requests/", fetcher);
+  const { data: myRequests = [], mutate } = useSWR("/users/wallet-requests/", fetcher);
 
   const bankCardNumber = "6037997310266797";
   const bankCardOwner = "علی یعقوبی - بانک ملی";
 
-  const predefinedAmounts = [50000, 100000, 200000, 500000, 1000000];
+  // مبالغ پیش‌فرض
+  const presetAmounts = [
+    { label: "20 هزار تومان", value: 20000 },
+    { label: "50 هزار تومان", value: 50000 },
+    { label: "100 هزار تومان", value: 100000 },
+    { label: "200 هزار تومان", value: 200000 },
+    { label: "500 هزار تومان", value: 500000 },
+    { label: "1 میلیون تومان", value: 1000000 }
+  ];
+
+  // WebSocket listener for real-time updates
+  const handleWebSocketMessage = useCallback((data) => {
+    if (data.type === 'wallet_request_update') {
+      mutate(); // Refresh the requests list
+      
+      // Dispatch window event for backward compatibility
+      window.dispatchEvent(new CustomEvent('wallet_request_status_changed', {
+        detail: { 
+          request_id: data.request_id, 
+          status: data.status,
+          admin_note: data.admin_note
+        }
+      }));
+      
+      // Show toast notification
+      if (data.status === 'approved') {
+        toast.success("درخواست شارژ تایید شد!");
+      } else if (data.status === 'rejected') {
+        toast.error("درخواست شارژ رد شد!");
+      }
+    }
+  }, [mutate]);
+
+  useGlobalWebSocket('wallet-charge-section', handleWebSocketMessage);
 
   useEffect(() => {
     const handleStatusChange = (event) => {
       mutate();
-      if (event.detail.status === 'APPROVED') {
+      if (event.detail.status === 'approved') {
         toast.success("درخواست شارژ تایید شد!");
       }
     };
@@ -383,14 +464,34 @@ function WalletChargeSection({ user }) {
     }
   };
 
+  // فرمت‌دهی مبلغ با کاما
+  const formatAmountInput = (value) => {
+    // حذف همه کاراکترهای غیرعددی
+    const numericValue = value.replace(/[^\d]/g, '');
+    // اضافه کردن کاما
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  };
+
+  const handleAmountChange = (e) => {
+    const formattedValue = formatAmountInput(e.target.value);
+    setAmount(formattedValue);
+  };
+
+  const handlePresetAmount = (value) => {
+    setAmount(formatAmountInput(value.toString()));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!amount || !receiptFile) return toast.error("تکمیل تمام فیلدها الزامی است");
     
+    // تبدیل مبلغ به عدد (حذف کاما)
+    const numericAmount = amount.replace(/,/g, '');
+    
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append("amount", amount);
+      formData.append("amount", numericAmount);
       formData.append("receipt_image", receiptFile);
       await api.post("/users/wallet-requests/", formData);
       toast.success("درخواست با موفقیت ثبت شد");
@@ -421,37 +522,111 @@ function WalletChargeSection({ user }) {
                 </div>
                 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <input 
-                        type="number" value={amount} onChange={(e) => setAmount(e.target.value)} 
-                        placeholder="مبلغ (تومان)" className="w-full bg-secondary rounded-xl p-3 text-sm outline-none" 
-                    />
-                    <div className="relative border-2 border-dashed border-border rounded-xl p-4 text-center cursor-pointer hover:bg-secondary/30 transition-colors">
-                        <input type="file" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-                        {receiptPreview ? <img src={receiptPreview} className="h-32 mx-auto rounded-lg" /> : <div className="text-foreground-muted text-xs"><Upload className="mx-auto mb-2 opacity-50" /> آپلود رسید پرداخت</div>}
+                    {/* دکمه‌های مبلغ پیش‌فرض */}
+                    <div className="mb-4">
+                        <p className="text-sm font-medium text-foreground mb-3">انتخاب سریع مبلغ:</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            {presetAmounts.map((preset, index) => (
+                                <button
+                                    key={index}
+                                    type="button"
+                                    onClick={() => handlePresetAmount(preset.value)}
+                                    className="px-3 py-2 text-xs font-medium bg-secondary hover:bg-primary hover:text-primary-foreground border border-border rounded-lg transition-all"
+                                >
+                                    {preset.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                    <button disabled={loading} className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold transition-all hover:opacity-90 disabled:opacity-50">
+
+                    <div className="relative">
+                        <input 
+                            type="text" 
+                            value={amount} 
+                            onChange={handleAmountChange}
+                            placeholder="مبلغ (تومان)" 
+                            className="w-full bg-secondary rounded-xl p-3 text-sm outline-none border border-border focus:border-primary transition-colors" 
+                        />
+                        {amount && (
+                            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-xs text-foreground-muted">
+                                تومان
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div className="relative border-2 border-dashed border-border rounded-xl p-4 text-center cursor-pointer hover:bg-secondary/30 transition-colors">
+                        <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                        {receiptPreview ? (
+                            <div className="space-y-2">
+                                <img src={receiptPreview} className="h-32 mx-auto rounded-lg object-cover" />
+                                <p className="text-xs text-success">فیش آپلود شد</p>
+                            </div>
+                        ) : (
+                            <div className="text-foreground-muted text-xs">
+                                <Upload className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                <p>آپلود رسید پرداخت</p>
+                                <p className="text-[10px] mt-1 opacity-70">فرمت‌های مجاز: JPG, PNG</p>
+                            </div>
+                        )}
+                    </div>
+                    
+                    <button 
+                        type="submit"
+                        disabled={loading || !amount || !receiptFile} 
+                        className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                         {loading ? "در حال ارسال..." : "ثبت درخواست"}
                     </button>
                 </form>
             </div>
 
             <div className="bg-card border border-border rounded-2xl p-6">
-                <h3 className="font-bold mb-4">درخواست‌های اخیر</h3>
-                <div className="space-y-3">
-                    {myRequests.map(req => (
-                        <div key={req.id} className="p-3 bg-secondary/30 rounded-xl flex items-center justify-between border border-border/50">
-                            <div>
-                                <p className="text-sm font-bold">{formatPrice(req.amount)} تومان</p>
-                                <p className="text-[10px] text-foreground-muted">{new Date(req.created_at).toLocaleDateString('fa-IR')}</p>
+                <h3 className="font-bold mb-4 flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-primary" />
+                    درخواست‌های اخیر
+                </h3>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {myRequests.length > 0 ? myRequests.map(req => (
+                        <div key={req.id} className="p-4 bg-secondary/30 rounded-xl border border-border/50 hover:bg-secondary/50 transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                                <div>
+                                    <p className="text-sm font-bold">{formatPrice(req.amount)} تومان</p>
+                                    <p className="text-[10px] text-foreground-muted">{new Date(req.created_at).toLocaleDateString('fa-IR')}</p>
+                                </div>
+                                <span className={`text-[10px] font-bold px-3 py-1 rounded-full ${
+                                    req.status === 'approved' ? 'bg-success/10 text-success border border-success/20' : 
+                                    req.status === 'rejected' ? 'bg-error/10 text-error border border-error/20' : 
+                                    'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                                }`}>
+                                    {req.status === 'approved' ? 'تایید شده' : req.status === 'rejected' ? 'رد شده' : 'در انتظار'}
+                                </span>
                             </div>
-                            <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${req.status === 'APPROVED' ? 'bg-success/10 text-success' : req.status === 'REJECTED' ? 'bg-error/10 text-error' : 'bg-amber-500/10 text-amber-500'}`}>
-                                {req.status === 'APPROVED' ? 'تایید شده' : req.status === 'REJECTED' ? 'رد شده' : 'در انتظار'}
-                            </span>
+                            {req.admin_note && (
+                                <div className="mt-2 p-2 bg-card rounded-lg border border-border">
+                                    <p className="text-[10px] text-foreground-muted mb-1">یادداشت ادمین:</p>
+                                    <p className="text-xs text-foreground">{req.admin_note}</p>
+                                </div>
+                            )}
                         </div>
-                    ))}
+                    )) : (
+                        <div className="text-center py-8 text-foreground-muted">
+                            <Wallet className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                            <p className="text-sm">هنوز درخواستی ثبت نکرده‌اید</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+    </div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }

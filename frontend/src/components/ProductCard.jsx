@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, calculateDiscount } from "@/lib/utils";
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import toast from "react-hot-toast";
@@ -15,6 +15,11 @@ export default function ProductCard({ product }) {
   
   const isLowStock = product.stock > 0 && product.stock <= 3;
   const isOutOfStock = product.stock === 0;
+  
+  // Calculate if product is free and discount percentage
+  const isFree = (product.discount_price !== null && product.discount_price !== undefined && product.discount_price === 0) || product.price === 0;
+  const hasDiscount = product.discount_price !== null && product.discount_price !== undefined && product.discount_price > 0 && product.discount_price < product.price;
+  const discountPercentage = hasDiscount ? calculateDiscount(product.price, product.discount_price) : 0;
 
   return (
     <div className={`group relative bg-card text-card-foreground rounded-2xl border shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full overflow-hidden ${isLowStock ? 'border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)] animate-pulse-subtle' : 'border-border'}`}>
@@ -23,6 +28,33 @@ export default function ProductCard({ product }) {
         <Link href={`/product/${product.slug}`}>
             <img src={imageUrl} alt={product.title} className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${isOutOfStock ? 'grayscale opacity-60' : ''}`} />
         </Link>
+        
+        {/* Free Badge */}
+        {isFree && (
+          <div className="absolute top-3 left-3 z-30">
+            <div className="bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border-2 border-white/20">
+              رایگان
+            </div>
+          </div>
+        )}
+
+        {/* Discount Badge */}
+        {hasDiscount && (
+          <div className="absolute top-3 left-3 z-30">
+            <div className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border-2 border-white/20">
+              {discountPercentage}% تخفیف
+            </div>
+          </div>
+        )}
+
+        {/* File Type Badge */}
+        {product.product_type === 'file' && product.file_type && (
+          <div className="absolute top-3 right-14 z-30">
+            <div className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-lg border border-white/20 uppercase">
+              {product.file_type}
+            </div>
+          </div>
+        )}
         
         {/* Out of Stock Overlay */}
         {isOutOfStock && (
@@ -33,9 +65,19 @@ export default function ProductCard({ product }) {
           </div>
         )}
 
-        {/* Low Stock Badge */}
-        {isLowStock && !isOutOfStock && (
+        {/* Low Stock Badge - only show if not free and no discount */}
+        {isLowStock && !isOutOfStock && !isFree && !hasDiscount && (
           <div className="absolute top-3 left-3 z-30">
+            <div className="bg-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg animate-bounce">
+              <Zap className="w-3 h-3 fill-white" />
+              فقط {product.stock} عدد باقی مانده!
+            </div>
+          </div>
+        )}
+
+        {/* Low Stock Badge for products with free/discount - different position */}
+        {isLowStock && !isOutOfStock && (isFree || hasDiscount) && (
+          <div className="absolute bottom-3 left-3 z-30">
             <div className="bg-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg animate-bounce">
               <Zap className="w-3 h-3 fill-white" />
               فقط {product.stock} عدد باقی مانده!
@@ -76,18 +118,18 @@ export default function ProductCard({ product }) {
 
         <div className="mt-auto pt-4 border-t border-border flex items-end justify-between">
             <div className="flex flex-col text-right" dir="rtl">
-                {product.discount_price ? (
+                {product.discount_price !== null && product.discount_price !== undefined ? (
                     <>
                         <span className="text-xs text-foreground-muted line-through decoration-red-400">
                             {formatPrice(product.price)}
                         </span>
                         <span className={`text-lg font-black ${isOutOfStock ? 'text-foreground-muted' : 'text-foreground'}`}>
-                            {formatPrice(product.discount_price)} <span className="text-xs font-normal text-foreground-muted">تومان</span>
+                            {product.discount_price === 0 ? 'رایگان' : `${formatPrice(product.discount_price)} تومان`}
                         </span>
                     </>
                 ) : (
                     <span className={`text-lg font-black ${isOutOfStock ? 'text-foreground-muted' : 'text-foreground'}`}>
-                        {formatPrice(product.price)} <span className="text-xs font-normal text-foreground-muted">تومان</span>
+                        {product.price === 0 ? 'رایگان' : `${formatPrice(product.price)} تومان`}
                     </span>
                 )}
             </div>

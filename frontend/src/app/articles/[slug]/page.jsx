@@ -1,214 +1,290 @@
+// مسیر: src/app/articles/[slug]/page.jsx
 "use client";
 
-import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { 
-  Calendar, User, Clock, ChevronRight, 
-  Share2, Bookmark, MessageSquare, Loader2,
-  ArrowRight, BookOpen
-} from "lucide-react";
-import Link from "next/link";
+import useSWR from "swr";
 import api from "@/lib/axios";
-import ArticleComments from "@/components/ArticleComments";
+import Link from "next/link";
+import { 
+  Calendar, User, ArrowRight, Share2, Eye, 
+  MessageSquare, FileText, Clock 
+} from "lucide-react";
+import { getImageUrl } from "@/lib/utils";
+import toast from "react-hot-toast";
 
-export default function ArticleDetail() {
+const fetcher = (url) => api.get(url).then((res) => res.data);
+
+export default function ArticleDetailPage() {
   const { slug } = useParams();
-  const [article, setArticle] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data: article, error, isLoading } = useSWR(slug ? `/articles/${slug}/` : null, fetcher);
 
-  const fetchArticle = async () => {
-    try {
-      const response = await api.get(`/articles/${slug}/`);
-      setArticle(response.data);
-    } catch (error) {
-      console.error("Error fetching article:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchArticle();
-  }, [slug]);
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-foreground-muted text-sm font-medium">در حال بارگذاری مقاله...</span>
+        </div>
       </div>
     );
   }
 
-  if (!article) {
+  if (error || !article) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <h1 className="text-2xl font-black">مقاله مورد نظر یافت نشد</h1>
-        <Link href="/articles" className="text-primary hover:underline flex items-center gap-2">
-          <ArrowRight className="w-4 h-4" />
-          بازگشت به لیست مقالات
-        </Link>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <FileText className="w-16 h-16 text-red-500" />
+        <h1 className="text-2xl font-bold text-foreground">مقاله یافت نشد!</h1>
+        <Link href="/articles" className="text-primary hover:underline">بازگشت به لیست مقالات</Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header Image & Title */}
-      <div className="relative h-[40vh] md:h-[60vh] overflow-hidden">
-        <img 
-          src={article.image} 
-          alt={article.title} 
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent"></div>
-        
-        <div className="absolute bottom-0 left-0 right-0 p-4 md:p-12">
-          <div className="container mx-auto">
-            <div className="flex flex-wrap items-center gap-4 text-sm text-foreground-muted mb-6 bg-background/20 backdrop-blur-md w-fit px-4 py-2 rounded-2xl border border-white/10">
-              <div className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-primary" />
-                {article.created_at_human}
-              </div>
-              <div className="w-1 h-1 bg-border rounded-full hidden sm:block"></div>
-              <div className="flex items-center gap-1.5">
-                <User className="w-4 h-4 text-primary" />
-                {article.author_name}
-              </div>
-              <div className="w-1 h-1 bg-border rounded-full hidden sm:block"></div>
-              <div className="flex items-center gap-1.5">
-                <MessageSquare className="w-4 h-4 text-primary" />
-                {article.comments_count} دیدگاه
-              </div>
+    <div className="min-h-screen bg-background">
+      
+      {/* Article Header */}
+      <div className="bg-gradient-to-b from-primary/5 to-transparent">
+        <div className="container mx-auto px-4 py-8">
+          
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-2 text-sm text-foreground-muted mb-6">
+            <Link href="/" className="hover:text-primary transition-colors">خانه</Link>
+            <span>/</span>
+            <Link href="/articles" className="hover:text-primary transition-colors">مقالات</Link>
+            <span>/</span>
+            <span className="text-foreground font-medium">{article.title}</span>
+          </nav>
+
+          {/* Back Button */}
+          <Link 
+            href="/articles"
+            className="inline-flex items-center gap-2 text-foreground-muted hover:text-foreground transition-colors mb-6"
+          >
+            <ArrowRight className="w-4 h-4" />
+            بازگشت به مقالات
+          </Link>
+
+          {/* Article Title */}
+          <h1 className="text-3xl lg:text-4xl font-black text-foreground leading-tight mb-6">
+            {article.title}
+          </h1>
+
+          {/* Article Meta */}
+          <div className="flex flex-wrap items-center gap-6 text-foreground-muted mb-8">
+            <div className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              <span className="font-medium">{article.author_name || 'نامشخص'}</span>
             </div>
-            
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-foreground max-w-4xl leading-tight">
-              {article.title}
-            </h1>
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              <span>{article.created_at_human || new Date(article.created_at).toLocaleDateString('fa-IR')}</span>
+            </div>
+            {article.category && (
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+                  {article.category_name}
+                </span>
+              </div>
+            )}
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                toast.success("لینک مقاله کپی شد");
+              }}
+              className="flex items-center gap-2 hover:text-primary transition-colors"
+            >
+              <Share2 className="w-5 h-5" />
+              اشتراک گذاری
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 mt-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      {/* Article Content */}
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
           {/* Main Content */}
-          <article className="lg:col-span-8">
-            <div 
-              className="prose prose-lg dark:prose-invert max-w-none text-foreground-secondary leading-loose"
-              dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br />') }}
-            />
+          <div className="lg:col-span-8">
             
-              <div className="mt-12 space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-secondary/50 rounded-3xl border border-border gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center text-white overflow-hidden border-2 border-primary/20">
-                      {article.author_avatar ? (
-                        <img src={article.author_avatar} alt={article.author_name} className="w-full h-full object-cover" />
-                      ) : (
-                        <User className="w-8 h-8" />
-                      )}
+            {/* Article Image */}
+            {article.image && (
+              <div className="mb-8">
+                <img 
+                  src={getImageUrl(article.image)} 
+                  alt={article.title}
+                  className="w-full h-auto rounded-2xl shadow-lg"
+                />
+              </div>
+            )}
+
+            {/* Article Body */}
+            <div className="bg-card border border-border rounded-2xl p-6 lg:p-8">
+              <div 
+                className="prose prose-lg max-w-none text-foreground 
+                [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-4 [&_img]:shadow-lg 
+                [&_video]:max-w-full [&_video]:h-auto [&_video]:rounded-lg [&_video]:my-4 
+                [&_audio]:w-full [&_audio]:my-4
+                [&_.rounded-image]:rounded-full
+                [&_.shadow-image]:shadow-xl
+                [&_.bordered-image]:border-4 [&_.bordered-image]:border-primary [&_.bordered-image]:p-1
+                [&_table]:w-full [&_table]:border-collapse [&_table]:my-4
+                [&_th]:bg-secondary [&_th]:p-3 [&_th]:border [&_th]:border-border [&_th]:font-bold
+                [&_td]:p-3 [&_td]:border [&_td]:border-border
+                [&_blockquote]:border-r-4 [&_blockquote]:border-primary [&_blockquote]:bg-secondary/30 [&_blockquote]:p-4 [&_blockquote]:my-4 [&_blockquote]:italic
+                [&_code]:bg-secondary [&_code]:px-2 [&_code]:py-1 [&_code]:rounded [&_code]:text-sm [&_code]:font-mono
+                [&_pre]:bg-secondary [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-4
+                [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:my-6 [&_h1]:text-foreground
+                [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:my-5 [&_h2]:text-foreground
+                [&_h3]:text-xl [&_h3]:font-bold [&_h3]:my-4 [&_h3]:text-foreground
+                [&_h4]:text-lg [&_h4]:font-bold [&_h4]:my-3 [&_h4]:text-foreground
+                [&_h5]:text-base [&_h5]:font-bold [&_h5]:my-2 [&_h5]:text-foreground
+                [&_h6]:text-sm [&_h6]:font-bold [&_h6]:my-2 [&_h6]:text-foreground
+                [&_ul]:list-disc [&_ul]:list-inside [&_ul]:my-4 [&_ul]:space-y-2
+                [&_ol]:list-decimal [&_ol]:list-inside [&_ol]:my-4 [&_ol]:space-y-2
+                [&_li]:text-foreground
+                [&_a]:text-primary [&_a]:hover:underline
+                [&_strong]:font-bold [&_strong]:text-foreground
+                [&_em]:italic [&_em]:text-foreground"
+                style={{ direction: 'rtl', textAlign: 'right' }}
+                dangerouslySetInnerHTML={{ __html: article.content }}
+              />
+            </div>
+
+            {/* Author Note */}
+            {article.author_note && (
+              <div className="mt-8 bg-primary/5 border border-primary/20 rounded-2xl p-6">
+                <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                  <User className="w-5 h-5 text-primary" />
+                  نکته نویسنده
+                </h3>
+                <p className="text-foreground-muted leading-relaxed">
+                  {article.author_note}
+                </p>
+              </div>
+            )}
+
+            {/* Related Articles */}
+            {article.related_articles_detail && article.related_articles_detail.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-xl font-bold text-foreground mb-4">مقالات مرتبط</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {article.related_articles_detail.map((relatedArticle) => (
+                    <Link 
+                      key={relatedArticle.id}
+                      href={`/articles/${relatedArticle.slug}`}
+                      className="bg-card border border-border rounded-xl p-4 hover:shadow-lg transition-all group"
+                    >
+                      <div className="flex items-center gap-4">
+                        {relatedArticle.image ? (
+                          <img 
+                            src={getImageUrl(relatedArticle.image)} 
+                            alt={relatedArticle.title}
+                            className="w-16 h-16 object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center">
+                            <FileText className="w-8 h-8 text-primary" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                            {relatedArticle.title}
+                          </h4>
+                          <p className="text-sm text-foreground-muted">
+                            {new Date(relatedArticle.created_at).toLocaleDateString('fa-IR')}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="lg:col-span-4">
+            <div className="sticky top-24 space-y-6">
+              
+              {/* Author Info */}
+              <div className="bg-card border border-border rounded-2xl p-6">
+                <h3 className="font-bold text-foreground mb-4">درباره نویسنده</h3>
+                <div className="flex items-center gap-4 mb-4">
+                  {article.author_avatar ? (
+                    <img 
+                      src={getImageUrl(article.author_avatar)} 
+                      alt={article.author_name}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                      <User className="w-6 h-6 text-primary" />
                     </div>
-                    <div>
-                      <div className="text-xs text-foreground-muted mb-1">نویسنده مقاله</div>
-                      <div className="font-black text-xl text-foreground">{article.author_name}</div>
-                      {article.author_bio && (
-                        <p className="text-xs text-foreground-muted mt-1 max-w-md line-clamp-2">{article.author_bio}</p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <button className="p-3 bg-card border border-border rounded-xl hover:border-primary transition-colors text-foreground-muted hover:text-primary group" title="اشتراک‌گذاری">
-                      <Share2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    </button>
-                    <button className="p-3 bg-card border border-border rounded-xl hover:border-primary transition-colors text-foreground-muted hover:text-primary group" title="نشان کردن">
-                      <Bookmark className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    </button>
+                  )}
+                  <div>
+                    <h4 className="font-medium text-foreground">{article.author_name || 'نامشخص'}</h4>
+                    <p className="text-sm text-foreground-muted">نویسنده</p>
                   </div>
                 </div>
-
-                {article.author_note && (
-                  <div className="p-6 bg-primary/5 rounded-3xl border border-primary/10 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full -mr-12 -mt-12 blur-2xl"></div>
-                    <div className="relative flex items-start gap-4">
-                      <div className="bg-primary/20 p-2 rounded-lg">
-                        <MessageSquare className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-black text-foreground mb-2">یادداشت نویسنده:</h4>
-                        <p className="text-sm text-foreground-secondary leading-relaxed italic">
-                          "{article.author_note}"
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                {article.author_bio && (
+                  <p className="text-foreground-muted text-sm leading-relaxed">
+                    {article.author_bio}
+                  </p>
                 )}
               </div>
 
-            {/* Comments Section */}
-            <ArticleComments 
-              articleId={article.id} 
-              initialComments={article.comments} 
-              onRefresh={fetchArticle} 
-            />
-          </article>
-
-          {/* Sidebar */}
-            <aside className="lg:col-span-4 space-y-8">
-              <div className="bg-card border border-border rounded-3xl p-6 sticky top-24">
-                <h3 className="text-lg font-black text-foreground mb-6 flex items-center gap-2 border-b border-border pb-4">
-                  <BookOpen className="w-5 h-5 text-primary" />
-                  مطالب مرتبط
-                </h3>
-                
-                <div className="space-y-4">
-                  {article.related_articles_detail?.length > 0 ? (
-                    article.related_articles_detail.map((related) => (
-                      <Link 
-                        key={related.id}
-                        href={`/articles/${related.slug}`}
-                        className="flex gap-4 group"
-                      >
-                        <div className="w-20 h-20 rounded-2xl overflow-hidden bg-secondary flex-shrink-0">
-                          <img 
-                            src={related.image} 
-                            alt={related.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                          />
-                        </div>
-                        <div className="flex flex-col justify-center">
-                          <h4 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                            {related.title}
-                          </h4>
-                          <span className="text-[10px] text-foreground-muted mt-1">
-                            {new Date(related.created_at).toLocaleDateString('fa-IR')}
-                          </span>
-                        </div>
-                      </Link>
-                    ))
-                  ) : (
-                    <div className="text-center py-8">
-                      <BookOpen className="w-12 h-12 text-foreground-muted/20 mx-auto mb-2" />
-                      <p className="text-foreground-muted text-sm">مقاله مرتبطی یافت نشد.</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-8 pt-8 border-t border-border">
-                  <Link 
-                    href="/articles"
-                    className="block w-full bg-secondary text-foreground py-4 rounded-2xl font-black text-center hover:bg-secondary-hover transition-all text-sm mb-3"
-                  >
-                    آرشیو مقالات
-                  </Link>
-                  <Link 
-                    href="/search"
-                    className="block w-full bg-primary text-primary-foreground py-4 rounded-2xl font-black text-center shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all text-sm"
-                  >
-                    مشاهده فروشگاه
-                  </Link>
+              {/* Article Stats */}
+              <div className="bg-card border border-border rounded-2xl p-6">
+                <h3 className="font-bold text-foreground mb-4">آمار مقاله</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-foreground-muted flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      تاریخ انتشار
+                    </span>
+                    <span className="text-foreground font-medium">
+                      {new Date(article.created_at).toLocaleDateString('fa-IR')}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-foreground-muted flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4" />
+                      تعداد نظرات
+                    </span>
+                    <span className="text-foreground font-medium">
+                      {article.comments_count || 0}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-foreground-muted flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      زمان مطالعه
+                    </span>
+                    <span className="text-foreground font-medium">
+                      {Math.ceil((article.content?.replace(/<[^>]*>/g, '').length || 0) / 200)} دقیقه
+                    </span>
+                  </div>
                 </div>
               </div>
-            </aside>
+
+              {/* Share Article */}
+              <div className="bg-card border border-border rounded-2xl p-6">
+                <h3 className="font-bold text-foreground mb-4">اشتراک گذاری</h3>
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    toast.success("لینک مقاله کپی شد");
+                  }}
+                  className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Share2 className="w-5 h-5" />
+                  کپی لینک مقاله
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

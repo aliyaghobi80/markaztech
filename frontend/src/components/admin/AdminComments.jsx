@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import useSWR from "swr";
 import api from "@/lib/axios";
+import { globalWebSocket } from "@/lib/globalWebSocket";
 import { MessageSquare, CheckCircle, XCircle, Trash2, Loader2, User, Clock, Reply, Send, FileText, ShoppingBag } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -169,21 +170,15 @@ export default function AdminComments() {
   const [submittingReply, setSubmittingReply] = useState(false);
 
   useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.hostname;
-    const port = "8000";
-    const token = localStorage.getItem("accessToken");
-    
-    const socket = new WebSocket(`${protocol}//${host}:${port}/ws/user/?token=${token}`);
-
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+    // استفاده از WebSocket مرکزی
+    const handleWebSocketMessage = (data) => {
       if (data.type === "comment_update") {
         mutate();
       }
     };
 
-    return () => socket.close();
+    const unsubscribe = globalWebSocket.subscribe('admin-comments', handleWebSocketMessage);
+    return unsubscribe;
   }, [mutate]);
 
   const topLevelComments = allComments?.filter(c => !c.parent) || [];

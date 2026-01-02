@@ -37,8 +37,8 @@ export default function UserDropdown() {
         className="flex items-center gap-2 bg-secondary hover:bg-secondary-hover px-2 py-2 md:px-4 md:py-2 rounded-xl transition-all border border-border group"
       >
         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/20">
-          {user.avatar ? (
-            <img src={getAvatarUrl(user.avatar)} alt={user.full_name} className="w-full h-full object-cover" />
+          {user.avatar_url ? (
+            <img src={getAvatarUrl(user.avatar_url)} alt={user.full_name} className="w-full h-full object-cover" />
           ) : (
             <User className="w-4 h-4 text-primary" />
           )}
