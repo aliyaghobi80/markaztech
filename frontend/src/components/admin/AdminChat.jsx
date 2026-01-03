@@ -20,6 +20,7 @@ import {
   Pause
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { WS_ENABLED } from "@/lib/wsConfig";
 
 const fetcher = (url) => api.get(url).then((res) => res.data);
 
@@ -123,6 +124,10 @@ export default function AdminChat() {
   };
 
   const connectWebSocket = (roomId) => {
+    if (!WS_ENABLED) {
+      console.log('?? WebSocket disabled on shared host - using polling only');
+      return;
+    }
     // بستن اتصال قبلی
     if (wsRef.current) {
       wsRef.current.close();

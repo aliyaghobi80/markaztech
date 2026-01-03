@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useCallback, useRef } from 'react';
+import { WS_ENABLED } from './wsConfig';
 
 class UserTrackingWebSocket {
   constructor() {
@@ -13,6 +14,10 @@ class UserTrackingWebSocket {
   }
 
   connect() {
+    if (!WS_ENABLED) {
+      console.log('🔌 User tracking WebSocket disabled on shared host');
+      return;
+    }
     if (this.ws?.readyState === WebSocket.OPEN) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';

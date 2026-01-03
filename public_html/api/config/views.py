@@ -8,8 +8,13 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.core.management import call_command
 from django.utils import timezone
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
+try:
+    from channels.layers import get_channel_layer
+    from asgiref.sync import async_to_sync
+except Exception:
+    # Channels not installed/used on shared hosting
+    get_channel_layer = None
+    async_to_sync = None
 import json
 import os
 import logging
@@ -113,6 +118,12 @@ def channel_layer_health(request):
     """
     Lightweight channel layer connectivity probe.
     """
+    if not settings.WEBSOCKETS_ENABLED:
+        return JsonResponse({'channel_layer': 'disabled'}, status=200)
+
+    if not get_channel_layer or not async_to_sync:
+        return JsonResponse({'channel_layer': 'not-configured'}, status=500)
+
     layer = get_channel_layer()
     if not layer:
         return JsonResponse({'channel_layer': 'not-configured'}, status=500)

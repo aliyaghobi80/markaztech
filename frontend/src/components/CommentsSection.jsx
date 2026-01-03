@@ -6,6 +6,7 @@ import { MessageSquare, Star, Send, User, Clock, CheckCircle, Reply, CornerDownL
 import api from "@/lib/axios";
 import { useAuth } from "@/context/AuthContext";
 import toast from "react-hot-toast";
+import { WS_ENABLED } from "@/lib/wsConfig";
 
 export default function CommentsSection({ productId, comments: initialComments = [], onCommentSubmit }) {
   const { user } = useAuth();
@@ -21,7 +22,7 @@ export default function CommentsSection({ productId, comments: initialComments =
 
   // WebSocket for real-time comments
   useEffect(() => {
-    if (!productId) return;
+    if (!productId || !WS_ENABLED) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.hostname}:8001/ws/products/${productId}/comments/`;

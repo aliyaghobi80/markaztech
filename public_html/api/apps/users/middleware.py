@@ -1,4 +1,8 @@
-from channels.db import database_sync_to_async
+try:
+    from channels.db import database_sync_to_async
+except Exception:  # Channels not installed/enabled
+    def database_sync_to_async(func):
+        return func
 from django.contrib.auth.models import AnonymousUser
 from rest_framework_simplejwt.tokens import AccessToken
 from django.contrib.auth import get_user_model

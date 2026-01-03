@@ -6,6 +6,7 @@ import { X, Send, User, Phone, MessageCircle, Image, Mic, Paperclip, Play, Pause
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
+import { WS_ENABLED } from "@/lib/wsConfig";
 
 export default function ChatWindow({ onClose, onlineAdmins, onUnreadCountChange }) {
   const { user, loading: authLoading } = useAuth();
@@ -256,6 +257,10 @@ export default function ChatWindow({ onClose, onlineAdmins, onUnreadCountChange 
   };
 
   const connectWebSocket = (roomId) => {
+    if (!WS_ENABLED) {
+      console.log('?? Chat WebSocket disabled on shared host - using HTTP only');
+      return;
+    }
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host.includes('localhost') ? 'localhost:8001' : window.location.host;
     const wsUrl = `${protocol}//${host}/ws/chat/${roomId}/`;

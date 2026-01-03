@@ -21,11 +21,13 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='markaztech.ir,www.markaztech.ir
 
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='https://markaztech.ir,https://www.markaztech.ir').split(',')
 
+# Toggle WebSocket/Channels support (keep False on shared host without Redis/WebSocket)
+WEBSOCKETS_ENABLED = config('WEBSOCKETS_ENABLED', default=False, cast=bool)
+
 
 # Application definition
 
 INSTALLED_APPS = [
-    'daphne',  # WebSocket support
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -38,7 +40,6 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
-    'channels',  # WebSocket support
     'tinymce',   # Rich text editor
     'django_jalali',  # Jalali date support
 
@@ -49,6 +50,11 @@ INSTALLED_APPS = [
     'apps.articles',
     'apps.chat',  # Chat with WebSocket
 ]
+
+# Optional WebSocket apps (only added when enabled)
+if WEBSOCKETS_ENABLED:
+    INSTALLED_APPS.insert(0, 'daphne')   # WebSocket server
+    INSTALLED_APPS.append('channels')    # Channels support
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -80,29 +86,33 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
-ASGI_APPLICATION = 'config.asgi.application'  # WebSocket support
+ASGI_APPLICATION = 'config.asgi.application'  # Only used when WebSockets are enabled
 
-# Channel layer: Redis in production, in-memory only for local/dev fallback
-if config('REDIS_HOST', default=None):
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                'hosts': [
-                    (
-                        config('REDIS_HOST'),
-                        config('REDIS_PORT', default=6379, cast=int)
-                    )
-                ]
+# Channel layer: only configure when WebSockets are enabled
+if WEBSOCKETS_ENABLED:
+    # Redis in production, in-memory only for local/dev fallback
+    if config('REDIS_HOST', default=None):
+        CHANNEL_LAYERS = {
+            'default': {
+                'BACKEND': 'channels_redis.core.RedisChannelLayer',
+                'CONFIG': {
+                    'hosts': [
+                        (
+                            config('REDIS_HOST'),
+                            config('REDIS_PORT', default=6379, cast=int)
+                        )
+                    ]
+                },
             },
-        },
-    }
+        }
+    else:
+        CHANNEL_LAYERS = {
+            'default': {
+                'BACKEND': 'channels.layers.InMemoryChannelLayer',
+            },
+        }
 else:
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels.layers.InMemoryChannelLayer',
-        },
-    }
+    CHANNEL_LAYERS = {}
 
 
 # Database

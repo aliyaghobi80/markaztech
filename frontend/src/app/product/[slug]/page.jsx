@@ -15,6 +15,7 @@ import { useCart } from "@/context/CartContext";
 import toast from "react-hot-toast";
 import FavoriteToggle from "@/components/FavoriteToggle";
 import CommentsSection from "@/components/CommentsSection";
+import { WS_ENABLED } from "@/lib/wsConfig";
 
 const fetcher = (url) => api.get(url).then((res) => res.data);
 
@@ -26,7 +27,7 @@ export default function ProductPage() {
     const isLowStock = product?.stock > 0 && product?.stock <= 3;
 
     useEffect(() => {
-    if (!slug) return;
+    if (!slug || !WS_ENABLED) return;
     
     // WebSocket connection for real-time comment updates
     const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000'}/ws/product/${product?.id || 0}/`;

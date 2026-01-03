@@ -6,6 +6,7 @@ import api from "@/lib/axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
+import { WS_ENABLED } from "@/lib/wsConfig";
 
 export default function SearchModal({ isOpen, onClose }) {
   const [query, setQuery] = useState("");
@@ -24,7 +25,7 @@ export default function SearchModal({ isOpen, onClose }) {
 
   // WebSocket connection management
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && WS_ENABLED) {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.hostname;
       const port = '8001'; // Django port

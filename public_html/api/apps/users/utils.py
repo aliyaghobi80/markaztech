@@ -1,10 +1,24 @@
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
+from django.conf import settings
 import jdatetime
 import datetime
 
+try:
+    from asgiref.sync import async_to_sync
+    from channels.layers import get_channel_layer
+except Exception:
+    async_to_sync = None
+    get_channel_layer = None
+
+
+def _channel_layer():
+    """Return channel layer when WebSockets are enabled, otherwise None."""
+    if not settings.WEBSOCKETS_ENABLED or not async_to_sync or not get_channel_layer:
+        return None
+    return get_channel_layer()
+
+
 def jalali_relative_time(dt):
-    """Returns a human-readable relative time in Jalali (e.g., 5 دقیقه پیش)."""
+    """Returns a human-readable relative time in Jalali (e.g., 5 O_U,UOU,UŘ U_UOO')."""
     if not dt:
         return ""
     
@@ -13,24 +27,30 @@ def jalali_relative_time(dt):
     
     seconds = diff.total_seconds()
     if seconds < 60:
-        return "لحظاتی پیش"
+        return "U,O-O,OOŚUO U_UOO'"
     elif seconds < 3600:
-        return f"{int(seconds // 60)} دقیقه پیش"
+        return f"{int(seconds // 60)} O_U,UOU,UŘ U_UOO'"
     elif seconds < 86400:
-        return f"{int(seconds // 3600)} ساعت پیش"
+        return f"{int(seconds // 3600)} O3OO1OŚ U_UOO'"
     elif seconds < 2592000:
-        return f"{int(seconds // 86400)} روز پیش"
+        return f"{int(seconds // 86400)} OńU^Oý U_UOO'"
     else:
         return jdatetime.datetime.fromgregorian(datetime=dt).strftime('%Y/%m/%d')
+
 
 def jalali_full_date(dt):
     """Returns a full Jalali date and time."""
     if not dt:
         return ""
-    return jdatetime.datetime.fromgregorian(datetime=dt).strftime('%Y/%m/%d ساعت %H:%M')
+    return jdatetime.datetime.fromgregorian(datetime=dt).strftime('%Y/%m/%d O3OO1OŚ %H:%M')
+
 
 def broadcast_site_stats():
-    """Broadcasts current site statistics via WebSocket."""
+    """Broadcasts current site statistics via WebSocket (no-op on shared host)."""
+    layer = _channel_layer()
+    if not layer:
+        return
+
     from .models import SiteStats, SatisfactionVote
     stats, created = SiteStats.objects.get_or_create(id=1)
     
@@ -48,8 +68,7 @@ def broadcast_site_stats():
         "online_users": len(online_user_connections)
     }
     
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
+    async_to_sync(layer.group_send)(
         "site_stats",
         {
             "type": "stats_update",
@@ -57,14 +76,17 @@ def broadcast_site_stats():
         }
     )
 
+
 def send_comment_update(comment):
-    """Sends a comment update to the relevant group (product or article)."""
+    """Sends a comment update to the relevant group (no-op when WS disabled)."""
+    layer = _channel_layer()
+    if not layer:
+        return
+
     from apps.products.serializers import CommentSerializer as ProductCommentSerializer
     from apps.articles.serializers import ArticleCommentSerializer
     from apps.products.models import Comment as ProductComment
     from apps.articles.models import ArticleComment
-    
-    channel_layer = get_channel_layer()
     
     if isinstance(comment, ProductComment):
         group_name = f"product_{comment.product.id}_comments"
@@ -75,7 +97,7 @@ def send_comment_update(comment):
     else:
         return
 
-    async_to_sync(channel_layer.group_send)(
+    async_to_sync(layer.group_send)(
         group_name,
         {
             "type": "comment_update",
@@ -85,7 +107,7 @@ def send_comment_update(comment):
     )
     
     # Also send to admin comments group
-    async_to_sync(channel_layer.group_send)(
+    async_to_sync(layer.group_send)(
         "admin_comments",
         {
             "type": "comment_update",
@@ -94,13 +116,17 @@ def send_comment_update(comment):
         }
     )
 
+
 def send_product_update(product, action="update"):
-    """Sends a product update to the products group."""
+    """Sends a product update to the products group (no-op on shared host)."""
+    layer = _channel_layer()
+    if not layer:
+        return
+
     from apps.products.serializers import ProductSerializer
     
-    channel_layer = get_channel_layer()
     serializer = ProductSerializer(product)
-    async_to_sync(channel_layer.group_send)(
+    async_to_sync(layer.group_send)(
         "products",
         {
             "type": "product_update",
@@ -109,11 +135,15 @@ def send_product_update(product, action="update"):
         }
     )
 
+
 def send_wallet_update(user):
     """Sends a wallet balance update to the user's group."""
-    channel_layer = get_channel_layer()
+    layer = _channel_layer()
+    if not layer:
+        return
+
     group_name = f"user_{user.id}_wallet"
-    async_to_sync(channel_layer.group_send)(
+    async_to_sync(layer.group_send)(
         group_name,
         {
             "type": "wallet_update",
@@ -121,13 +151,16 @@ def send_wallet_update(user):
         }
     )
 
+
 def send_wallet_request_update(user, request_id, status, admin_note=None):
     """Sends a wallet request status update message."""
-    channel_layer = get_channel_layer()
+    layer = _channel_layer()
+    if not layer:
+        return
     
     # Send to user's personal wallet group
     user_group_name = f"user_{user.id}_wallet"
-    async_to_sync(channel_layer.group_send)(
+    async_to_sync(layer.group_send)(
         user_group_name,
         {
             "type": "wallet_request_update",
@@ -138,7 +171,7 @@ def send_wallet_request_update(user, request_id, status, admin_note=None):
     )
     
     # Also send to admin notifications group for real-time admin panel updates
-    async_to_sync(channel_layer.group_send)(
+    async_to_sync(layer.group_send)(
         "admin_notifications",
         {
             "type": "wallet_request_update",
@@ -149,12 +182,16 @@ def send_wallet_request_update(user, request_id, status, admin_note=None):
         }
     )
 
+
 def send_ticket_update(ticket):
     """Sends a ticket update to the user and admins."""
-    channel_layer = get_channel_layer()
+    layer = _channel_layer()
+    if not layer:
+        return
+
     # Send to user
     user_group = f"user_{ticket.user.id}_tickets"
-    async_to_sync(channel_layer.group_send)(
+    async_to_sync(layer.group_send)(
         user_group,
         {
             "type": "ticket_update",
@@ -163,7 +200,7 @@ def send_ticket_update(ticket):
         }
     )
     # Send to admins group
-    async_to_sync(channel_layer.group_send)(
+    async_to_sync(layer.group_send)(
         "admin_notifications",
         {
             "type": "ticket_update",
@@ -173,10 +210,14 @@ def send_ticket_update(ticket):
         }
     )
 
+
 def broadcast_site_settings_update(settings_data):
     """Broadcasts site settings update to all connected clients."""
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
+    layer = _channel_layer()
+    if not layer:
+        return
+
+    async_to_sync(layer.group_send)(
         "site_stats",  # Using existing group for site-wide updates
         {
             "type": "site_settings_update",
