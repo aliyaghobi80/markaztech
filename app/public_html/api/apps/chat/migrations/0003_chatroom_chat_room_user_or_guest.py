@@ -14,6 +14,13 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddConstraint(
             model_name='chatroom',
-            constraint=models.CheckConstraint(condition=models.Q(models.Q(('guest_phone__isnull', True), ('user__isnull', False)), models.Q(('guest_phone__isnull', False), ('user__isnull', True)), _connector='OR'), name='chat_room_user_or_guest'),
+            constraint=models.CheckConstraint(
+                check=models.Q(
+                    models.Q(('guest_phone__isnull', True), ('user__isnull', False)),
+                    models.Q(('guest_phone__isnull', False), ('user__isnull', True)),
+                    _connector='OR',
+                ),
+                name='chat_room_user_or_guest',
+            ),
         ),
     ]

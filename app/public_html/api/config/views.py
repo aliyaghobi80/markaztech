@@ -114,17 +114,7 @@ def channel_layer_health(request):
     """
     Lightweight channel layer connectivity probe.
     """
-    layer = get_channel_layer()
-    if not layer:
-        return JsonResponse({'channel_layer': 'not-configured', 'mode': 'polling'}, status=500)
-    try:
-        channel_name = async_to_sync(layer.new_channel)("health")
-        async_to_sync(layer.send)(channel_name, {"type": "health.check", "text": "ok"})
-        status = 'degraded' if isinstance(layer, InMemoryChannelLayer) and not settings.DEBUG else 'websocket'
-        return JsonResponse({'channel_layer': 'ok', 'mode': status})
-    except Exception as exc:
-        logging.getLogger(__name__).exception("Channel layer health failed: %s", exc)
-        return JsonResponse({'channel_layer': 'error', 'mode': 'polling'}, status=500)
+    return JsonResponse({'channel_layer': 'disabled', 'mode': 'polling'})
 
 
 @require_http_methods(["GET"])
@@ -132,11 +122,4 @@ def realtime_health(request):
     """
     Reports realtime capability for frontends to decide WS vs polling.
     """
-    layer = get_channel_layer()
-    if layer and isinstance(layer, InMemoryChannelLayer):
-        mode = 'degraded' if not settings.DEBUG else 'websocket'
-    elif layer:
-        mode = 'websocket'
-    else:
-        mode = 'polling'
-    return JsonResponse({'realtime': mode})
+    return JsonResponse({'realtime': 'polling'})

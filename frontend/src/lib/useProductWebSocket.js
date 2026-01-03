@@ -26,30 +26,15 @@ export function useProductWebSocket(onUpdate) {
   }, [onUpdate]);
 
   const handleMessage = useCallback((data) => {
-    if (data?.type === 'fallback') {
-      startPolling();
-      return;
-    }
-    if (data.type === 'product_update' || data.type === 'product_delete') {
-      onUpdate?.(data);
-    }
+    startPolling();
   }, [onUpdate, startPolling]);
 
   useEffect(() => {
     let unsubscribe = () => {};
 
     const init = async () => {
-      try {
-        const res = await api.get('/health/realtime/');
-        if (res.data?.realtime && res.data.realtime !== 'websocket') {
-          startPolling();
-          return;
-        }
-      } catch (err) {
-        console.warn('Realtime health check failed, trying WebSocket', err?.message);
-      }
-
-      productWs.connect();
+      // Always use polling (WebSocket disabled on host)
+      startPolling();
       unsubscribe = productWs.subscribe(handleMessage);
     };
 
